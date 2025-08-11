@@ -11,7 +11,7 @@ const GallerySection = () => {
   const galleryImages = [
     {
       src: heroImage,
-      alt: "Khách sạn LUFO Hotel - Mặt tiền",
+      alt: "Khách sạn Y Hotel - Mặt tiền",
       category: "Mặt tiền"
     },
     {
@@ -75,7 +75,7 @@ const GallerySection = () => {
             Thư Viện Hình Ảnh
           </h2>
           <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Khám phá không gian sang trọng và tiện nghi hiện đại của LUFO Hotel
+            Khám phá không gian sang trọng và tiện nghi hiện đại của Y Hotel
           </p>
         </div>
 

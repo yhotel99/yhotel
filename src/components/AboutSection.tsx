@@ -22,7 +22,7 @@ const AboutSection = () => {
     {
       icon: Heart,
       title: "Trải Nghiệm Đáng Nhớ",
-      description: "Mỗi khoảnh khắc tại LUFO Hotel đều được thiết kế để tạo nên những kỷ niệm khó quên."
+      description: "Mỗi khoảnh khắc tại Y Hotel đều được thiết kế để tạo nên những kỷ niệm khó quên."
     }
   ];
 
@@ -41,15 +41,15 @@ const AboutSection = () => {
           <div className="space-y-8">
             <div className="space-y-4">
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground">
-                Về <span className="text-gradient">LUFO Hotel</span>
+                Về <span className="text-gradient">Y Hotel</span>
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed text-justify">
-                Được thành lập từ năm 2008, LUFO Hotel đã trở thành biểu tượng của sự sang trọng và 
+                Được thành lập từ năm 2008, Y Hotel đã trở thành biểu tượng của sự sang trọng và 
                 đẳng cấp trong ngành khách sạn. Chúng tôi cam kết mang đến những trải nghiệm 
                 nghỉ dưỡng hoàn hảo với tiêu chuẩn dịch vụ quốc tế.
               </p>
               <p className="text-lg text-muted-foreground leading-relaxed text-justify">
-                Với kiến trúc hiện đại kết hợp nét truyền thống, LUFO Hotel không chỉ là nơi nghỉ ngơi 
+                Với kiến trúc hiện đại kết hợp nét truyền thống, Y Hotel không chỉ là nơi nghỉ ngơi 
                 mà còn là điểm đến lý tưởng cho các sự kiện quan trọng và những kỷ niệm đáng nhớ.
               </p>
             </div>
@@ -97,7 +97,7 @@ const AboutSection = () => {
             <div className="relative overflow-hidden rounded-xl shadow-luxury">
               <img
                 src={lobbyImage}
-                alt="LUFO Hotel Lobby"
+                alt="Y Hotel Lobby"
                 className="w-full h-[600px] object-cover hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />

@@ -32,14 +32,9 @@ const Navigation = () => {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <div className="flex items-center">
-            <img 
-              src="/lovable-uploads/d1b87096-5a25-49c4-aa28-ab269f34eab3.png" 
-              alt="LUFO Hotel Logo" 
-              className="h-8 lg:h-10 w-auto"
-            />
-            <span className="ml-3 text-xl lg:text-2xl font-display font-bold text-gradient">
-              LUFO Hotel
-            </span>
+            <h1 className="text-2xl lg:text-3xl font-display font-bold text-gradient">
+              Y Hotel
+            </h1>
           </div>
 
           {/* Desktop Navigation */}

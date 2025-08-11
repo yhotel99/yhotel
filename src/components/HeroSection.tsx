@@ -37,7 +37,7 @@ const HeroSection = () => {
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold mb-6 animate-fade-up">
             Trải Nghiệm Sang Trọng
             <span className="block text-gradient-hero bg-gradient-to-r from-primary-light to-primary bg-clip-text text-transparent">
-              Tại LUFO Hotel
+              Tại Y Hotel
             </span>
           </h1>
           
