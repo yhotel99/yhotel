@@ -13,7 +13,7 @@ const Footer = () => {
       "Airport Transfer"
     ],
     "Thông Tin": [
-      "Về Y Hotel",
+      "Về LUFO Hotel",
       "Tin Tức & Sự Kiện",
       "Chính Sách Bảo Mật",
       "Điều Khoản Sử Dụng",
@@ -46,7 +46,7 @@ const Footer = () => {
           <div className="lg:col-span-1 space-y-6">
             <div>
               <h2 className="text-3xl font-display font-bold text-gradient mb-4">
-                Y Hotel
+                LUFO Hotel
               </h2>
               <p className="text-background/80 leading-relaxed">
                 Khách sạn sang trọng hàng đầu với tiêu chuẩn dịch vụ quốc tế, 
@@ -65,7 +65,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center space-x-3 text-background/80">
                 <Mail className="w-5 h-5 text-primary" />
-                <span className="text-sm">info@yhotel.com</span>
+                <span className="text-sm">info@lufohotel.com</span>
               </div>
             </div>
 
@@ -117,7 +117,7 @@ const Footer = () => {
                 Đăng Ký Nhận Tin
               </h3>
               <p className="text-background/80 text-sm">
-                Nhận thông tin về ưu đãi đặc biệt và sự kiện mới nhất từ Y Hotel.
+                Nhận thông tin về ưu đãi đặc biệt và sự kiện mới nhất từ LUFO Hotel.
               </p>
             </div>
             <div className="flex space-x-2">
@@ -136,7 +136,7 @@ const Footer = () => {
         <div className="border-t border-background/20 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="text-background/80 text-sm">
-              © 2024 Y Hotel. Tất cả quyền được bảo lưu.
+              © 2024 LUFO Hotel. Tất cả quyền được bảo lưu.
             </div>
             <div className="flex space-x-6 text-sm">
               <a href="#" className="text-background/80 hover:text-primary transition-colors">
