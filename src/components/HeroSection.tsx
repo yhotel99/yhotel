@@ -26,6 +26,8 @@ const HeroSection = () => {
           backgroundImage: `url(${heroImage})`,
           transform: `translateY(${parallaxOffset}px)`,
         }}
+        role="img"
+        aria-label="Y Hotel - Khách sạn sang trọng với kiến trúc hiện đại và cảnh quan tuyệt đẹp"
       />
       
       {/* Gradient Overlay */}

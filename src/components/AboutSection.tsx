@@ -97,7 +97,7 @@ const AboutSection = () => {
             <div className="relative overflow-hidden rounded-xl shadow-luxury">
               <img
                 src={lobbyImage}
-                alt="Y Hotel Lobby"
+                alt="Sảnh khách sang trọng tại Y Hotel với thiết kế hiện đại và không gian rộng rãi"
                 className="w-full h-[600px] object-cover hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />

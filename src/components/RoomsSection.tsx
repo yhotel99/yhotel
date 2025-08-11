@@ -72,7 +72,7 @@ const RoomsSection = () => {
               <div className="relative overflow-hidden">
                 <img
                   src={room.image}
-                  alt={room.name}
+                  alt={`Phòng ${room.name} tại Y Hotel - ${room.size} với view đẹp và tiện nghi cao cấp`}
                   className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
