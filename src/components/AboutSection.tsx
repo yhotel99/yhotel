@@ -43,12 +43,12 @@ const AboutSection = () => {
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground">
                 Về <span className="text-gradient">Y Hotel</span>
               </h2>
-              <p className="text-lg text-muted-foreground leading-relaxed">
+              <p className="text-lg text-muted-foreground leading-relaxed text-justify">
                 Được thành lập từ năm 2008, Y Hotel đã trở thành biểu tượng của sự sang trọng và 
                 đẳng cấp trong ngành khách sạn. Chúng tôi cam kết mang đến những trải nghiệm 
                 nghỉ dưỡng hoàn hảo với tiêu chuẩn dịch vụ quốc tế.
               </p>
-              <p className="text-lg text-muted-foreground leading-relaxed">
+              <p className="text-lg text-muted-foreground leading-relaxed text-justify">
                 Với kiến trúc hiện đại kết hợp nét truyền thống, Y Hotel không chỉ là nơi nghỉ ngơi 
                 mà còn là điểm đến lý tưởng cho các sự kiện quan trọng và những kỷ niệm đáng nhớ.
               </p>
