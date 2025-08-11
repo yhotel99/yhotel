@@ -25,6 +25,7 @@ Sophisticated cyan gradients with elegant typography and smooth animations
     --primary-foreground: 0 0% 100%;
     --primary-light: 188 86% 53%;
     --primary-dark: 191 91% 36%;
+    --primary-subtle: 189 50% 85%;
 
     /* Secondary - Elegant Support Colors */
     --secondary: 220 14% 96%;
@@ -53,10 +54,27 @@ Sophisticated cyan gradients with elegant typography and smooth animations
     --input: 220 13% 91%;
     --ring: 189 94% 43%;
 
-    /* Gradients */
+    /* Elegant Luxury Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(189 94% 43%) 0%, hsl(191 91% 36%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(189 94% 43%) 0%, hsl(188 86% 53%) 50%, hsl(191 91% 36%) 100%);
+    --gradient-luxury: linear-gradient(135deg, 
+      hsl(189 50% 95%) 0%, 
+      hsl(189 40% 90%) 25%, 
+      hsl(189 60% 85%) 50%, 
+      hsl(189 50% 90%) 75%, 
+      hsl(189 40% 95%) 100%);
+    --gradient-subtle: linear-gradient(135deg, 
+      hsl(189 30% 98%) 0%, 
+      hsl(189 40% 95%) 50%, 
+      hsl(189 30% 98%) 100%);
+    --gradient-hero: linear-gradient(135deg, 
+      hsl(189 94% 43% / 0.9) 0%, 
+      hsl(188 86% 53% / 0.8) 50%, 
+      hsl(191 91% 36% / 0.9) 100%);
     --gradient-overlay: linear-gradient(180deg, transparent 0%, hsl(220 13% 13% / 0.6) 100%);
+    --gradient-section: linear-gradient(to bottom, 
+      hsl(189 50% 98%) 0%, 
+      hsl(189 40% 96%) 50%, 
+      hsl(189 50% 98%) 100%);
 
     /* Shadows */
     --shadow-luxury: 0 25px 50px -12px hsl(189 94% 43% / 0.25);
@@ -123,8 +141,25 @@ Sophisticated cyan gradients with elegant typography and smooth animations
     --ring: 189 94% 43%;
 
     --gradient-primary: linear-gradient(135deg, hsl(189 94% 43%) 0%, hsl(191 91% 36%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(189 94% 43%) 0%, hsl(188 86% 53%) 50%, hsl(191 91% 36%) 100%);
+    --gradient-luxury: linear-gradient(135deg, 
+      hsl(189 50% 20%) 0%, 
+      hsl(189 40% 25%) 25%, 
+      hsl(189 60% 15%) 50%, 
+      hsl(189 50% 20%) 75%, 
+      hsl(189 40% 25%) 100%);
+    --gradient-subtle: linear-gradient(135deg, 
+      hsl(189 30% 15%) 0%, 
+      hsl(189 40% 12%) 50%, 
+      hsl(189 30% 15%) 100%);
+    --gradient-hero: linear-gradient(135deg, 
+      hsl(189 94% 43% / 0.9) 0%, 
+      hsl(188 86% 53% / 0.8) 50%, 
+      hsl(191 91% 36% / 0.9) 100%);
     --gradient-overlay: linear-gradient(180deg, transparent 0%, hsl(220 13% 9% / 0.8) 100%);
+    --gradient-section: linear-gradient(to bottom, 
+      hsl(189 50% 8%) 0%, 
+      hsl(189 40% 10%) 50%, 
+      hsl(189 50% 8%) 100%);
 
     --shadow-luxury: 0 25px 50px -12px hsl(189 94% 43% / 0.4);
     --shadow-card: 0 10px 25px -5px hsl(220 13% 9% / 0.3);
@@ -202,5 +237,18 @@ Sophisticated cyan gradients with elegant typography and smooth animations
 
   .container-luxury {
     @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+  }
+
+  /* Luxury Background Classes */
+  .bg-luxury-gradient {
+    background: var(--gradient-luxury);
+  }
+
+  .bg-subtle-gradient {
+    background: var(--gradient-subtle);
+  }
+
+  .bg-section-gradient {
+    background: var(--gradient-section);
   }
 }
