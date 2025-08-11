@@ -29,7 +29,7 @@ const BlogSection = () => {
       id: 3,
       title: "Lễ Hội Mùa Đông 2024 - Ưu Đãi Đặc Biệt",
       excerpt: "Chuỗi sự kiện và chương trình khuyến mãi hấp dẫn trong mùa lễ hội cuối năm tại Y Hotel.",
-      image: "https://images.unsplash.com/photo-1512098379297-ee37aa1ca65a?w=600",
+      image: "https://images.unsplash.com/photo-1543589077-47d81606c1bf?w=600",
       author: "Y Hotel",
       date: "5 Tháng 11, 2024",
       category: "Khuyến mãi", 

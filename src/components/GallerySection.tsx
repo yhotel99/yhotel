@@ -31,7 +31,7 @@ const GallerySection = () => {
       category: "Nhà hàng"
     },
     {
-      src: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=800", 
+      src: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800", 
       alt: "Hồ bơi khách sạn",
       category: "Hồ bơi"
     },
