@@ -63,16 +63,23 @@ const HeroSection = () => {
                 transition={{ delay: 0.8, duration: 1 }}
               >
                 <span className="text-white/80 text-3xl md:text-4xl lg:text-5xl mr-4">Tại</span>
-                <span className="text-gradient-hero bg-gradient-to-r from-gold via-primary-light to-primary bg-clip-text text-transparent font-bold tracking-wider drop-shadow-2xl relative">
+                <span 
+                  className="bg-gradient-to-r from-gold via-primary-light via-primary to-gold bg-clip-text text-transparent font-bold tracking-wider drop-shadow-2xl relative animate-gradient-shift"
+                  style={{ 
+                    backgroundSize: '400% 400%',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                  }}
+                >
                   Y Hotel
                   <motion.div
-                    className="absolute inset-0 bg-gradient-to-r from-gold/20 to-primary/20 blur-xl -z-10"
+                    className="absolute inset-0 bg-gradient-to-r from-gold/30 via-primary/30 to-gold/30 blur-xl -z-10"
                     animate={{ 
-                      opacity: [0.3, 0.6, 0.3],
-                      scale: [1, 1.1, 1]
+                      opacity: [0.4, 0.8, 0.4],
+                      scale: [1, 1.1, 1],
                     }}
                     transition={{ 
-                      duration: 3, 
+                      duration: 4, 
                       repeat: Infinity,
                       ease: "easeInOut"
                     }}
