@@ -57,12 +57,27 @@ const HeroSection = () => {
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-display font-bold mb-6">
               <TextShimmer>Trải Nghiệm Sang Trọng</TextShimmer>
               <motion.span 
-                className="block text-gradient-hero bg-gradient-to-r from-primary-light to-primary bg-clip-text text-transparent"
+                className="block"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.8, duration: 1 }}
               >
-                Tại Y Hotel
+                <span className="text-white/80 text-3xl md:text-4xl lg:text-5xl mr-4">Tại</span>
+                <span className="text-gradient-hero bg-gradient-to-r from-gold via-primary-light to-primary bg-clip-text text-transparent font-bold tracking-wider drop-shadow-2xl relative">
+                  Y Hotel
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-gold/20 to-primary/20 blur-xl -z-10"
+                    animate={{ 
+                      opacity: [0.3, 0.6, 0.3],
+                      scale: [1, 1.1, 1]
+                    }}
+                    transition={{ 
+                      duration: 3, 
+                      repeat: Infinity,
+                      ease: "easeInOut"
+                    }}
+                  />
+                </span>
               </motion.span>
             </h1>
           </motion.div>
