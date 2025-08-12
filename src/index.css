@@ -75,11 +75,20 @@ Sophisticated cyan gradients with elegant typography and smooth animations
       hsl(189 50% 98%) 0%, 
       hsl(189 40% 96%) 50%, 
       hsl(189 50% 98%) 100%);
+    --gradient-shimmer: linear-gradient(110deg, transparent 40%, hsl(var(--primary) / 0.2) 50%, transparent 60%);
+    --gradient-aurora: linear-gradient(135deg, 
+      hsl(var(--primary) / 0.2) 0%, 
+      hsl(var(--gold) / 0.1) 25%, 
+      hsl(var(--primary) / 0.1) 50%, 
+      hsl(var(--gold) / 0.2) 75%, 
+      hsl(var(--primary) / 0.2) 100%);
 
     /* Shadows */
     --shadow-luxury: 0 25px 50px -12px hsl(189 94% 43% / 0.25);
     --shadow-card: 0 10px 25px -5px hsl(220 13% 13% / 0.1);
     --shadow-hover: 0 20px 35px -10px hsl(189 94% 43% / 0.3);
+    --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    --shadow-glow: 0 0 60px hsl(var(--primary) / 0.3);
 
     /* Spacing & Layout */
     --radius: 0.75rem;
