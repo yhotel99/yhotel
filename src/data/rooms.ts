@@ -203,6 +203,205 @@ export const rooms: Room[] = [
     amenities: [Wifi, Coffee, Bath],
     popular: false,
     category: "standard"
+  },
+  {
+    id: 10,
+    name: "Deluxe City View",
+    image: typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+    galleryImages: [
+      typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+      galleryImages[0],
+      galleryImages[2],
+      galleryImages[3],
+      galleryImages[4]
+    ],
+    price: "2,400,000",
+    originalPrice: "2,800,000",
+    size: "38m²",
+    guests: 2,
+    features: ["1 giường đôi lớn", "Tầm nhìn thành phố", "Ban công riêng", "Minibar cao cấp"],
+    amenities: [Wifi, Coffee, Bath, Car],
+    popular: true,
+    category: "deluxe"
+  },
+  {
+    id: 11,
+    name: "Junior Suite",
+    image: typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+    galleryImages: [
+      typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+      galleryImages[1],
+      galleryImages[2],
+      galleryImages[4],
+      galleryImages[5]
+    ],
+    price: "3,200,000",
+    originalPrice: "3,800,000",
+    size: "50m²",
+    guests: 3,
+    features: ["Phòng ngủ riêng", "Phòng khách", "Bàn làm việc", "Minibar đầy đủ"],
+    amenities: [Wifi, Coffee, Bath, Car],
+    popular: false,
+    category: "suite"
+  },
+  {
+    id: 12,
+    name: "Standard Plus",
+    image: typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+    galleryImages: [
+      typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+      galleryImages[0],
+      galleryImages[1],
+      galleryImages[2]
+    ],
+    price: "1,700,000",
+    originalPrice: "2,000,000",
+    size: "32m²",
+    guests: 2,
+    features: ["1 giường đôi", "Nội thất hiện đại", "Tầm nhìn đẹp", "Minibar"],
+    amenities: [Wifi, Coffee, Bath],
+    popular: false,
+    category: "standard"
+  },
+  {
+    id: 14,
+    name: "Royal Suite",
+    image: typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+    galleryImages: [
+      typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+      galleryImages[0],
+      galleryImages[2],
+      galleryImages[4],
+      galleryImages[5]
+    ],
+    price: "5,500,000",
+    originalPrice: "6,500,000",
+    size: "85m²",
+    guests: 4,
+    features: ["2 phòng ngủ", "Phòng khách sang trọng", "Bếp đầy đủ", "Phòng tắm jacuzzi"],
+    amenities: [Wifi, Coffee, Bath, Car],
+    popular: true,
+    category: "suite"
+  },
+  {
+    id: 15,
+    name: "Family Premium",
+    image: typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+    galleryImages: [
+      typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+      galleryImages[1],
+      galleryImages[3],
+      galleryImages[4],
+      galleryImages[5]
+    ],
+    price: "4,200,000",
+    originalPrice: "4,800,000",
+    size: "70m²",
+    guests: 5,
+    features: ["2 phòng ngủ", "Phòng khách rộng", "Bếp mini", "Phù hợp gia đình lớn"],
+    amenities: [Wifi, Coffee, Bath, Car],
+    popular: false,
+    category: "family"
+  },
+  {
+    id: 16,
+    name: "Standard Comfort",
+    image: typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+    galleryImages: [
+      typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+      galleryImages[0],
+      galleryImages[1],
+      galleryImages[2],
+      galleryImages[3]
+    ],
+    price: "1,400,000",
+    originalPrice: "1,700,000",
+    size: "24m²",
+    guests: 2,
+    features: ["1 giường đôi", "Nội thất tiện nghi", "Tầm nhìn đẹp", "Minibar"],
+    amenities: [Wifi, Coffee, Bath],
+    popular: false,
+    category: "standard"
+  },
+  {
+    id: 17,
+    name: "Deluxe Garden View",
+    image: typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+    galleryImages: [
+      typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+      galleryImages[1],
+      galleryImages[2],
+      galleryImages[3],
+      galleryImages[4]
+    ],
+    price: "2,600,000",
+    originalPrice: "3,100,000",
+    size: "42m²",
+    guests: 2,
+    features: ["1 giường đôi lớn", "Tầm nhìn vườn", "Ban công riêng", "Minibar cao cấp"],
+    amenities: [Wifi, Coffee, Bath, Car],
+    popular: true,
+    category: "deluxe"
+  },
+  {
+    id: 18,
+    name: "Grand Suite",
+    image: typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+    galleryImages: [
+      typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+      galleryImages[0],
+      galleryImages[2],
+      galleryImages[4],
+      galleryImages[5]
+    ],
+    price: "4,000,000",
+    originalPrice: "4,800,000",
+    size: "65m²",
+    guests: 3,
+    features: ["Phòng ngủ riêng", "Phòng khách rộng", "Bàn làm việc", "Minibar đầy đủ"],
+    amenities: [Wifi, Coffee, Bath, Car],
+    popular: false,
+    category: "suite"
+  },
+  {
+    id: 19,
+    name: "Family Grand",
+    image: typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+    galleryImages: [
+      typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+      galleryImages[1],
+      galleryImages[2],
+      galleryImages[4],
+      galleryImages[5]
+    ],
+    price: "4,500,000",
+    originalPrice: "5,200,000",
+    size: "80m²",
+    guests: 6,
+    features: ["3 phòng ngủ", "Phòng khách lớn", "Bếp đầy đủ", "Phù hợp gia đình lớn"],
+    amenities: [Wifi, Coffee, Bath, Car],
+    popular: true,
+    category: "family"
+  },
+  {
+    id: 20,
+    name: "Deluxe Panoramic",
+    image: typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+    galleryImages: [
+      typeof luxuryRoomImage === 'string' ? luxuryRoomImage : luxuryRoomImage.src,
+      galleryImages[0],
+      galleryImages[1],
+      galleryImages[3],
+      galleryImages[4]
+    ],
+    price: "2,800,000",
+    originalPrice: "3,300,000",
+    size: "45m²",
+    guests: 2,
+    features: ["1 giường đôi lớn", "Tầm nhìn toàn cảnh", "Ban công rộng", "Minibar cao cấp"],
+    amenities: [Wifi, Coffee, Bath, Car],
+    popular: true,
+    category: "deluxe"
   }
 ];
 

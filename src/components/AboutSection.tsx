@@ -50,7 +50,7 @@ const AboutSection = () => {
             className="space-y-8"
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             viewport={{ once: true, margin: "-100px" }}
           >
             <div className="space-y-4">
@@ -58,7 +58,7 @@ const AboutSection = () => {
                 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground"
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.1 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true, margin: "-100px" }}
               >
                 Về Y Hotel
@@ -67,7 +67,7 @@ const AboutSection = () => {
                 className="text-base text-muted-foreground leading-relaxed text-justify"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.2 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true, margin: "-100px" }}
               >
                 Được thành lập từ năm 2008, Y Hotel đã trở thành biểu tượng của sự sang trọng và 
@@ -78,7 +78,7 @@ const AboutSection = () => {
                 className="text-base text-muted-foreground leading-relaxed text-justify"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.25 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true, margin: "-100px" }}
               >
                 Với kiến trúc hiện đại kết hợp nét truyền thống, Y Hotel không chỉ là nơi nghỉ ngơi 
@@ -91,7 +91,7 @@ const AboutSection = () => {
               className="grid grid-cols-2 md:grid-cols-4 gap-6"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
               viewport={{ once: true, margin: "-100px" }}
             >
               {stats.map((stat, index) => (
@@ -102,8 +102,7 @@ const AboutSection = () => {
                     whileInView={{ scale: 1 }}
                     transition={{ 
                       duration: 0.3, 
-                      delay: 0.4 + (index * 0.05),
-                      ease: "easeOut"
+                      ease: [0.25, 0.1, 0.25, 1]
                     }}
                     viewport={{ once: true, margin: "-50px" }}
                   >
@@ -123,7 +122,7 @@ const AboutSection = () => {
               className="grid md:grid-cols-2 gap-6"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.4 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
               viewport={{ once: true, margin: "-100px" }}
             >
               {features.map((feature, index) => (
@@ -131,12 +130,12 @@ const AboutSection = () => {
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.5 + (index * 0.05) }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                   viewport={{ once: true, margin: "-50px" }}
                 >
                   <FloatingCard 
                     className="border-border/50 h-full rounded-xl"
-                    delay={index * 0.1}
+                    delay={0}
                   >
                     <CardContent className="p-6">
                       <div className="flex items-start space-x-4">
@@ -170,7 +169,7 @@ const AboutSection = () => {
             className="relative"
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             viewport={{ once: true, margin: "-100px" }}
           >
             <GradientBorder containerClassName="group">
@@ -178,10 +177,10 @@ const AboutSection = () => {
                 <motion.img
                   src={typeof lobbyImage === 'string' ? lobbyImage : lobbyImage.src}
                   alt="Sảnh khách sang trọng tại Y Hotel với thiết kế hiện đại và không gian rộng rãi"
-                  className="w-full h-[600px] object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-[600px] object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                   initial={{ scale: 1.1 }}
                   whileInView={{ scale: 1 }}
-                  transition={{ duration: 0.6 }}
+                  transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
                   viewport={{ once: true, margin: "-100px" }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
@@ -191,7 +190,7 @@ const AboutSection = () => {
               <motion.div
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.6 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true, margin: "-50px" }}
               >
                 <FloatingCard className="absolute -bottom-6 -left-6 p-6 bg-white shadow-luxury rounded-xl">
@@ -202,8 +201,7 @@ const AboutSection = () => {
                       whileInView={{ scale: 1 }}
                       transition={{ 
                         duration: 0.3, 
-                        delay: 0.7,
-                        ease: "easeOut"
+                        ease: [0.25, 0.1, 0.25, 1]
                       }}
                       viewport={{ once: true, margin: "-50px" }}
                     >

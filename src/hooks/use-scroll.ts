@@ -105,3 +105,49 @@ export function useParallax(speed: number = 0.5) {
   return offset;
 }
 
+/**
+ * Hook to detect scroll direction (up/down)
+ */
+export function useScrollDirection() {
+  const [scrollDirection, setScrollDirection] = useState<'up' | 'down'>('down');
+  const lastScrollY = useRef(0);
+  const rafId = useRef<number | null>(null);
+  const ticking = useRef(false);
+
+  useEffect(() => {
+    const updateScrollDirection = () => {
+      const scrollY = window.scrollY;
+      
+      // Only update if scroll difference is significant (more than 5px)
+      if (Math.abs(scrollY - lastScrollY.current) > 5) {
+        const direction = scrollY > lastScrollY.current ? 'down' : 'up';
+        setScrollDirection(direction);
+        lastScrollY.current = scrollY > 0 ? scrollY : 0;
+      }
+      
+      ticking.current = false;
+    };
+
+    const handleScroll = () => {
+      if (!ticking.current) {
+        rafId.current = requestAnimationFrame(updateScrollDirection);
+        ticking.current = true;
+      }
+    };
+
+    // Initialize
+    lastScrollY.current = window.scrollY;
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId.current) {
+        cancelAnimationFrame(rafId.current);
+      }
+    };
+  }, []);
+
+  return scrollDirection;
+}
+

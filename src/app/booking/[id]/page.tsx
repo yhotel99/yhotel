@@ -28,7 +28,7 @@ const BookingDetailPage = ({ params }: BookingDetailPageProps) => {
   const { toast } = useToast();
   const isScrolled = useScrollThreshold(100);
 
-  // Get booking data from URL params (passed from checkout success)
+  // Get booking data from URL params (passed from payment success)
   const roomId = searchParams.get("roomId");
   const checkIn = searchParams.get("checkIn");
   const checkOut = searchParams.get("checkOut");
@@ -285,7 +285,7 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
                               className="w-32 h-24 object-cover rounded-lg"
                             />
                             <div className="flex-1">
-                              <h3 className="text-xl font-display font-bold mb-2">{roomName}</h3>
+                              <h3 className="text-lg md:text-xl font-display font-bold mb-2">{roomName}</h3>
                               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                                 <div className="flex items-center gap-1">
                                   <Bed className="w-4 h-4" />
@@ -314,7 +314,7 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
                             </div>
                             <div className="flex-1">
                               <p className="text-sm text-muted-foreground">Ngày nhận phòng</p>
-                              <p className="font-semibold text-lg">{checkIn ? formatDateTime(checkIn) : ""}</p>
+                              <p className="font-semibold text-base md:text-xl">{checkIn ? formatDateTime(checkIn) : ""}</p>
                               <p className="text-sm text-muted-foreground">14:00</p>
                             </div>
                           </div>
@@ -324,7 +324,7 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
                             </div>
                             <div className="flex-1">
                               <p className="text-sm text-muted-foreground">Ngày trả phòng</p>
-                              <p className="font-semibold text-lg">{checkOut ? formatDateTime(checkOut) : ""}</p>
+                              <p className="font-semibold text-base md:text-xl">{checkOut ? formatDateTime(checkOut) : ""}</p>
                               <p className="text-sm text-muted-foreground">12:00</p>
                             </div>
                           </div>
@@ -334,7 +334,7 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
                             </div>
                             <div className="flex-1">
                               <p className="text-sm text-muted-foreground">Số đêm</p>
-                              <p className="font-semibold text-lg">{nights} đêm</p>
+                              <p className="font-semibold text-base md:text-xl">{nights} đêm</p>
                             </div>
                           </div>
                         </div>
@@ -419,7 +419,7 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
                             <span className="text-muted-foreground">Phí dịch vụ (5%)</span>
                             <span className="font-medium">{formatCurrency(serviceFee)}₫</span>
                           </div>
-                          <div className="flex justify-between pt-4 border-t text-lg font-bold">
+                          <div className="flex justify-between pt-4 border-t text-base md:text-xl font-bold">
                             <span>Tổng cộng</span>
                             <span className="text-primary">{formatCurrency(total)}₫</span>
                           </div>
@@ -490,9 +490,9 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
                           <Download className="w-4 h-4" />
                           Tải Xuống PDF
                         </Button>
-                        <Link href="/rooms" className="block">
+                        <Link href="/" className="block">
                           <ShimmerButton variant="luxury" size="lg" className="w-full">
-                            Đặt Phòng Khác
+                            Về Trang Chủ
                           </ShimmerButton>
                         </Link>
                       </CardContent>

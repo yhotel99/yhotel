@@ -328,7 +328,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                     viewport={{ once: true }}
                     className="mt-8"
                   >
-                    <h2 className="text-2xl font-display font-bold mb-6">Bài viết liên quan</h2>
+                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold mb-6">Bài viết liên quan</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {relatedPosts.map((relatedPost) => (
                         <Link key={relatedPost.id} href={`/blog/${relatedPost.id}`}>
@@ -349,7 +349,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                                   <Calendar className="w-3 h-3" />
                                   <span>{relatedPost.date}</span>
                                 </div>
-                                <h3 className="text-base font-display font-semibold text-foreground mb-2 line-clamp-2">
+                                <h3 className="text-sm md:text-lg font-display font-semibold text-foreground mb-2 line-clamp-2">
                                   {relatedPost.title}
                                 </h3>
                                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-grow">
@@ -380,48 +380,47 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                   initial={{ opacity: 1, y: 0 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0 }}
-                  className="sticky top-24 space-y-6"
+                  className="sticky top-24"
                 >
-                  {/* Author Info */}
+                  {/* Author & Post Info Combined */}
                   <GradientBorder containerClassName="relative">
                     <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
                       <CardContent className="p-6">
-                        <h3 className="text-lg font-display font-bold mb-4">Tác giả</h3>
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                            <User className="w-6 h-6 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-foreground">{post.author}</p>
-                            <p className="text-sm text-muted-foreground">{post.category}</p>
+                        {/* Author Section */}
+                        <div className="mb-6 pb-6 border-b border-border">
+                          <h3 className="text-lg font-display font-bold mb-4">Tác giả</h3>
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                              <User className="w-6 h-6 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-semibold text-foreground">{post.author}</p>
+                              <p className="text-sm text-muted-foreground">{post.category}</p>
+                            </div>
                           </div>
                         </div>
-                      </CardContent>
-                    </FloatingCard>
-                  </GradientBorder>
 
-                  {/* Post Info */}
-                  <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
-                      <CardContent className="p-6">
-                        <h3 className="text-lg font-display font-bold mb-4">Thông tin bài viết</h3>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Ngày đăng:</span>
-                            <span className="font-medium text-foreground">{post.date}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Clock className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Thời gian đọc:</span>
-                            <span className="font-medium text-foreground">{post.readTime}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Tag className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-muted-foreground">Danh mục:</span>
-                            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                              {post.category}
-                            </Badge>
+                        {/* Post Info Section */}
+                        <div>
+                          <h3 className="text-lg font-display font-bold mb-4">Thông tin bài viết</h3>
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">Ngày đăng:</span>
+                              <span className="font-medium text-foreground">{post.date}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Clock className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">Thời gian đọc:</span>
+                              <span className="font-medium text-foreground">{post.readTime}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <Tag className="w-4 h-4 text-muted-foreground" />
+                              <span className="text-muted-foreground">Danh mục:</span>
+                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+                                {post.category}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
                       </CardContent>

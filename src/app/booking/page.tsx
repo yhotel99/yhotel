@@ -300,7 +300,7 @@ const BookingLookupPage = () => {
               <h1 className="text-3xl md:text-4xl font-display font-bold mb-4">
                 Tra Cứu Đặt Phòng
               </h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+              <p className="text-base text-muted-foreground max-w-2xl mx-auto">
                 Nhập số điện thoại và email để xem lại thông tin đặt phòng của bạn
               </p>
             </motion.div>
@@ -375,7 +375,7 @@ const BookingLookupPage = () => {
                     transition={{ duration: 0.4, delay: 0.2 }}
                     className="mt-8"
                   >
-                    <h2 className="text-2xl font-display font-bold mb-6">
+                    <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold mb-6">
                       Danh Sách Đặt Phòng ({bookings.length})
                     </h2>
                     <div className="space-y-4">
@@ -397,7 +397,7 @@ const BookingLookupPage = () => {
                                       </div>
                                       <div>
                                         <p className="text-sm text-muted-foreground">Mã đặt phòng</p>
-                                        <p className="font-mono font-bold text-lg">#{booking.bookingId}</p>
+                                        <p className="font-mono font-bold text-base md:text-xl">#{booking.bookingId}</p>
                                       </div>
                                     </div>
 
@@ -432,7 +432,7 @@ const BookingLookupPage = () => {
                                       <div className="pt-3 border-t">
                                         <div className="flex justify-between items-center">
                                           <span className="text-muted-foreground">Tổng thanh toán:</span>
-                                          <span className="text-lg font-bold text-primary">
+                                          <span className="text-base md:text-xl font-bold text-primary">
                                             {formatCurrency(booking.total)}₫
                                           </span>
                                         </div>

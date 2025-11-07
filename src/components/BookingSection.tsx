@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Calendar as CalendarIcon, Users, MapPin, Phone } from "lucide-react";
@@ -16,9 +16,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
-const BookingSection = () => {
+const BookingSectionContent = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
+  
+  // Get roomId from URL if available
+  const roomIdFromUrl = searchParams.get("roomId");
   const [formData, setFormData] = useState({
     checkIn: undefined as Date | undefined,
     checkOut: undefined as Date | undefined,
@@ -74,6 +78,7 @@ const BookingSection = () => {
       email: formData.email,
       phone: formData.phone,
       ...(formData.specialRequests && { specialRequests: formData.specialRequests }),
+      ...(roomIdFromUrl && { roomId: roomIdFromUrl }),
     });
 
     // Redirect to checkout page
@@ -345,6 +350,23 @@ const BookingSection = () => {
         </div>
       </div>
     </section>
+  );
+};
+
+const BookingSection = () => {
+  return (
+    <Suspense fallback={
+      <section className="py-20 bg-gradient-section">
+        <div className="container-luxury">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Đang tải...</p>
+          </div>
+        </div>
+      </section>
+    }>
+      <BookingSectionContent />
+    </Suspense>
   );
 };
 

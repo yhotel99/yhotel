@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Calendar, Users, CreditCard, Lock, Check, ArrowLeft, Phone, Mail } from "lucide-react";
+import { Calendar, Users, CreditCard, Lock, Check, ArrowLeft, Phone, Mail, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Textarea } from "@/components/ui/textarea";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useScrollThreshold } from "@/hooks/use-scroll";
 import Navigation from "@/components/Navigation";
@@ -30,19 +36,40 @@ const CheckoutPageContent = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [bookingId, setBookingId] = useState<string>("");
+  const [finalBookingData, setFinalBookingData] = useState<{
+    roomName: string;
+    checkIn: string;
+    checkOut: string;
+    nights: number;
+    total: number;
+    email: string;
+  } | null>(null);
   
-  // Get booking data from URL params
+  // Booking form state (for when user comes directly to checkout)
+  const [bookingForm, setBookingForm] = useState({
+    checkIn: searchParams.get("checkIn") ? new Date(searchParams.get("checkIn")!) : undefined as Date | undefined,
+    checkOut: searchParams.get("checkOut") ? new Date(searchParams.get("checkOut")!) : undefined as Date | undefined,
+    adults: searchParams.get("adults") || "1",
+    children: searchParams.get("children") || "0",
+    fullName: searchParams.get("fullName") || "",
+    email: searchParams.get("email") || "",
+    phone: searchParams.get("phone") || "",
+    specialRequests: searchParams.get("specialRequests") || "",
+    roomType: searchParams.get("roomType") || "",
+  });
+  
+  // Get booking data from URL params or form state
   const roomId = searchParams.get("roomId");
-  const checkIn = searchParams.get("checkIn");
-  const checkOut = searchParams.get("checkOut");
-  const guests = searchParams.get("guests") || "2";
-  const adults = searchParams.get("adults") || "1";
-  const children = searchParams.get("children") || "0";
-  const fullName = searchParams.get("fullName") || "";
-  const email = searchParams.get("email") || "";
-  const phone = searchParams.get("phone") || "";
-  const specialRequests = searchParams.get("specialRequests") || "";
-  const roomType = searchParams.get("roomType") || "";
+  const checkIn = searchParams.get("checkIn") || (bookingForm.checkIn ? format(bookingForm.checkIn, "yyyy-MM-dd") : "");
+  const checkOut = searchParams.get("checkOut") || (bookingForm.checkOut ? format(bookingForm.checkOut, "yyyy-MM-dd") : "");
+  const guests = searchParams.get("guests") || String(parseInt(bookingForm.adults) + parseInt(bookingForm.children)) || "2";
+  const adults = searchParams.get("adults") || bookingForm.adults || "1";
+  const children = searchParams.get("children") || bookingForm.children || "0";
+  const fullName = searchParams.get("fullName") || bookingForm.fullName || "";
+  const email = searchParams.get("email") || bookingForm.email || "";
+  const phone = searchParams.get("phone") || bookingForm.phone || "";
+  const specialRequests = searchParams.get("specialRequests") || bookingForm.specialRequests || "";
+  const roomType = searchParams.get("roomType") || bookingForm.roomType || "";
 
   // Find room data
   const room = roomId ? rooms.find((r) => r.id === parseInt(roomId)) : null;
@@ -82,19 +109,17 @@ const CheckoutPageContent = () => {
     accountNumber: "",
   });
 
-  useEffect(() => {
-    // Validate required params
-    if (!checkIn || !checkOut || (!roomId && !roomType)) {
-      toast({
-        title: "Thông tin đặt phòng không đầy đủ",
-        description: "Vui lòng quay lại và đặt phòng lại",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        router.push("/");
-      }, 2000);
-    }
-  }, [checkIn, checkOut, roomId, roomType, router, toast]);
+  // Room types for selection
+  const roomTypesList = [
+    { value: "standard", label: "Phòng Standard - 1,500,000đ/đêm", price: 1500000 },
+    { value: "deluxe", label: "Phòng Deluxe - 2,200,000đ/đêm", price: 2200000 },
+    { value: "suite", label: "Phòng Suite - 3,500,000đ/đêm", price: 3500000 },
+    { value: "presidential", label: "Phòng Presidential - 5,000,000đ/đêm", price: 5000000 },
+  ];
+
+  // Check if we have minimum booking info
+  const hasBookingInfo = (checkIn && checkOut) || (bookingForm.checkIn && bookingForm.checkOut);
+  const hasRoomSelection = roomId || roomType || bookingForm.roomType;
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN").format(amount);
@@ -109,8 +134,46 @@ const CheckoutPageContent = () => {
     });
   };
 
+  const handleBookingInfoUpdate = () => {
+    // Use form state values for calculations
+    const formCheckIn = bookingForm.checkIn ? format(bookingForm.checkIn, "yyyy-MM-dd") : "";
+    const formCheckOut = bookingForm.checkOut ? format(bookingForm.checkOut, "yyyy-MM-dd") : "";
+    return { formCheckIn, formCheckOut };
+  };
+
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate booking info first
+    const { formCheckIn, formCheckOut } = handleBookingInfoUpdate();
+    const finalCheckIn = checkIn || formCheckIn;
+    const finalCheckOut = checkOut || formCheckOut;
+    const finalRoomId = roomId || "";
+    const finalRoomType = roomType || bookingForm.roomType;
+    const finalFullName = fullName || bookingForm.fullName;
+    const finalEmail = email || bookingForm.email;
+    const finalPhone = phone || bookingForm.phone;
+    const finalAdults = adults || bookingForm.adults;
+    const finalChildren = children || bookingForm.children;
+    const finalSpecialRequests = specialRequests || bookingForm.specialRequests;
+
+    if (!finalCheckIn || !finalCheckOut || (!finalRoomId && !finalRoomType)) {
+      toast({
+        title: "Thông tin đặt phòng chưa đầy đủ",
+        description: "Vui lòng điền đầy đủ thông tin đặt phòng",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!finalFullName || !finalEmail || !finalPhone) {
+      toast({
+        title: "Thông tin liên hệ chưa đầy đủ",
+        description: "Vui lòng điền đầy đủ họ tên, email và số điện thoại",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Validate payment method
     if (paymentMethod === "credit-card") {
@@ -144,26 +207,66 @@ const CheckoutPageContent = () => {
       setIsSuccess(true);
       setBookingId(newBookingId);
       
+      // Calculate final values
+      const finalCheckIn = checkIn || handleBookingInfoUpdate().formCheckIn;
+      const finalCheckOut = checkOut || handleBookingInfoUpdate().formCheckOut;
+      const finalRoomId = roomId || "";
+      const finalRoomType = roomType || bookingForm.roomType;
+      const finalFullName = fullName || bookingForm.fullName;
+      const finalEmail = email || bookingForm.email;
+      const finalPhone = phone || bookingForm.phone;
+      const finalAdults = adults || bookingForm.adults;
+      const finalChildren = children || bookingForm.children;
+      const finalSpecialRequests = specialRequests || bookingForm.specialRequests;
+      const finalGuests = String(parseInt(finalAdults) + parseInt(finalChildren));
+
+      // Calculate final totals
+      const finalRoom = finalRoomId ? rooms.find((r) => r.id === parseInt(finalRoomId)) : null;
+      const finalSelectedRoomType = finalRoomType ? roomTypes[finalRoomType] : null;
+      const finalRoomPrice = finalRoom ? parseInt(finalRoom.price.replace(/,/g, "")) : (finalSelectedRoomType?.price || 0);
+      const finalRoomName = finalRoom?.name || finalSelectedRoomType?.name || "Phòng";
+      
+      const finalCheckInDate = finalCheckIn ? new Date(finalCheckIn) : null;
+      const finalCheckOutDate = finalCheckOut ? new Date(finalCheckOut) : null;
+      const finalNights = finalCheckInDate && finalCheckOutDate 
+        ? Math.ceil((finalCheckOutDate.getTime() - finalCheckInDate.getTime()) / (1000 * 60 * 60 * 24))
+        : 1;
+      
+      const finalSubtotal = finalRoomPrice * finalNights;
+      const finalTax = Math.round(finalSubtotal * 0.1);
+      const finalServiceFee = Math.round(finalSubtotal * 0.05);
+      const finalTotal = finalSubtotal + finalTax + finalServiceFee;
+
+      // Save final booking data for success screen
+      setFinalBookingData({
+        roomName: finalRoomName,
+        checkIn: finalCheckIn,
+        checkOut: finalCheckOut,
+        nights: finalNights,
+        total: finalTotal,
+        email: finalEmail,
+      });
+
       // Save booking to localStorage for lookup
       const bookingData = {
         bookingId: newBookingId,
-        roomId: roomId || "",
-        roomName: roomName,
-        roomType: roomType,
-        checkIn: checkIn || "",
-        checkOut: checkOut || "",
-        guests: guests,
-        adults: adults,
-        children: children,
-        fullName: fullName,
-        email: email,
-        phone: phone,
-        specialRequests: specialRequests || "",
-        total: total,
-        subtotal: subtotal,
-        tax: tax,
-        serviceFee: serviceFee,
-        nights: nights,
+        roomId: finalRoomId,
+        roomName: finalRoomName,
+        roomType: finalRoomType,
+        checkIn: finalCheckIn,
+        checkOut: finalCheckOut,
+        guests: finalGuests,
+        adults: finalAdults,
+        children: finalChildren,
+        fullName: finalFullName,
+        email: finalEmail,
+        phone: finalPhone,
+        specialRequests: finalSpecialRequests,
+        total: finalTotal,
+        subtotal: finalSubtotal,
+        tax: finalTax,
+        serviceFee: finalServiceFee,
+        nights: finalNights,
         createdAt: new Date().toISOString(),
       };
 
@@ -214,10 +317,10 @@ const CheckoutPageContent = () => {
 
   if (isSuccess) {
     return (
-      <div className="min-h-screen bg-luxury-gradient">
+      <div className="min-h-screen bg-luxury-gradient flex flex-col">
         <Navigation />
-        <main className="pt-14 lg:pt-16">
-          <section className="py-20 min-h-[80vh] flex items-center">
+        <main className="pt-14 lg:pt-16 flex-1 flex items-center">
+          <section className="py-20 w-full flex items-center min-h-full">
             <div className="container-luxury w-full">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -230,8 +333,8 @@ const CheckoutPageContent = () => {
                     <Check className="w-12 h-12 text-green-500" />
                   </div>
                   <h1 className="text-4xl font-display font-bold mb-4">Thanh Toán Thành Công!</h1>
-                  <p className="text-lg text-muted-foreground mb-8">
-                    Cảm ơn bạn đã đặt phòng tại Y Hotel. Chúng tôi đã gửi email xác nhận đến {email}
+                  <p className="text-base text-muted-foreground mb-8">
+                    Cảm ơn bạn đã đặt phòng tại Y Hotel. Chúng tôi đã gửi email xác nhận đến {finalBookingData?.email || email}
                   </p>
                 </div>
 
@@ -245,23 +348,23 @@ const CheckoutPageContent = () => {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Phòng:</span>
-                          <span className="font-medium">{roomName}</span>
+                          <span className="font-medium">{finalBookingData?.roomName || roomName}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Ngày nhận phòng:</span>
-                          <span className="font-medium">{checkIn ? formatDate(checkIn) : ""}</span>
+                          <span className="font-medium">{finalBookingData?.checkIn ? formatDate(finalBookingData.checkIn) : (checkIn ? formatDate(checkIn) : "")}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Ngày trả phòng:</span>
-                          <span className="font-medium">{checkOut ? formatDate(checkOut) : ""}</span>
+                          <span className="font-medium">{finalBookingData?.checkOut ? formatDate(finalBookingData.checkOut) : (checkOut ? formatDate(checkOut) : "")}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Số đêm:</span>
-                          <span className="font-medium">{nights} đêm</span>
+                          <span className="font-medium">{finalBookingData?.nights || nights} đêm</span>
                         </div>
                         <div className="flex justify-between pt-4 border-t">
-                          <span className="text-lg font-bold">Tổng thanh toán:</span>
-                          <span className="text-lg font-bold text-primary">{formatCurrency(total)}₫</span>
+                          <span className="text-base md:text-xl font-bold">Tổng thanh toán:</span>
+                          <span className="text-base md:text-xl font-bold text-primary">{formatCurrency(finalBookingData?.total || total)}₫</span>
                         </div>
                       </div>
 
@@ -277,19 +380,31 @@ const CheckoutPageContent = () => {
                           variant="default"
                           className="flex-1"
                           onClick={() => {
+                            const finalCheckIn = finalBookingData?.checkIn || checkIn || "";
+                            const finalCheckOut = finalBookingData?.checkOut || checkOut || "";
+                            const finalRoomId = roomId || "";
+                            const finalRoomType = roomType || bookingForm.roomType || "";
+                            const finalFullName = fullName || bookingForm.fullName || "";
+                            const finalEmail = finalBookingData?.email || email || bookingForm.email || "";
+                            const finalPhone = phone || bookingForm.phone || "";
+                            const finalAdults = adults || bookingForm.adults || "1";
+                            const finalChildren = children || bookingForm.children || "0";
+                            const finalGuests = String(parseInt(finalAdults) + parseInt(finalChildren));
+                            const finalSpecialRequests = specialRequests || bookingForm.specialRequests || "";
+
                             const params = new URLSearchParams({
                               bookingId: bookingId,
-                              roomId: roomId || "",
-                              checkIn: checkIn || "",
-                              checkOut: checkOut || "",
-                              guests: guests,
-                              adults: adults,
-                              children: children,
-                              roomType: roomType,
-                              fullName: fullName,
-                              email: email,
-                              phone: phone,
-                              ...(specialRequests && { specialRequests: specialRequests }),
+                              roomId: finalRoomId,
+                              checkIn: finalCheckIn,
+                              checkOut: finalCheckOut,
+                              guests: finalGuests,
+                              adults: finalAdults,
+                              children: finalChildren,
+                              roomType: finalRoomType,
+                              fullName: finalFullName,
+                              email: finalEmail,
+                              phone: finalPhone,
+                              ...(finalSpecialRequests && { specialRequests: finalSpecialRequests }),
                             });
                             router.push(`/booking/${bookingId}?${params.toString()}`);
                           }}
@@ -309,9 +424,25 @@ const CheckoutPageContent = () => {
     );
   }
 
-  if (!checkIn || !checkOut || (!roomId && !roomType)) {
-    return null;
-  }
+  // Determine which room/type to use for pricing
+  const activeRoomId = roomId || "";
+  const activeRoomType = roomType || bookingForm.roomType || "";
+  const activeRoom = activeRoomId ? rooms.find((r) => r.id === parseInt(activeRoomId)) : null;
+  const activeSelectedRoomType = activeRoomType ? roomTypes[activeRoomType] : null;
+  const activeRoomPrice = activeRoom ? parseInt(activeRoom.price.replace(/,/g, "")) : (activeSelectedRoomType?.price || 0);
+  const activeRoomName = activeRoom?.name || activeSelectedRoomType?.name || "Chọn phòng";
+
+  // Calculate dates and totals with current form state
+  const activeCheckInDate = checkIn ? new Date(checkIn) : bookingForm.checkIn;
+  const activeCheckOutDate = checkOut ? new Date(checkOut) : bookingForm.checkOut;
+  const activeNights = activeCheckInDate && activeCheckOutDate 
+    ? Math.ceil((activeCheckOutDate.getTime() - activeCheckInDate.getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
+
+  const activeSubtotal = activeRoomPrice * activeNights;
+  const activeTax = Math.round(activeSubtotal * 0.1);
+  const activeServiceFee = Math.round(activeSubtotal * 0.05);
+  const activeTotal = activeSubtotal + activeTax + activeServiceFee;
 
   return (
     <div className="min-h-screen bg-luxury-gradient">
@@ -327,7 +458,7 @@ const CheckoutPageContent = () => {
           transition={{ duration: 0.3 }}
           className={`fixed top-20 left-4 z-40 ${isScrolled ? 'pointer-events-auto' : 'pointer-events-none'}`}
         >
-          <Link href={roomId ? `/rooms/${roomId}` : "/"}>
+          <Link href="/">
             <Button 
               variant="secondary" 
               size="sm" 
@@ -349,7 +480,7 @@ const CheckoutPageContent = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4 }}
                 >
-                  <Link href={roomId ? `/rooms/${roomId}` : "/"}>
+                  <Link href="/">
                     <Button variant="ghost" size="sm" className="mb-6 gap-2">
                       <ArrowLeft className="w-4 h-4" />
                       Quay lại
@@ -366,6 +497,183 @@ const CheckoutPageContent = () => {
                       </CardHeader>
                       <CardContent>
                         <form onSubmit={handlePaymentSubmit} className="space-y-6">
+                          {/* Booking Information Form (if not provided) */}
+                          {(!hasBookingInfo || !hasRoomSelection) && (
+                            <div className="space-y-4 pb-6 border-b">
+                              <h3 className="text-lg font-semibold">Thông Tin Đặt Phòng</h3>
+                              
+                              {!roomId && !hasRoomSelection && (
+                                <div>
+                                  <Label htmlFor="roomType">Loại phòng *</Label>
+                                  <Select
+                                    value={bookingForm.roomType}
+                                    onValueChange={(value) => setBookingForm({ ...bookingForm, roomType: value })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Chọn loại phòng" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {roomTypesList.map((rt) => (
+                                        <SelectItem key={rt.value} value={rt.value}>
+                                          {rt.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label>Ngày nhận phòng *</Label>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          "w-full justify-start text-left font-normal",
+                                          !bookingForm.checkIn && "text-muted-foreground"
+                                        )}
+                                      >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {bookingForm.checkIn ? (
+                                          format(bookingForm.checkIn, "dd/MM/yyyy", { locale: vi })
+                                        ) : (
+                                          <span>Chọn ngày</span>
+                                        )}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                      <CalendarComponent
+                                        mode="single"
+                                        selected={bookingForm.checkIn}
+                                        onSelect={(date) => {
+                                          setBookingForm({ ...bookingForm, checkIn: date });
+                                          if (date && bookingForm.checkOut && bookingForm.checkOut <= date) {
+                                            setBookingForm({ ...bookingForm, checkIn: date, checkOut: undefined });
+                                          }
+                                        }}
+                                        disabled={(date) => date < new Date()}
+                                        initialFocus
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
+                                <div>
+                                  <Label>Ngày trả phòng *</Label>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        className={cn(
+                                          "w-full justify-start text-left font-normal",
+                                          !bookingForm.checkOut && "text-muted-foreground"
+                                        )}
+                                      >
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {bookingForm.checkOut ? (
+                                          format(bookingForm.checkOut, "dd/MM/yyyy", { locale: vi })
+                                        ) : (
+                                          <span>Chọn ngày</span>
+                                        )}
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                      <CalendarComponent
+                                        mode="single"
+                                        selected={bookingForm.checkOut}
+                                        onSelect={(date) => setBookingForm({ ...bookingForm, checkOut: date })}
+                                        disabled={(date) => !bookingForm.checkIn || date <= bookingForm.checkIn}
+                                        initialFocus
+                                      />
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label htmlFor="adults">Người lớn *</Label>
+                                  <Select
+                                    value={bookingForm.adults}
+                                    onValueChange={(value) => setBookingForm({ ...bookingForm, adults: value })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {[1, 2, 3, 4, 5, 6].map((num) => (
+                                        <SelectItem key={num} value={String(num)}>{num}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div>
+                                  <Label htmlFor="children">Trẻ em</Label>
+                                  <Select
+                                    value={bookingForm.children}
+                                    onValueChange={(value) => setBookingForm({ ...bookingForm, children: value })}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {[0, 1, 2, 3, 4].map((num) => (
+                                        <SelectItem key={num} value={String(num)}>{num}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              <div>
+                                <Label htmlFor="fullName">Họ và tên *</Label>
+                                <Input
+                                  id="fullName"
+                                  value={bookingForm.fullName}
+                                  onChange={(e) => setBookingForm({ ...bookingForm, fullName: e.target.value })}
+                                  placeholder="Nguyễn Văn A"
+                                  required
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <Label htmlFor="email">Email *</Label>
+                                  <Input
+                                    id="email"
+                                    type="email"
+                                    value={bookingForm.email}
+                                    onChange={(e) => setBookingForm({ ...bookingForm, email: e.target.value })}
+                                    placeholder="email@example.com"
+                                    required
+                                  />
+                                </div>
+                                <div>
+                                  <Label htmlFor="phone">Số điện thoại *</Label>
+                                  <Input
+                                    id="phone"
+                                    value={bookingForm.phone}
+                                    onChange={(e) => setBookingForm({ ...bookingForm, phone: e.target.value })}
+                                    placeholder="+84 123 456 789"
+                                    required
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <Label htmlFor="specialRequests">Yêu cầu đặc biệt</Label>
+                                <Textarea
+                                  id="specialRequests"
+                                  value={bookingForm.specialRequests}
+                                  onChange={(e) => setBookingForm({ ...bookingForm, specialRequests: e.target.value })}
+                                  placeholder="Ví dụ: Giường đôi, tầng cao, view biển..."
+                                  rows={3}
+                                />
+                              </div>
+                            </div>
+                          )}
+
                           {/* Payment Method Selection */}
                           <div>
                             <Label className="text-base font-semibold mb-4 block">Phương thức thanh toán</Label>
@@ -507,7 +815,7 @@ const CheckoutPageContent = () => {
 
                           {/* Cash Payment Info */}
                           {paymentMethod === "cash" && (
-                            <div className="p-4 bg-muted/50 rounded-lg text-sm space-y-2">
+                            <div className="p-4 bg-muted/50 rounded-lg text-sm">
                               <p className="font-semibold">Thanh toán tại khách sạn</p>
                               <p>Bạn sẽ thanh toán khi nhận phòng. Vui lòng đến đúng giờ nhận phòng (14:00).</p>
                             </div>
@@ -521,7 +829,7 @@ const CheckoutPageContent = () => {
                               className="w-full"
                               disabled={isProcessing}
                             >
-                              {isProcessing ? "Đang xử lý..." : `Thanh Toán ${formatCurrency(total)}₫`}
+                              {isProcessing ? "Đang xử lý..." : `Thanh Toán ${formatCurrency(activeTotal)}₫`}
                             </ShimmerButton>
                             <p className="text-xs text-muted-foreground text-center mt-4">
                               <Lock className="w-3 h-3 inline mr-1" />
@@ -551,11 +859,11 @@ const CheckoutPageContent = () => {
                       <CardContent className="space-y-6">
                         {/* Room Info */}
                         <div>
-                          <h3 className="font-semibold mb-2">{roomName}</h3>
-                          {room && (
+                          <h3 className="font-semibold mb-2">{activeRoomName}</h3>
+                          {(activeRoom || activeRoomType) && (
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
                               <Users className="w-4 h-4" />
-                              <span>{guests} khách</span>
+                              <span>{String(parseInt(adults || bookingForm.adults) + parseInt(children || bookingForm.children))} khách</span>
                             </div>
                           )}
                         </div>
@@ -566,21 +874,25 @@ const CheckoutPageContent = () => {
                             <Calendar className="w-4 h-4 text-primary" />
                             <div className="flex-1">
                               <p className="text-muted-foreground">Nhận phòng</p>
-                              <p className="font-medium">{checkIn ? formatDate(checkIn) : ""}</p>
+                              <p className="font-medium">
+                                {checkIn ? formatDate(checkIn) : (bookingForm.checkIn ? format(bookingForm.checkIn, "dd/MM/yyyy", { locale: vi }) : "Chưa chọn")}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
                             <Calendar className="w-4 h-4 text-primary" />
                             <div className="flex-1">
                               <p className="text-muted-foreground">Trả phòng</p>
-                              <p className="font-medium">{checkOut ? formatDate(checkOut) : ""}</p>
+                              <p className="font-medium">
+                                {checkOut ? formatDate(checkOut) : (bookingForm.checkOut ? format(bookingForm.checkOut, "dd/MM/yyyy", { locale: vi }) : "Chưa chọn")}
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 text-sm">
                             <Calendar className="w-4 h-4 text-primary" />
                             <div className="flex-1">
                               <p className="text-muted-foreground">Số đêm</p>
-                              <p className="font-medium">{nights} đêm</p>
+                              <p className="font-medium">{activeNights} đêm</p>
                             </div>
                           </div>
                         </div>
@@ -592,34 +904,34 @@ const CheckoutPageContent = () => {
                             <div className="flex-1">
                               <p className="text-muted-foreground">Khách</p>
                               <p className="font-medium">
-                                {adults} người lớn{parseInt(children) > 0 ? `, ${children} trẻ em` : ""}
+                                {adults || bookingForm.adults} người lớn{parseInt(children || bookingForm.children) > 0 ? `, ${children || bookingForm.children} trẻ em` : ""}
                               </p>
                             </div>
                           </div>
-                          {fullName && (
+                          {(fullName || bookingForm.fullName) && (
                             <div className="flex items-center gap-2 text-sm">
                               <Mail className="w-4 h-4 text-primary" />
                               <div className="flex-1">
                                 <p className="text-muted-foreground">Tên</p>
-                                <p className="font-medium">{fullName}</p>
+                                <p className="font-medium">{fullName || bookingForm.fullName}</p>
                               </div>
                             </div>
                           )}
-                          {email && (
+                          {(email || bookingForm.email) && (
                             <div className="flex items-center gap-2 text-sm">
                               <Mail className="w-4 h-4 text-primary" />
                               <div className="flex-1">
                                 <p className="text-muted-foreground">Email</p>
-                                <p className="font-medium text-xs break-all">{email}</p>
+                                <p className="font-medium text-xs break-all">{email || bookingForm.email}</p>
                               </div>
                             </div>
                           )}
-                          {phone && (
+                          {(phone || bookingForm.phone) && (
                             <div className="flex items-center gap-2 text-sm">
                               <Phone className="w-4 h-4 text-primary" />
                               <div className="flex-1">
                                 <p className="text-muted-foreground">Điện thoại</p>
-                                <p className="font-medium">{phone}</p>
+                                <p className="font-medium">{phone || bookingForm.phone}</p>
                               </div>
                             </div>
                           )}
@@ -629,28 +941,28 @@ const CheckoutPageContent = () => {
                         <div className="pt-4 border-t space-y-3">
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">
-                              {formatCurrency(roomPrice)}₫ × {nights} đêm
+                              {activeRoomPrice > 0 ? `${formatCurrency(activeRoomPrice)}₫ × ${activeNights} đêm` : "Chưa chọn phòng"}
                             </span>
-                            <span className="font-medium">{formatCurrency(subtotal)}₫</span>
+                            <span className="font-medium">{formatCurrency(activeSubtotal)}₫</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Thuế (10%)</span>
-                            <span className="font-medium">{formatCurrency(tax)}₫</span>
+                            <span className="font-medium">{formatCurrency(activeTax)}₫</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Phí dịch vụ (5%)</span>
-                            <span className="font-medium">{formatCurrency(serviceFee)}₫</span>
+                            <span className="font-medium">{formatCurrency(activeServiceFee)}₫</span>
                           </div>
-                          <div className="flex justify-between pt-4 border-t text-lg font-bold">
+                          <div className="flex justify-between pt-4 border-t text-base md:text-xl font-bold">
                             <span>Tổng cộng</span>
-                            <span className="text-primary">{formatCurrency(total)}₫</span>
+                            <span className="text-primary">{formatCurrency(activeTotal)}₫</span>
                           </div>
                         </div>
 
-                        {specialRequests && (
+                        {(specialRequests || bookingForm.specialRequests) && (
                           <div className="pt-4 border-t">
                             <p className="text-sm text-muted-foreground mb-2">Yêu cầu đặc biệt:</p>
-                            <p className="text-sm">{specialRequests}</p>
+                            <p className="text-sm">{specialRequests || bookingForm.specialRequests}</p>
                           </div>
                         )}
                       </CardContent>

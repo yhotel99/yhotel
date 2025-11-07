@@ -102,7 +102,7 @@ const BlogSection = () => {
           className="text-center mb-8 md:mb-12"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
           viewport={{ once: true }}
         >
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-black mb-3 md:mb-6">
@@ -135,7 +135,7 @@ const BlogSection = () => {
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
+            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             viewport={{ once: true }}
             className="mb-12 md:mb-16"
           >
@@ -208,7 +208,7 @@ const BlogSection = () => {
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                   viewport={{ once: true }}
                   className="h-full"
                 >
@@ -219,7 +219,7 @@ const BlogSection = () => {
                         <img
                           src={post.image}
                           alt={post.title}
-                          className="w-full h-40 md:h-44 object-cover transition-transform duration-500 group-hover:scale-110"
+                          className="w-full h-40 md:h-44 object-cover transition-transform duration-500 ease-out group-hover:scale-110"
                         />
                         <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
                           {post.category}

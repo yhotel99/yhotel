@@ -173,7 +173,7 @@ const GallerySection = () => {
               variant={activeCategory === category ? "luxury" : "outline"}
               size="sm"
               onClick={() => handleCategoryChange(category)}
-              className="transition-all duration-300"
+              className="transition-all duration-200"
             >
               {category}
             </Button>
@@ -201,10 +201,10 @@ const GallerySection = () => {
                 <img
                   src={image.src}
                   alt={image.alt}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                   loading="lazy"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <div className="absolute bottom-4 left-4 right-4">
                     <p className="text-white font-medium text-sm md:text-base mb-1">{image.alt}</p>
                     <p className="text-white/90 text-xs md:text-sm">{image.category}</p>
