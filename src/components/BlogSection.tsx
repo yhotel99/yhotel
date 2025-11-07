@@ -86,7 +86,7 @@ const BlogSection = () => {
   const categories = ["Tất cả", "Kinh nghiệm", "Du lịch", "Ẩm thực", "Wellness", "Sự kiện", "Khám phá"];
 
   const featuredPost = blogPosts.find(post => post.featured) || blogPosts[0];
-  const otherPosts = blogPosts.filter(post => !post.featured).slice(0, 3);
+  const otherPosts = blogPosts.filter(post => !post.featured).slice(0, 2);
 
   const filteredPosts = selectedCategory === "Tất cả" 
     ? otherPosts 
@@ -137,7 +137,7 @@ const BlogSection = () => {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             viewport={{ once: true }}
-            className="mb-12 md:mb-16"
+            className="mb-8 md:mb-12"
           >
             <Link href={`/blog/${featuredPost.id}`}>
               <GradientBorder containerClassName="relative">
@@ -202,7 +202,7 @@ const BlogSection = () => {
 
         {/* Other Articles Grid */}
         {filteredPosts.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 items-stretch">
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-6 items-stretch">
             {filteredPosts.map((post, index) => (
               <Link key={post.id} href={`/blog/${post.id}`} className="h-full">
                 <motion.div
@@ -219,40 +219,40 @@ const BlogSection = () => {
                         <img
                           src={post.image}
                           alt={post.title}
-                          className="w-full h-40 md:h-44 object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                          className="w-full h-32 md:h-44 object-cover transition-transform duration-500 ease-out group-hover:scale-110"
                         />
-                        <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
+                        <Badge className="absolute top-2 left-2 md:top-3 md:left-3 bg-primary text-primary-foreground text-[10px] md:text-xs px-1.5 md:px-2 py-0.5">
                           {post.category}
                         </Badge>
                       </div>
                       
                       {/* Content */}
-                      <CardContent className="p-3 md:p-4 flex flex-col flex-1">
-                        <div className="flex items-center gap-2 md:gap-3 text-xs text-muted-foreground mb-2">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            <span>{post.date}</span>
+                      <CardContent className="p-2.5 md:p-4 flex flex-col flex-1">
+                        <div className="flex items-center gap-1.5 md:gap-3 text-[10px] md:text-xs text-muted-foreground mb-1.5 md:mb-2">
+                          <div className="flex items-center gap-0.5 md:gap-1">
+                            <Calendar className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                            <span className="line-clamp-1">{post.date}</span>
                           </div>
-                          <div className="flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            <span>{post.author}</span>
+                          <div className="flex items-center gap-0.5 md:gap-1">
+                            <User className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                            <span className="line-clamp-1">{post.author}</span>
                           </div>
                         </div>
                         
-                        <h3 className="text-sm md:text-base font-display font-semibold text-foreground mb-1.5 line-clamp-2">
+                        <h3 className="text-xs md:text-base font-display font-semibold text-foreground mb-1 md:mb-1.5 line-clamp-2">
                           {post.title}
                         </h3>
                         
-                        <p className="text-xs md:text-sm text-muted-foreground mb-2.5 line-clamp-2 flex-1">
+                        <p className="text-[10px] md:text-sm text-muted-foreground mb-2 md:mb-2.5 line-clamp-2 flex-1">
                           {post.excerpt}
                         </p>
                         
-                        <div className="flex items-center justify-between pt-2 border-t border-border mt-auto">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Clock className="w-3 h-3" />
+                        <div className="flex items-center justify-between pt-1.5 md:pt-2 border-t border-border mt-auto">
+                          <div className="flex items-center gap-0.5 md:gap-1 text-[10px] md:text-xs text-muted-foreground">
+                            <Clock className="w-2.5 h-2.5 md:w-3 md:h-3" />
                             <span>{post.readTime}</span>
                           </div>
-                          <ShimmerButton variant="luxury" size="sm" className="text-xs px-2 md:px-3 py-1">
+                          <ShimmerButton variant="luxury" size="sm" className="text-[10px] md:text-xs px-1.5 md:px-3 py-0.5 md:py-1">
                             Đọc tiếp →
                           </ShimmerButton>
                         </div>

@@ -320,7 +320,7 @@ const CheckoutPageContent = () => {
       <div className="min-h-screen bg-luxury-gradient flex flex-col">
         <Navigation />
         <main className="pt-14 lg:pt-16 flex-1 flex items-center">
-          <section className="py-20 w-full flex items-center min-h-full">
+          <section className="py-8 md:py-12 lg:py-20 w-full flex items-center min-h-full px-4">
             <div className="container-luxury w-full">
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -328,57 +328,57 @@ const CheckoutPageContent = () => {
                 transition={{ duration: 0.5 }}
                 className="max-w-2xl mx-auto text-center"
               >
-                <div className="mb-8">
-                  <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <Check className="w-12 h-12 text-green-500" />
+                <div className="mb-6 md:mb-8">
+                  <div className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 mx-auto mb-4 md:mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <Check className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 text-green-500" />
                   </div>
-                  <h1 className="text-4xl font-display font-bold mb-4">Thanh Toán Thành Công!</h1>
-                  <p className="text-base text-muted-foreground mb-8">
-                    Cảm ơn bạn đã đặt phòng tại Y Hotel. Chúng tôi đã gửi email xác nhận đến {finalBookingData?.email || email}
+                  <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-display font-bold mb-3 md:mb-4 whitespace-nowrap">Thanh Toán Thành Công!</h1>
+                  <p className="text-sm md:text-base text-muted-foreground mb-6 md:mb-8 px-4">
+                    Cảm ơn bạn đã đặt phòng tại Y Hotel. Chúng tôi đã gửi email xác nhận đến <span className="break-all">{finalBookingData?.email || email}</span>
                   </p>
                 </div>
 
                 <GradientBorder containerClassName="relative">
                   <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
-                    <CardContent className="p-8">
-                      <div className="space-y-4 text-left mb-8">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Mã đặt phòng:</span>
-                          <span className="font-bold">#{bookingId}</span>
+                    <CardContent className="p-4 md:p-6 lg:p-8">
+                      <div className="space-y-3 md:space-y-4 text-left mb-6 md:mb-8">
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-xs md:text-sm text-muted-foreground flex-shrink-0">Mã đặt phòng:</span>
+                          <span className="text-xs md:text-sm font-bold text-right">#{bookingId}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Phòng:</span>
-                          <span className="font-medium">{finalBookingData?.roomName || roomName}</span>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-xs md:text-sm text-muted-foreground flex-shrink-0">Phòng:</span>
+                          <span className="text-xs md:text-sm font-medium text-right">{finalBookingData?.roomName || roomName}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Ngày nhận phòng:</span>
-                          <span className="font-medium">{finalBookingData?.checkIn ? formatDate(finalBookingData.checkIn) : (checkIn ? formatDate(checkIn) : "")}</span>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-xs md:text-sm text-muted-foreground flex-shrink-0">Ngày nhận phòng:</span>
+                          <span className="text-xs md:text-sm font-medium text-right">{finalBookingData?.checkIn ? formatDate(finalBookingData.checkIn) : (checkIn ? formatDate(checkIn) : "")}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Ngày trả phòng:</span>
-                          <span className="font-medium">{finalBookingData?.checkOut ? formatDate(finalBookingData.checkOut) : (checkOut ? formatDate(checkOut) : "")}</span>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-xs md:text-sm text-muted-foreground flex-shrink-0">Ngày trả phòng:</span>
+                          <span className="text-xs md:text-sm font-medium text-right">{finalBookingData?.checkOut ? formatDate(finalBookingData.checkOut) : (checkOut ? formatDate(checkOut) : "")}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Số đêm:</span>
-                          <span className="font-medium">{finalBookingData?.nights || nights} đêm</span>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="text-xs md:text-sm text-muted-foreground flex-shrink-0">Số đêm:</span>
+                          <span className="text-xs md:text-sm font-medium text-right">{finalBookingData?.nights || nights} đêm</span>
                         </div>
-                        <div className="flex justify-between pt-4 border-t">
-                          <span className="text-base md:text-xl font-bold">Tổng thanh toán:</span>
-                          <span className="text-base md:text-xl font-bold text-primary">{formatCurrency(finalBookingData?.total || total)}₫</span>
+                        <div className="flex justify-between items-center gap-2 pt-3 md:pt-4 border-t">
+                          <span className="text-sm md:text-base lg:text-lg font-bold">Tổng thanh toán:</span>
+                          <span className="text-sm md:text-base lg:text-lg font-bold text-primary text-right">{formatCurrency(finalBookingData?.total || total)}₫</span>
                         </div>
                       </div>
 
-                      <div className="flex gap-4">
+                      <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                         <Button
                           variant="outline"
-                          className="flex-1"
+                          className="flex-1 w-full sm:w-auto text-sm md:text-base"
                           onClick={() => router.push("/")}
                         >
                           Về Trang Chủ
                         </Button>
                         <Button
                           variant="default"
-                          className="flex-1"
+                          className="flex-1 w-full sm:w-auto text-sm md:text-base"
                           onClick={() => {
                             const finalCheckIn = finalBookingData?.checkIn || checkIn || "";
                             const finalCheckOut = finalBookingData?.checkOut || checkOut || "";

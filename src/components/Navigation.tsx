@@ -24,15 +24,18 @@ const Navigation = () => {
       isScrolled ? "bg-slate-900/95 backdrop-blur-lg shadow-card" : "bg-slate-900/80"
     }`}>
       <div className="container-luxury">
-        <div className="flex items-center justify-between h-14 lg:h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center">
+        <div className="relative flex items-center justify-between h-14 lg:h-16">
+          {/* Spacer for mobile - to balance the menu button */}
+          <div className="lg:hidden w-10 flex-shrink-0" />
+
+          {/* Logo - Centered on mobile */}
+          <Link href="/" className="absolute left-1/2 -translate-x-1/2 lg:relative lg:left-0 lg:translate-x-0 flex items-center">
             <Image
               src="/logo.png"
               alt="Y Hotel Logo"
               width={180}
               height={60}
-              className="h-12 w-auto md:h-16 lg:h-20 drop-shadow-2xl"
+              className="h-14 w-auto md:h-16 lg:h-20 drop-shadow-2xl"
               priority
             />
           </Link>
@@ -52,7 +55,7 @@ const Navigation = () => {
             </div>
           )}
 
-          {/* Contact Info & CTA */}
+          {/* Contact Info & CTA - Desktop */}
           <div className="hidden lg:flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-sm text-slate-300">
               <Phone className="w-4 h-4" />
@@ -65,11 +68,11 @@ const Navigation = () => {
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile Menu Button - Right */}
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden text-primary hover:text-primary/80 hover:bg-primary/10"
+            className="lg:hidden text-primary hover:text-primary/80 hover:bg-primary/10 flex-shrink-0"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

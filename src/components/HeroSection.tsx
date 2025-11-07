@@ -7,7 +7,7 @@ import heroImage from "@/assets/hero-hotel.jpg";
 
 const HeroSection = () => {
   return (
-    <section id="home" className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section id="home" className="relative min-h-[70vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden">
       {/* Background Image */}
       <motion.div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
@@ -60,8 +60,8 @@ const HeroSection = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
           >
-            Khám phá sự tinh tế và đẳng cấp trong từng khoảnh khắc. 
-            Nơi mỗi chi tiết đều được chăm chút để mang đến trải nghiệm hoàn hảo.
+            Khám phá không gian sang trọng với trang thiết bị hiện đại và tiện nghi cao cấp. 
+            Nơi mỗi chi tiết đều được chăm chút để mang đến trải nghiệm lưu trú hoàn hảo.
           </motion.p>
 
           <motion.div 

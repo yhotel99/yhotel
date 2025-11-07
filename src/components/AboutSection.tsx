@@ -11,18 +11,18 @@ const AboutSection = () => {
   const features = [
     {
       icon: Award,
-      title: "Đẳng Cấp 5 Sao",
-      description: "Được công nhận bởi các tổ chức uy tín quốc tế với tiêu chuẩn dịch vụ hàng đầu."
+      title: "Thiết Bị Hiện Đại",
+      description: "Trang thiết bị hoàn toàn mới với công nghệ thông minh và tiện nghi cao cấp nhất."
     },
     {
       icon: Users,
       title: "Đội Ngũ Chuyên Nghiệp",
-      description: "Đội ngũ nhân viên được đào tạo bài bản, tận tâm phục vụ 24/7."
+      description: "Đội ngũ nhân viên được đào tạo bài bản quốc tế, tận tâm phục vụ 24/7."
     },
     {
       icon: Globe,
       title: "Vị Trí Thuận Lợi",
-      description: "Tọa lạc tại trung tâm thành phố, gần các điểm du lịch nổi tiếng."
+      description: "Tọa lạc tại trung tâm Cần Thơ, gần chợ nổi và các điểm du lịch nổi tiếng."
     },
     {
       icon: Heart,
@@ -32,14 +32,14 @@ const AboutSection = () => {
   ];
 
   const stats = [
-    { number: "500+", label: "Phòng Sang Trọng" },
+    { number: "20+", label: "Phòng Hiện Đại" },
     { number: "50+", label: "Dịch Vụ Cao Cấp" },
-    { number: "10K+", label: "Khách Hàng Hài Lòng" },
-    { number: "15+", label: "Năm Kinh Nghiệm" }
+    { number: "100%", label: "Trang Thiết Bị Mới" },
+    { number: "5⭐", label: "Tiêu Chuẩn Quốc Tế" }
   ];
 
   return (
-    <section id="about" className="section-padding bg-gradient-section relative overflow-hidden">
+    <section id="about" className="py-12 md:py-16 bg-gradient-section relative overflow-hidden">
       {/* Background Aurora Effect */}
       <div className="absolute inset-0 bg-gradient-aurora animate-aurora opacity-30" />
       
@@ -64,25 +64,16 @@ const AboutSection = () => {
                 Về Y Hotel
               </motion.h2>
               <motion.p 
-                className="text-base text-muted-foreground leading-relaxed text-justify"
+                className="text-base text-muted-foreground leading-relaxed"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true, margin: "-100px" }}
               >
-                Được thành lập từ năm 2008, Y Hotel đã trở thành biểu tượng của sự sang trọng và 
-                đẳng cấp trong ngành khách sạn. Chúng tôi cam kết mang đến những trải nghiệm 
-                nghỉ dưỡng hoàn hảo với tiêu chuẩn dịch vụ quốc tế.
-              </motion.p>
-              <motion.p 
-                className="text-base text-muted-foreground leading-relaxed text-justify"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-                viewport={{ once: true, margin: "-100px" }}
-              >
-                Với kiến trúc hiện đại kết hợp nét truyền thống, Y Hotel không chỉ là nơi nghỉ ngơi 
-                mà còn là điểm đến lý tưởng cho các sự kiện quan trọng và những kỷ niệm đáng nhớ.
+                Y Hotel tự hào là khách sạn 5 sao với trang thiết bị hoàn toàn mới, kiến trúc hiện đại 
+                và không gian sang trọng. Mỗi phòng được trang bị nội thất cao cấp, công nghệ thông minh 
+                và tiện nghi đầy đủ. Chúng tôi cam kết mang đến trải nghiệm nghỉ dưỡng đẳng cấp quốc tế 
+                với dịch vụ tận tâm và chuyên nghiệp.
               </motion.p>
             </div>
 
@@ -117,7 +108,7 @@ const AboutSection = () => {
               ))}
             </motion.div>
 
-            {/* Features */}
+            {/* Features - Only show 2 */}
             <motion.div 
               className="grid md:grid-cols-2 gap-6"
               initial={{ opacity: 0, y: 30 }}
@@ -125,7 +116,7 @@ const AboutSection = () => {
               transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
               viewport={{ once: true, margin: "-100px" }}
             >
-              {features.map((feature, index) => (
+              {features.slice(0, 2).map((feature, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
@@ -177,7 +168,7 @@ const AboutSection = () => {
                 <motion.img
                   src={typeof lobbyImage === 'string' ? lobbyImage : lobbyImage.src}
                   alt="Sảnh khách sang trọng tại Y Hotel với thiết kế hiện đại và không gian rộng rãi"
-                  className="w-full h-[600px] object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                  className="w-full h-[400px] md:h-[500px] object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                   initial={{ scale: 1.1 }}
                   whileInView={{ scale: 1 }}
                   transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
@@ -205,10 +196,10 @@ const AboutSection = () => {
                       }}
                       viewport={{ once: true, margin: "-50px" }}
                     >
-                      98%
+                      5.0⭐
                     </motion.div>
                     <div className="text-sm text-muted-foreground">
-                      Khách Hàng Đánh Giá Tuyệt Vời
+                      Đánh Giá Hoàn Hảo
                     </div>
                   </div>
                 </FloatingCard>

@@ -8,33 +8,33 @@ const ServicesSection = () => {
   const services = [
     {
       icon: Wifi,
-      title: "WiFi Miễn Phí",
-      description: "Kết nối internet tốc độ cao trong toàn bộ khách sạn"
+      title: "WiFi Tốc Độ Cao",
+      description: "Kết nối internet siêu nhanh miễn phí toàn khách sạn"
     },
     {
       icon: Car,
       title: "Bãi Đỗ Xe",
-      description: "Bãi đỗ xe rộng rãi, an toàn cho khách hàng"
+      description: "Bãi đỗ xe hiện đại, rộng rãi và an toàn 24/7"
     },
     {
       icon: Coffee,
-      title: "Phòng Ăn Sáng",
-      description: "Buffet sáng phong phú với món ăn Á-Âu"
+      title: "Buffet Sáng",
+      description: "Thực đơn phong phú với hơn 50 món Á-Âu mỗi ngày"
     },
     {
       icon: Dumbbell,
-      title: "Phòng Gym",
-      description: "Trang thiết bị hiện đại, mở cửa 24/7"
+      title: "Phòng Gym Hiện Đại",
+      description: "Trang thiết bị thể thao cao cấp, hoạt động 24/7"
     },
     {
       icon: Utensils,
-      title: "Nhà Hàng",
-      description: "Ẩm thực cao cấp với đầu bếp chuyên nghiệp"
+      title: "Nhà Hàng Cao Cấp",
+      description: "Ẩm thực đẳng cấp với đầu bếp quốc tế"
     },
     {
       icon: Waves,
-      title: "Hồ Bơi",
-      description: "Hồ bơi trong nhà với view tuyệt đẹp"
+      title: "Hồ Bơi Trong Nhà",
+      description: "Không gian thư giãn sang trọng với view thành phố"
     }
   ];
 
@@ -71,14 +71,14 @@ const ServicesSection = () => {
   };
 
   return (
-    <section id="services" className="py-20 bg-gradient-subtle">
+    <section id="services" className="py-12 md:py-16 bg-gradient-subtle">
       <div className="container-luxury">
-        <div className="text-center mb-16">
+        <div className="text-center mb-8 md:mb-12">
           <h2 className="text-3xl md:text-4xl font-display font-bold text-black mb-6">
             Dịch Vụ Tiện Ích
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Trải nghiệm dịch vụ 5 sao với đầy đủ tiện nghi hiện đại
+            Hệ thống tiện ích hiện đại và dịch vụ đẳng cấp 5 sao phục vụ mọi nhu cầu của bạn
           </p>
         </div>
       </div>

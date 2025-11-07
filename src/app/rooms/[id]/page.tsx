@@ -36,6 +36,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useScrollThreshold } from "@/hooks/use-scroll";
@@ -76,11 +77,8 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxImageIndex, setLightboxImageIndex] = useState(0);
-  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
-  const thumbnailContainerRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [mainCarouselApi, setMainCarouselApi] = useState<CarouselApi>();
+  const [thumbnailCarouselApi, setThumbnailCarouselApi] = useState<CarouselApi>();
   const [formData, setFormData] = useState({
     checkIn: undefined as Date | undefined,
     checkOut: undefined as Date | undefined,
@@ -99,15 +97,31 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   const room = rooms.find((r) => r.id === parseInt(id));
   const images = room ? (room.galleryImages || [room.image]) : [];
 
-  const nextImage = useCallback(() => {
-    if (images.length === 0) return;
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  }, [images.length]);
+  // Sync main carousel and thumbnail carousel
+  useEffect(() => {
+    if (!mainCarouselApi) return;
 
-  const prevImage = useCallback(() => {
-    if (images.length === 0) return;
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  }, [images.length]);
+    mainCarouselApi.on("select", () => {
+      const selected = mainCarouselApi.selectedScrollSnap();
+      setCurrentImageIndex(selected);
+      // Sync thumbnail carousel
+      if (thumbnailCarouselApi) {
+        thumbnailCarouselApi.scrollTo(selected);
+      }
+    });
+  }, [mainCarouselApi, thumbnailCarouselApi]);
+
+  useEffect(() => {
+    if (!thumbnailCarouselApi) return;
+
+    thumbnailCarouselApi.on("select", () => {
+      const selected = thumbnailCarouselApi.selectedScrollSnap();
+      // Sync main carousel
+      if (mainCarouselApi) {
+        mainCarouselApi.scrollTo(selected);
+      }
+    });
+  }, [mainCarouselApi, thumbnailCarouselApi]);
 
   const openLightbox = useCallback((index: number) => {
     setLightboxImageIndex(index);
@@ -128,24 +142,9 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     setLightboxImageIndex((prev) => (prev - 1 + images.length) % images.length);
   }, [images.length]);
 
-  // Check if thumbnail gallery can scroll
-  const checkScrollability = useCallback(() => {
-    const container = thumbnailContainerRef.current;
-    if (!container) return;
-    
-    const hasOverflow = container.scrollWidth > container.clientWidth;
-    if (!hasOverflow) {
-      setCanScrollLeft(false);
-      setCanScrollRight(false);
-      return;
-    }
+  // Minimum swipe distance (in px) to trigger image change in lightbox
+  const minSwipeDistance = 50;
 
-    const threshold = 5; // Small threshold for edge cases
-    setCanScrollLeft(container.scrollLeft > threshold);
-    setCanScrollRight(
-      container.scrollLeft < container.scrollWidth - container.clientWidth - threshold
-    );
-  }, []);
 
   // Keyboard navigation for lightbox
   useEffect(() => {
@@ -165,29 +164,6 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLightboxOpen, images.length, prevLightboxImage, nextLightboxImage, closeLightbox]);
 
-  useEffect(() => {
-    if (images.length === 0) return;
-    
-    // Delay check to ensure container is rendered
-    const timeoutId = setTimeout(() => {
-      checkScrollability();
-    }, 100);
-
-    const container = thumbnailContainerRef.current;
-    if (!container) {
-      clearTimeout(timeoutId);
-      return;
-    }
-
-    container.addEventListener('scroll', checkScrollability);
-    window.addEventListener('resize', checkScrollability);
-
-    return () => {
-      clearTimeout(timeoutId);
-      container.removeEventListener('scroll', checkScrollability);
-      window.removeEventListener('resize', checkScrollability);
-    };
-  }, [images, checkScrollability]);
 
   if (!room) {
     return (
@@ -253,80 +229,8 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   };
 
 
-  const scrollThumbnails = (direction: 'left' | 'right') => {
-    const container = thumbnailContainerRef.current;
-    if (!container) return;
 
-    const scrollAmount = 200;
-    const scrollTo = direction === 'left' 
-      ? container.scrollLeft - scrollAmount 
-      : container.scrollLeft + scrollAmount;
 
-    container.scrollTo({
-      left: scrollTo,
-      behavior: 'smooth'
-    });
-
-    // Check scrollability after scroll animation completes
-    setTimeout(() => {
-      checkScrollability();
-    }, 300);
-  };
-
-  // Minimum swipe distance (in px) to trigger image change
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    const touch = e.targetTouches[0];
-    setTouchEnd(null);
-    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    const touch = e.targetTouches[0];
-    const currentTouch = { x: touch.clientX, y: touch.clientY };
-    setTouchEnd(currentTouch);
-    
-    // Prevent vertical scrolling when swiping horizontally
-    if (touchStartRef.current) {
-      const deltaX = Math.abs(touch.clientX - touchStartRef.current.x);
-      const deltaY = Math.abs(touch.clientY - touchStartRef.current.y);
-      
-      // If horizontal movement is significantly greater than vertical, prevent default scroll
-      if (deltaX > 10 && deltaX > deltaY * 1.5) {
-        e.preventDefault();
-      }
-    }
-  };
-
-  const onTouchEnd = () => {
-    const start = touchStartRef.current;
-    if (!start || !touchEnd) {
-      touchStartRef.current = null;
-      setTouchEnd(null);
-      return;
-    }
-    
-    const distance = start.x - touchEnd.x;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-    
-    // Only trigger swipe if horizontal movement is greater than vertical
-    const deltaX = Math.abs(distance);
-    const deltaY = Math.abs(start.y - touchEnd.y);
-    
-    if (deltaX > deltaY && (isLeftSwipe || isRightSwipe)) {
-      if (isLeftSwipe) {
-        nextImage();
-      } else if (isRightSwipe) {
-        prevImage();
-      }
-    }
-    
-    // Reset touch positions
-    touchStartRef.current = null;
-    setTouchEnd(null);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -412,36 +316,47 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
               transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
               className="relative"
             >
-              <div 
-                className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] rounded-xl overflow-hidden cursor-pointer group"
-                onTouchStart={onTouchStart}
-                onTouchMove={onTouchMove}
-                onTouchEnd={onTouchEnd}
-                style={{ touchAction: 'pan-y pinch-zoom' }}
-                onClick={() => openLightbox(currentImageIndex)}
+              <Carousel
+                setApi={setMainCarouselApi}
+                opts={{
+                  align: "start",
+                  loop: true,
+                }}
+                className="w-full"
               >
-                <img
-                  src={images[currentImageIndex]}
-                  alt={`${room.name} - Hình ${currentImageIndex + 1}`}
-                  className="w-full h-full object-cover select-none transition-transform duration-500 ease-out group-hover:scale-105"
-                  draggable={false}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  <div className="bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm">
-                    Click để xem full
-                  </div>
-                </div>
+                <CarouselContent>
+                  {images.map((image, index) => (
+                    <CarouselItem key={index}>
+                      <div 
+                        className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] rounded-xl overflow-hidden cursor-pointer group"
+                        onClick={() => openLightbox(index)}
+                      >
+                        <img
+                          src={image}
+                          alt={`${room.name} - Hình ${index + 1}`}
+                          className="w-full h-full object-cover select-none transition-transform duration-500 ease-out group-hover:scale-105"
+                          draggable={false}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
+                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                          <div className="bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm">
+                            Click để xem full
+                          </div>
+                        </div>
+                      </div>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
 
                 {/* Image Indicators */}
                 {images.length > 1 && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10 pointer-events-none">
                     {images.map((_, index) => (
                       <button
                         key={index}
-                        onClick={() => setCurrentImageIndex(index)}
-                        className={`w-2 h-2 rounded-full transition-all ${
+                        onClick={() => mainCarouselApi?.scrollTo(index)}
+                        className={`w-2 h-2 rounded-full transition-all pointer-events-auto ${
                           index === currentImageIndex
                             ? "bg-white w-8"
                             : "bg-white/50 hover:bg-white/75"
@@ -451,76 +366,44 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                     ))}
                   </div>
                 )}
-              </div>
+              </Carousel>
 
               {/* Thumbnail Gallery */}
               {images.length > 1 && (
-                <div className="relative mt-3 md:mt-4 group">
-                  {/* Left gradient fade with clickable button */}
-                  {canScrollLeft && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="absolute left-0 top-0 bottom-2 w-16 md:w-20 bg-gradient-to-r from-background via-background/80 to-transparent z-10 flex items-center"
-                    >
-                      <button
-                        onClick={() => scrollThumbnails('left')}
-                        className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-background/90 backdrop-blur-sm border border-border shadow-sm flex items-center justify-center hover:bg-background hover:shadow-md transition-all ml-1"
-                        aria-label="Cuộn sang trái"
-                      >
-                        <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-                      </button>
-                    </motion.div>
-                  )}
-                  
-                  {/* Thumbnail container */}
-                  <div 
-                    ref={thumbnailContainerRef}
-                    className="flex gap-2 md:gap-3 overflow-x-auto pb-2 scrollbar-hide scroll-smooth"
-                    onScroll={checkScrollability}
+                <div className="mt-3 md:mt-4">
+                  <Carousel
+                    setApi={setThumbnailCarouselApi}
+                    opts={{
+                      align: "start",
+                      loop: false,
+                      containScroll: "trimSnaps",
+                    }}
+                    className="w-full"
                   >
-                    {images.map((image, index) => (
-                      <button
-                        key={index}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setCurrentImageIndex(index);
-                          openLightbox(index);
-                        }}
-                        className={`relative flex-shrink-0 w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
-                          index === currentImageIndex
-                            ? "border-primary"
-                            : "border-transparent hover:border-primary/50"
-                        }`}
-                      >
-                        <img
-                          src={image}
-                          alt={`Thumbnail ${index + 1}`}
-                          className="w-full h-full object-cover"
-                          draggable={false}
-                        />
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Right gradient fade with clickable button */}
-                  {canScrollRight && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="absolute right-0 top-0 bottom-2 w-16 md:w-20 bg-gradient-to-l from-background via-background/80 to-transparent z-10 flex items-center justify-end"
-                    >
-                      <button
-                        onClick={() => scrollThumbnails('right')}
-                        className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-background/90 backdrop-blur-sm border border-border shadow-sm flex items-center justify-center hover:bg-background hover:shadow-md transition-all mr-1"
-                        aria-label="Cuộn sang phải"
-                      >
-                        <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-primary" />
-                      </button>
-                    </motion.div>
-                  )}
+                    <CarouselContent className="-ml-2 md:-ml-4">
+                      {images.map((image, index) => (
+                        <CarouselItem key={index} className="pl-2 md:pl-4 basis-auto">
+                          <button
+                            onClick={() => {
+                              mainCarouselApi?.scrollTo(index);
+                            }}
+                            className={`relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
+                              index === currentImageIndex
+                                ? "border-primary"
+                                : "border-transparent hover:border-primary/50"
+                            }`}
+                          >
+                            <img
+                              src={image}
+                              alt={`Thumbnail ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              draggable={false}
+                            />
+                          </button>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                  </Carousel>
                 </div>
               )}
             </motion.div>
@@ -867,19 +750,33 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
-              {rooms
-                .filter((r) => r.id !== room.id)
-                .filter((r) => r.category === room.category)
-                .slice(0, 4)
-                .map((similarRoom, index) => (
-                  <motion.div
-                    key={similarRoom.id}
-                    initial={{ opacity: 0, y: 50 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Link href={`/rooms/${similarRoom.id}`} className="block h-full">
+            <div className="overflow-visible relative -mx-4 sm:-mx-6 lg:-mx-8">
+              <Carousel
+                opts={{
+                  align: "start",
+                  loop: true,
+                }}
+                className="w-full"
+              >
+                <CarouselContent className="ml-2 md:ml-4 pr-4 md:pr-8">
+                  {(() => {
+                    const sameCategoryRooms = rooms
+                      .filter((r) => r.id !== room.id)
+                      .filter((r) => r.category === room.category);
+                    const otherCategoryRooms = rooms
+                      .filter((r) => r.id !== room.id)
+                      .filter((r) => r.category !== room.category);
+                    const allRooms = [...sameCategoryRooms, ...otherCategoryRooms];
+                    return allRooms.slice(0, 10);
+                  })().map((similarRoom, index) => (
+                      <CarouselItem
+                        key={similarRoom.id}
+                        className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4"
+                      >
+                        <Link 
+                          href={`/rooms/${similarRoom.id}`} 
+                          className="block h-full"
+                        >
                       <GradientBorder containerClassName="relative h-full">
                         <FloatingCard
                           className="group overflow-hidden h-full bg-background rounded-xl border-0 backdrop-blur-none shadow-none hover:shadow-lg transition-shadow cursor-pointer"
@@ -965,27 +862,41 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                           </CardContent>
                         </FloatingCard>
                       </GradientBorder>
-                    </Link>
-                  </motion.div>
-                ))}
+                        </Link>
+                      </CarouselItem>
+                    ))}
+                </CarouselContent>
+              </Carousel>
+              
+              {/* Swipe indicator - Gradient fade */}
+              <div className="absolute right-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-l from-background/60 via-background/30 to-transparent pointer-events-none" />
             </div>
 
             {/* Fallback: Show other rooms if not enough similar rooms */}
             {rooms.filter((r) => r.id !== room.id && r.category === room.category).length < 4 && (
-              <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6 mt-4 md:mt-6">
-                {rooms
-                  .filter((r) => r.id !== room.id && r.category !== room.category)
-                  .slice(0, 4 - rooms.filter((r) => r.id !== room.id && r.category === room.category).length)
-                  .map((otherRoom, index) => {
-                    const similarCount = rooms.filter((r) => r.id !== room.id && r.category === room.category).length;
-                    return (
-                      <motion.div
-                        key={otherRoom.id}
-                        initial={{ opacity: 0, y: 50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <Link href={`/rooms/${otherRoom.id}`} className="block h-full">
+              <div className="mt-4 md:mt-6 overflow-visible relative -mx-4 sm:-mx-6 lg:-mx-8">
+                <Carousel
+                  opts={{
+                    align: "start",
+                    loop: true,
+                  }}
+                  className="w-full"
+                >
+                  <CarouselContent className="ml-2 md:ml-4 pr-4 md:pr-8">
+                    {rooms
+                      .filter((r) => r.id !== room.id && r.category !== room.category)
+                      .slice(0, 4 - rooms.filter((r) => r.id !== room.id && r.category === room.category).length)
+                      .map((otherRoom, index) => {
+                        const similarCount = rooms.filter((r) => r.id !== room.id && r.category === room.category).length;
+                        return (
+                          <CarouselItem
+                            key={otherRoom.id}
+                            className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4"
+                          >
+                            <Link 
+                              href={`/rooms/${otherRoom.id}`} 
+                              className="block h-full"
+                            >
                           <GradientBorder containerClassName="relative h-full">
                             <FloatingCard
                               className="group overflow-hidden h-full bg-background rounded-xl border-0 backdrop-blur-none shadow-none hover:shadow-lg transition-shadow cursor-pointer"
@@ -1068,13 +979,27 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                 >
                                   Đặt Ngay
                                 </ShimmerButton>
-                              </CardContent>
-                            </FloatingCard>
-                          </GradientBorder>
-                        </Link>
-                      </motion.div>
-                    );
-                  })}
+                          </CardContent>
+                        </FloatingCard>
+                      </GradientBorder>
+                            </Link>
+                          </CarouselItem>
+                        );
+                      })}
+                  </CarouselContent>
+                </Carousel>
+                
+                {/* Swipe indicator - Gradient fade with arrow */}
+                <div className="absolute right-0 top-0 bottom-0 w-20 md:w-32 bg-gradient-to-l from-background via-background/80 to-transparent pointer-events-none flex items-center justify-end pr-2 md:pr-4">
+                  <motion.div
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="flex items-center gap-1 text-muted-foreground"
+                  >
+                    <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-primary animate-pulse" />
+                  </motion.div>
+                </div>
               </div>
             )}
           </div>
@@ -1089,7 +1014,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
             Xem ảnh {room.name} - Hình {lightboxImageIndex + 1}
           </DialogTitle>
           <div 
-            className="relative w-full h-full flex items-center justify-center"
+            className="relative w-full h-full flex items-center justify-center overflow-auto"
             onTouchStart={onLightboxTouchStart}
             onTouchMove={onLightboxTouchMove}
             onTouchEnd={onLightboxTouchEnd}
@@ -1130,7 +1055,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
               key={lightboxImageIndex}
               src={images[lightboxImageIndex]}
               alt={`${room.name} - Hình ${lightboxImageIndex + 1}`}
-              className="max-w-full max-h-full object-contain"
+              className="w-full h-full object-contain"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}

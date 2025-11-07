@@ -135,7 +135,7 @@ const RoomsPage = () => {
                     <span className="hidden md:inline">Về Trang Chủ</span>
                   </Button>
                 </Link>
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground absolute left-1/2 -translate-x-1/2">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
                   Phòng & Suites
                 </h1>
                 <div className="w-[100px] shrink-0 md:w-[140px]"></div>

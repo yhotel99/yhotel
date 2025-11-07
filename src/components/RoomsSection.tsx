@@ -39,27 +39,28 @@ const RoomsSection = () => {
   const displayRooms = rooms.slice(0, 4);
 
   return (
-    <section id="rooms" className="section-padding bg-gradient-subtle">
+    <section id="rooms" className="py-12 md:py-16 bg-gradient-subtle">
       <div className="container-luxury">
         {/* Header */}
         <motion.div 
-          className="text-center mb-16"
+          className="text-center mb-8 md:mb-12"
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
           viewport={{ once: true, margin: "-100px" }}
         >
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground mb-6">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground mb-6 whitespace-nowrap">
             Phòng & Suites
           </h2>
           <p className="text-base text-muted-foreground max-w-3xl mx-auto">
-            Khám phá không gian nghỉ ngơi đẳng cấp với thiết kế hiện đại, tiện nghi cao cấp 
-            và dịch vụ tận tâm. Mỗi phòng đều được chăm chút tỉ mỉ để mang đến sự thoải mái tối đa.
+            Trải nghiệm không gian nghỉ ngơi với trang thiết bị hoàn toàn mới, thiết kế hiện đại và 
+            tiện nghi cao cấp. Mỗi phòng được trang bị nội thất sang trọng, công nghệ thông minh để 
+            mang đến sự thoải mái tối đa cho kỳ nghỉ của bạn.
           </p>
         </motion.div>
 
         {/* Room Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
           {displayRooms.map((room, index) => (
             <motion.div
               key={room.id}
@@ -81,7 +82,7 @@ const RoomsSection = () => {
                     <motion.img
                       src={room.image}
                       alt={`Phòng ${room.name} tại Y Hotel - ${room.size} với view đẹp và tiện nghi cao cấp`}
-                      className="w-full h-36 sm:h-44 md:h-48 lg:h-52 object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                      className="w-full h-32 md:h-48 lg:h-52 object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
                       whileHover={{ scale: 1.02 }}
                       transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                     />
@@ -117,25 +118,25 @@ const RoomsSection = () => {
                     </div>
                   </div>
 
-                  <CardContent className="p-2 sm:p-2.5 md:p-3 flex flex-col flex-1">
+                  <CardContent className="p-2 md:p-3 flex flex-col flex-1">
                     {/* Room Name */}
-                    <h3 className="text-sm sm:text-base md:text-lg font-display font-semibold text-foreground mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                    <h3 className="text-xs md:text-base lg:text-lg font-display font-semibold text-foreground mb-1 line-clamp-1 group-hover:text-primary transition-colors">
                       {room.name}
                     </h3>
 
                     {/* Price */}
                     <div className="mb-1.5">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-base sm:text-lg md:text-xl font-bold text-primary">
+                        <span className="text-sm md:text-lg lg:text-xl font-bold text-primary">
                           {room.price}₫
                         </span>
-                        <span className="text-[10px] sm:text-xs text-muted-foreground">/đêm</span>
+                        <span className="text-[10px] md:text-xs text-muted-foreground">/đêm</span>
                       </div>
                     </div>
 
                     {/* Features - Single line, compact */}
-                    <div className="mb-1.5 hidden sm:block">
-                      <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
+                    <div className="mb-1.5 hidden md:block">
+                      <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">
                         {room.features.slice(0, 2).join(" • ")}
                       </p>
                     </div>
@@ -144,7 +145,7 @@ const RoomsSection = () => {
                     <ShimmerButton
                       variant="luxury"
                       size="sm"
-                      className="w-full text-xs sm:text-sm mt-auto py-1 sm:py-1.5"
+                      className="w-full text-[10px] md:text-sm mt-auto py-1 md:py-1.5"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();

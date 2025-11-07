@@ -4,7 +4,6 @@ import AboutSection from "@/components/AboutSection";
 import RoomsSection from "@/components/RoomsSection";
 import ServicesSection from "@/components/ServicesSection";
 import GallerySection from "@/components/GallerySection";
-import BlogSection from "@/components/BlogSection";
 import ContactSection from "@/components/ContactSection";
 import Footer from "@/components/Footer";
 
@@ -18,7 +17,6 @@ export default function Home() {
         <RoomsSection />
         <ServicesSection />
         <GallerySection />
-        <BlogSection />
         <ContactSection />
       </main>
       <Footer />
