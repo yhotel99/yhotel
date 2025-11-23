@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://yhotel.lovable.app/sitemap.xml
+
+# Disallow admin pages if any
+Disallow: /admin/
+Disallow: /private/
+
+# Allow all images
+User-agent: Googlebot-Image
+Allow: /assets/
+Allow: /images/

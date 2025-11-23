@@ -1,0 +1,295 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Y Hotel Design System - Luxury Hotel Theme
+Sophisticated cyan gradients with elegant typography and smooth animations
+*/
+
+@layer base {
+  :root {
+    /* Base Colors */
+    --background: 0 0% 100%;
+    --foreground: 220 13% 13%;
+
+    /* Card System */
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 13%;
+
+    /* Popover System */
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 13%;
+
+    /* Primary - Luxury Cyan Gradient System */
+    --primary: 189 94% 43%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 188 86% 53%;
+    --primary-dark: 191 91% 36%;
+    --primary-subtle: 189 50% 85%;
+
+    /* Secondary - Elegant Support Colors */
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 13% 13%;
+
+    /* Muted - Subtle Tones */
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+
+    /* Accent - Highlight Colors */
+    --accent: 189 94% 43%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Luxury Gold Accent */
+    --gold: 43 96% 56%;
+    --gold-foreground: 220 13% 13%;
+
+    /* Status Colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    /* Interactive Elements */
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 189 94% 43%;
+
+    /* Elegant Luxury Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(189 94% 43%) 0%, hsl(191 91% 36%) 100%);
+    --gradient-luxury: linear-gradient(135deg, 
+      hsl(189 50% 95%) 0%, 
+      hsl(189 40% 90%) 25%, 
+      hsl(189 60% 85%) 50%, 
+      hsl(189 50% 90%) 75%, 
+      hsl(189 40% 95%) 100%);
+    --gradient-subtle: linear-gradient(135deg, 
+      hsl(189 30% 98%) 0%, 
+      hsl(189 40% 95%) 50%, 
+      hsl(189 30% 98%) 100%);
+    --gradient-hero: linear-gradient(135deg, 
+      hsl(189 94% 43% / 0.9) 0%, 
+      hsl(188 86% 53% / 0.8) 50%, 
+      hsl(191 91% 36% / 0.9) 100%);
+    --gradient-overlay: linear-gradient(180deg, transparent 0%, hsl(220 13% 13% / 0.6) 100%);
+    --gradient-section: linear-gradient(to bottom, 
+      hsl(189 50% 98%) 0%, 
+      hsl(189 40% 96%) 50%, 
+      hsl(189 50% 98%) 100%);
+    --gradient-shimmer: linear-gradient(110deg, transparent 45%, hsl(var(--primary) / 0.1) 50%, transparent 55%);
+    --gradient-aurora: linear-gradient(135deg, 
+      hsl(var(--primary) / 0.05) 0%, 
+      hsl(var(--gold) / 0.02) 25%, 
+      hsl(var(--primary) / 0.03) 50%, 
+      hsl(var(--gold) / 0.05) 75%, 
+      hsl(var(--primary) / 0.05) 100%);
+
+    /* Shadows */
+    --shadow-luxury: 0 25px 50px -12px hsl(189 94% 43% / 0.25);
+    --shadow-card: 0 10px 25px -5px hsl(220 13% 13% / 0.1);
+    --shadow-hover: 0 20px 35px -10px hsl(189 94% 43% / 0.3);
+    --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+    --shadow-glow: 0 0 30px hsl(var(--primary) / 0.15);
+
+    /* Spacing & Layout */
+    --radius: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    /* Dark Mode - Sophisticated Night Theme */
+    --background: 220 13% 9%;
+    --foreground: 220 14% 96%;
+
+    --card: 220 13% 11%;
+    --card-foreground: 220 14% 96%;
+
+    --popover: 220 13% 11%;
+    --popover-foreground: 220 14% 96%;
+
+    --primary: 189 94% 43%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 188 86% 53%;
+    --primary-dark: 191 91% 36%;
+
+    --secondary: 220 13% 15%;
+    --secondary-foreground: 220 14% 96%;
+
+    --muted: 220 13% 15%;
+    --muted-foreground: 220 9% 65%;
+
+    --accent: 189 94% 43%;
+    --accent-foreground: 0 0% 100%;
+
+    --gold: 43 96% 56%;
+    --gold-foreground: 220 13% 9%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 220 13% 20%;
+    --input: 220 13% 20%;
+    --ring: 189 94% 43%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(189 94% 43%) 0%, hsl(191 91% 36%) 100%);
+    --gradient-luxury: linear-gradient(135deg, 
+      hsl(189 50% 20%) 0%, 
+      hsl(189 40% 25%) 25%, 
+      hsl(189 60% 15%) 50%, 
+      hsl(189 50% 20%) 75%, 
+      hsl(189 40% 25%) 100%);
+    --gradient-subtle: linear-gradient(135deg, 
+      hsl(189 30% 15%) 0%, 
+      hsl(189 40% 12%) 50%, 
+      hsl(189 30% 15%) 100%);
+    --gradient-hero: linear-gradient(135deg, 
+      hsl(189 94% 43% / 0.9) 0%, 
+      hsl(188 86% 53% / 0.8) 50%, 
+      hsl(191 91% 36% / 0.9) 100%);
+    --gradient-overlay: linear-gradient(180deg, transparent 0%, hsl(220 13% 9% / 0.8) 100%);
+    --gradient-section: linear-gradient(to bottom, 
+      hsl(189 50% 8%) 0%, 
+      hsl(189 40% 10%) 50%, 
+      hsl(189 50% 8%) 100%);
+
+    --shadow-luxury: 0 25px 50px -12px hsl(189 94% 43% / 0.4);
+    --shadow-card: 0 10px 25px -5px hsl(220 13% 9% / 0.3);
+    --shadow-hover: 0 20px 35px -10px hsl(189 94% 43% / 0.5);
+  }
+}
+
+@layer base {
+  /* Hide scrollbar globally for all elements */
+  * {
+    @apply border-border;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  html,
+  body {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  /* Typography Classes */
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+  
+  .font-sans {
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Gradient Text */
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent;
+  }
+
+  /* Luxury Button Variants */
+  .btn-luxury {
+    @apply bg-gradient-to-r from-primary to-primary-dark text-primary-foreground;
+    @apply hover:shadow-hover transform hover:-translate-y-0.5 transition-all duration-300;
+  }
+
+  .btn-gold {
+    @apply bg-gradient-to-r from-gold to-yellow-400 text-gold-foreground;
+    @apply hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300;
+  }
+
+  /* Animation Classes */
+  .fade-in {
+    @apply opacity-0 translate-y-4 ease-out;
+    transition: all 400ms ease-out;
+  }
+
+  .fade-in.animate {
+    @apply opacity-100 translate-y-0;
+  }
+
+  .parallax-element {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+
+  /* Hover Effects */
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-1 hover:shadow-hover;
+  }
+
+  .hover-glow {
+    @apply transition-all duration-200 hover:shadow-luxury;
+  }
+
+  /* Layout Utilities */
+  .section-padding {
+    @apply py-16 md:py-24 lg:py-32;
+  }
+
+  .container-luxury {
+    @apply container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+  }
+
+  /* Luxury Background Classes */
+  .bg-luxury-gradient {
+    background: var(--gradient-luxury);
+  }
+
+  .bg-subtle-gradient {
+    background: var(--gradient-subtle);
+  }
+
+  .bg-section-gradient {
+    background: var(--gradient-section);
+  }
+
+  /* Scrollbar Hide */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
