@@ -11,6 +11,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'lovable.dev',
       },
+      {
+        protocol: 'https',
+        hostname: 'img.vietqr.io',
+      },
     ],
   },
   // Turbopack is enabled via --turbo flag in dev script

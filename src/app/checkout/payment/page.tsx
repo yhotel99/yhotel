@@ -29,7 +29,8 @@ import { BOOKING_STATUS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
-import QRCode from "react-qr-code";
+import { BANK_BIN_CODES } from "@/lib/utils";
+import Image from "next/image";
 
 const PaymentContent = () => {
   const searchParams = useSearchParams();
@@ -54,13 +55,51 @@ const PaymentContent = () => {
   const [isCopied, setIsCopied] = useState(false);
 
   const bankAccount = {
-    number: "1234567890",
+    number: "1026917727",
     bank: "Vietcombank",
-    owner: "Y Hotel"
+    bankBin: BANK_BIN_CODES["Vietcombank"] || "970436", // Vietcombank BIN code
+    owner: "Tran Quang Khai"
   };
 
   const paymentContent = bookingId ? bookingId.slice(0, 8).toUpperCase() : "";
-  const qrValue = `${paymentContent}|${bankAccount.number}|${bankAccount.bank}|${bankAccount.owner}`;
+  
+  // Generate VietQR API URL
+  // Format: https://img.vietqr.io/image/{acqId}-{accountNo}-{template}.png
+  // Use template 'qr_only' to get QR code only without logo
+  const vietQRUrl = (() => {
+    if (!booking) return null;
+    
+    // Use 'qr_only' template to get plain QR code without logo
+    const baseUrl = `https://img.vietqr.io/image/${bankAccount.bankBin}-${bankAccount.number}-qr_only.png`;
+    const params = new URLSearchParams();
+    
+    // Amount in VND
+    if (booking.total_amount) {
+      params.append('amount', booking.total_amount.toString());
+    }
+    
+    // Payment content (booking ID)
+    if (paymentContent) {
+      params.append('addInfo', paymentContent);
+    }
+    
+    // Account name (remove Vietnamese accents and convert to uppercase)
+    // VietQR requires account name without accents and in uppercase
+    const accountName = bankAccount.owner
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toUpperCase()
+      .trim();
+    
+    if (accountName) {
+      params.append('accountName', accountName);
+    }
+    
+    const queryString = params.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  })();
 
   const handleCopyAccountNumber = () => {
     navigator.clipboard.writeText(bankAccount.number);
@@ -208,21 +247,23 @@ const PaymentContent = () => {
                     <CardContent className="p-6 md:p-8 pt-2 md:pt-1 space-y-6">
                       {/* QR Code Section */}
                       <div className="flex flex-col md:flex-row gap-6">
-                        {/* QR Code */}
-                        <div className="flex flex-col items-center justify-center p-6 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border-2 border-primary/20">
-                          <p className="text-sm font-semibold text-foreground mb-4">Quét mã QR để chuyển khoản</p>
-                          <div className="p-4 bg-white rounded-lg border-2 border-primary/30 shadow-lg">
-                            <QRCode
-                              value={qrValue}
-                              size={200}
-                              level="H"
-                              bgColor="#FFFFFF"
-                              fgColor="#000000"
+                        {/* QR Code - Only QR */}
+                        <div className="flex items-center justify-center p-6 bg-white rounded-xl border-2 border-primary/30 shadow-lg">
+                          {vietQRUrl ? (
+                            <Image
+                              src={vietQRUrl}
+                              alt="VietQR Code"
+                              width={400}
+                              height={400}
+                              className="w-full max-w-[400px] h-auto aspect-square"
+                              unoptimized
+                              priority
                             />
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-4 text-center max-w-[200px]">
-                            Mở ứng dụng ngân hàng và quét mã QR để chuyển khoản nhanh chóng
-                          </p>
+                          ) : (
+                            <div className="w-full max-w-[400px] aspect-square flex items-center justify-center bg-gray-100 rounded-lg">
+                              <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+                            </div>
+                          )}
                         </div>
 
                         {/* Bank Account Info */}
@@ -296,12 +337,19 @@ const PaymentContent = () => {
                           Hướng dẫn thanh toán:
                         </p>
                         <ol className="list-decimal list-inside space-y-1 text-sm text-blue-700 dark:text-blue-300">
-                          <li>Quét mã QR hoặc chuyển khoản đến số tài khoản trên</li>
-                          <li>Nhập chính xác nội dung chuyển khoản (mã đặt phòng)</li>
-                          <li>Chuyển đúng số tiền: {formatPrice(booking.total_amount)}đ</li>
+                          <li>Mở ứng dụng ngân hàng trên điện thoại (hỗ trợ tất cả ngân hàng tại Việt Nam)</li>
+                          <li>Chọn tính năng quét mã QR và quét mã VietQR bên trên</li>
+                          <li>Kiểm tra thông tin: số tiền {formatPrice(booking.total_amount)}đ, nội dung chuyển khoản {paymentContent}</li>
+                          <li>Xác nhận và hoàn tất giao dịch</li>
                           <li>Nhấn &quot;Xác nhận đã chuyển khoản&quot; sau khi hoàn tất</li>
-                          <li>Chúng tôi sẽ gửi mail xác nhận thanh toán thành công trong vài phút</li>
+                          <li>Chúng tôi sẽ gửi email xác nhận thanh toán thành công trong vài phút</li>
                         </ol>
+                        <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
+                          <p className="text-xs text-blue-600 dark:text-blue-400">
+                            💡 <strong>Lưu ý:</strong> Mã VietQR tương thích với tất cả các ứng dụng ngân hàng tại Việt Nam. 
+                            Nếu không quét được QR, bạn có thể chuyển khoản thủ công theo thông tin tài khoản bên trên.
+                          </p>
+                        </div>
                       </div>
                     </CardContent>
                   </FloatingCard>
