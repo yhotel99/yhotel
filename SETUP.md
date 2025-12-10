@@ -1,7 +1,7 @@
 # yhotel-cyan-elegance Setup Guide
 
 ## Project Overview
-This is a modern hotel booking and management web application built with React, TypeScript, Vite, Tailwind CSS, and shadcn-ui components.
+This is a modern hotel booking and management web application built with **Next.js 15.5.7**, React 19, TypeScript, Tailwind CSS, and shadcn-ui components.
 
 ## Prerequisites
 
@@ -36,12 +36,12 @@ Edit `.env.local` and configure the following:
 
 ```env
 # Supabase Configuration (Required for database/auth)
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anonymous-key
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anonymous-key
 
 # Application Configuration
-VITE_APP_NAME=YHotel Cyan Elegance
-VITE_APP_URL=http://localhost:8080
+NEXT_PUBLIC_APP_NAME=YHotel Cyan Elegance
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Development Configuration
 NODE_ENV=development
@@ -56,24 +56,21 @@ NODE_ENV=development
 ### 3. Development Server
 
 ```bash
-# Start development server
+# Start development server (with Turbopack)
 npm run dev
 
 # The application will be available at:
-# http://localhost:8080
+# http://localhost:3000
 ```
 
 ### 4. Build and Deployment
 
 ```bash
-# Development build
-npm run build:dev
-
 # Production build  
 npm run build
 
-# Preview production build
-npm run preview
+# Start production server
+npm run start
 
 # Lint code
 npm run lint
@@ -85,17 +82,24 @@ npm run lint
 yhotel-cyan-elegance/
 ├── public/                 # Static assets
 ├── src/
-│   ├── components/        # Reusable UI components
+│   ├── app/              # Next.js App Router pages
+│   │   ├── api/          # API routes (REST endpoints)
+│   │   ├── blog/         # Blog pages
+│   │   ├── book/         # Booking pages
+│   │   ├── booking/      # Booking management
+│   │   ├── checkout/     # Checkout flow
+│   │   ├── rooms/        # Room pages
+│   │   ├── layout.tsx    # Root layout
+│   │   └── page.tsx      # Homepage
+│   ├── components/       # Reusable UI components
 │   │   ├── ui/           # shadcn-ui components
 │   │   └── *.tsx         # Feature components
 │   ├── hooks/            # Custom React hooks
-│   ├── lib/              # Utility functions
-│   ├── pages/            # Page components
-│   ├── App.tsx           # Main app component
-│   └── main.tsx          # App entry point
-├── .env.example          # Environment template
+│   ├── lib/              # Utility functions & API clients
+│   └── types/            # TypeScript type definitions
+├── .env.local            # Environment variables (create from .env.example)
 ├── package.json          # Dependencies and scripts
-├── vite.config.ts        # Vite configuration
+├── next.config.js        # Next.js configuration
 ├── tailwind.config.ts    # Tailwind CSS configuration
 └── tsconfig.json         # TypeScript configuration
 ```
@@ -103,9 +107,10 @@ yhotel-cyan-elegance/
 ## Technology Stack
 
 ### Frontend
-- **React 18.3.1** - UI library
+- **Next.js 15.5.7** - React framework with App Router
+- **React 19.2.1** - UI library
 - **TypeScript 5.8.3** - Type safety
-- **Vite 5.4.19** - Build tool and dev server
+- **Turbopack** - Fast bundler (Next.js dev server)
 - **Tailwind CSS 3.4.17** - Styling framework
 - **shadcn-ui** - Component library
 - **Framer Motion** - Animations
@@ -114,9 +119,10 @@ yhotel-cyan-elegance/
 - **React Query (@tanstack/react-query)** - Server state management
 - **React Hook Form** - Form handling
 - **Zod** - Schema validation
+- **Supabase** - Backend database & authentication
 
 ### Routing & Navigation
-- **React Router DOM** - Client-side routing
+- **Next.js App Router** - File-based routing with Server Components
 
 ### UI Components & Icons
 - **Radix UI** - Headless UI primitives
@@ -139,10 +145,11 @@ yhotel-cyan-elegance/
 - Hooks: camelCase with 'use' prefix (e.g., `useToast.ts`)
 
 ### Performance Optimization
-- Code splitting with React.lazy()
-- Optimized images and assets
-- Minimal bundle size with Vite
+- Automatic code splitting with Next.js
+- Optimized images with next/image
+- Server Components for better performance
 - Efficient re-renders with React Query
+- Turbopack for faster development builds
 
 ## Troubleshooting
 
@@ -157,9 +164,9 @@ yhotel-cyan-elegance/
    - Ensure `.env.local` exists
    - Restart development server
 
-3. **Port 8080 already in use**
+3. **Port 3000 already in use**
    ```bash
-   npm run dev -- --port 3000
+   npm run dev -- -p 3001
    ```
 
 4. **Build errors**
@@ -169,18 +176,24 @@ yhotel-cyan-elegance/
    ```
 
 ### Security Vulnerabilities
-The current audit shows 3 moderate vulnerabilities in development dependencies (esbuild/vite). These are:
-- Development-only vulnerabilities
-- Do not affect production builds
-- Can be monitored for updates
+Run security audit:
+```bash
+npm audit
+```
+
+If vulnerabilities are found:
+- Review and update dependencies
+- Most dev-only vulnerabilities don't affect production
+- Monitor for security updates
 
 ## Additional Resources
 
-- [Vite Documentation](https://vitejs.dev/)
+- [Next.js Documentation](https://nextjs.org/docs)
 - [React Documentation](https://react.dev/)
 - [Tailwind CSS Documentation](https://tailwindcss.com/)
 - [shadcn-ui Documentation](https://ui.shadcn.com/)
 - [Supabase Documentation](https://supabase.com/docs)
+- [Next.js App Router Guide](https://nextjs.org/docs/app)
 
 ## Support
 

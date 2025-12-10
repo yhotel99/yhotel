@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
 import { Calendar, User, ArrowRight, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -10,89 +10,64 @@ import { Badge } from "@/components/ui/badge";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { GradientBorder } from "@/components/ui/gradient-border";
+import { useBlogs } from "@/hooks/use-blogs";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 const BlogSection = () => {
-  const [selectedCategory, setSelectedCategory] = useState("Tất cả");
+  // Fetch blogs from API
+  const { blogs, isLoading } = useBlogs({
+    page: 1,
+    limit: 10, // Get latest 10 published blogs
+  });
 
-  const blogPosts = [
-    {
-      id: 1,
-      title: "10 Trải Nghiệm Không Thể Bỏ Lỡ Tại Y Hotel",
-      excerpt: "Khám phá những trải nghiệm độc đáo và đáng nhớ nhất mà Y Hotel mang đến cho du khách từ khắp nơi trên thế giới.",
-      image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
-      author: "Admin Y Hotel",
-      date: "15 Dec 2024",
-      category: "Kinh nghiệm",
-      readTime: "5 phút đọc",
-      featured: true
-    },
-    {
-      id: 2,
-      title: "Bí Quyết Tận Hưởng Kỳ Nghỉ Luxury Hoàn Hảo",
-      excerpt: "Hướng dẫn chi tiết về cách tận hưởng trọn vẹn kỳ nghỉ sang trọng tại Y Hotel với những dịch vụ cao cấp.",
-      image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600",
-      author: "Travel Expert",
-      date: "12 Dec 2024",
-      category: "Du lịch",
-      readTime: "7 phút đọc",
-      featured: false
-    },
-    {
-      id: 3,
-      title: "Ẩm Thực Đỉnh Cao: Hành Trình Khám Phá Các Nhà Hàng",
-      excerpt: "Khám phá những món ăn tinh tế và độc đáo tại các nhà hàng sang trọng của Y Hotel.",
-      image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600",
-      author: "Chef Y Hotel",
-      date: "10 Dec 2024",
-      category: "Ẩm thực",
-      readTime: "6 phút đọc",
-      featured: false
-    },
-    {
-      id: 4,
-      title: "Spa & Wellness: Hành Trình Tái Tạo Năng Lượng",
-      excerpt: "Trải nghiệm các liệu pháp spa và wellness độc đáo giúp bạn thư giãn và tái tạo năng lượng.",
-      image: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600",
-      author: "Wellness Expert",
-      date: "8 Dec 2024",
-      category: "Wellness",
-      readTime: "4 phút đọc",
-      featured: false
-    },
-    {
-      id: 5,
-      title: "Sự Kiện Đặc Biệt: Gala Dinner Mùa Đông 2024",
-      excerpt: "Tham gia sự kiện Gala Dinner đặc biệt với menu cao cấp và chương trình giải trí hấp dẫn.",
-      image: "https://images.unsplash.com/photo-1543589077-47d81606c1bf?w=600",
-      author: "Event Manager",
-      date: "5 Dec 2024",
-      category: "Sự kiện",
-      readTime: "3 phút đọc",
-      featured: false
-    },
-    {
-      id: 6,
-      title: "Khám Phá Văn Hóa Địa Phương Xung Quanh Khách Sạn",
-      excerpt: "Tìm hiểu những điểm đến văn hóa thú vị và các trải nghiệm địa phương gần Y Hotel.",
-      image: "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600",
-      author: "Local Guide",
-      date: "3 Dec 2024",
-      category: "Khám phá",
-      readTime: "8 phút đọc",
-      featured: false
-    }
-  ];
+  // Transform API data to component format
+  const blogPosts = useMemo(() => {
+    // Calculate read time from content
+    const calculateReadTime = (content: string) => {
+      const wordsPerMinute = 200;
+      const words = content.split(/\s+/).length;
+      const minutes = Math.ceil(words / wordsPerMinute);
+      return `${minutes} phút đọc`;
+    };
 
-  const categories = ["Tất cả", "Kinh nghiệm", "Du lịch", "Ẩm thực", "Wellness", "Sự kiện", "Khám phá"];
+    // Format date
+    const formatDate = (dateString: string) => {
+      try {
+        const date = new Date(dateString);
+        return format(date, "dd MMM yyyy", { locale: vi });
+      } catch {
+        return dateString;
+      }
+    };
 
-  const featuredPost = blogPosts.find(post => post.featured) || blogPosts[0];
-  const otherPosts = blogPosts.filter(post => !post.featured).slice(0, 2);
+    return blogs.map((blog) => ({
+      id: blog.id,
+      slug: blog.slug,
+      title: blog.title,
+      excerpt: blog.excerpt || "",
+      image: blog.image || "/placeholder.svg",
+      author: blog.author?.full_name || "Y Hotel",
+      date: formatDate(blog.date),
+      category: "Tin tức", // Default category since API doesn't have categories
+      readTime: calculateReadTime(blog.content),
+      featured: false, // First blog will be featured
+    }));
+  }, [blogs]);
 
-  const filteredPosts = selectedCategory === "Tất cả" 
-    ? otherPosts 
-    : otherPosts.filter(post => post.category === selectedCategory);
+  // Get featured post (first one) and other posts
+  const featuredPost = blogPosts[0] || null;
+  const otherPosts = blogPosts.slice(1, 5); // Get next 4 posts
 
-  const filteredFeatured = selectedCategory === "Tất cả" || featuredPost.category === selectedCategory;
+  // For now, we'll show all posts regardless of category filter
+  // since the API doesn't have categories
+  const filteredPosts = otherPosts;
+  const filteredFeatured = featuredPost !== null;
+
+  // Don't show section if no blogs
+  if (!isLoading && blogPosts.length === 0) {
+    return null;
+  }
 
   return (
     <section id="blog" className="py-12 md:py-20 bg-gradient-subtle">
@@ -113,33 +88,51 @@ const BlogSection = () => {
           </p>
         </motion.div>
 
-        {/* Category Filter Bar */}
-        <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-8 md:mb-12">
-          {categories.map((category) => (
-            <button
-              key={category}
-              onClick={() => setSelectedCategory(category)}
-              className={`px-4 py-2 rounded-full text-sm md:text-base font-medium transition-all duration-300 ${
-                selectedCategory === category
-                  ? "bg-primary text-primary-foreground shadow-lg"
-                  : "bg-background/60 text-foreground border border-primary/30 hover:border-primary/50"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-
-        {/* Featured Article Section */}
-        {filteredFeatured && (
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-            viewport={{ once: true }}
-            className="mb-8 md:mb-12"
-          >
-            <Link href={`/blog/${featuredPost.id}`}>
+        {/* Loading State */}
+        {isLoading ? (
+          <div className="space-y-8">
+            {/* Featured Post Skeleton */}
+            <GradientBorder containerClassName="relative">
+              <div className="bg-background rounded-xl overflow-hidden">
+                <div className="grid md:grid-cols-2 gap-0">
+                  <div className="h-64 md:h-auto bg-muted animate-pulse" />
+                  <div className="p-6 md:p-8 space-y-4">
+                    <div className="h-4 bg-muted rounded w-20 animate-pulse" />
+                    <div className="h-6 bg-muted rounded w-3/4 animate-pulse" />
+                    <div className="h-4 bg-muted rounded w-full animate-pulse" />
+                    <div className="h-4 bg-muted rounded w-2/3 animate-pulse" />
+                  </div>
+                </div>
+              </div>
+            </GradientBorder>
+            
+            {/* Other Posts Skeleton */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <GradientBorder key={i} containerClassName="relative h-full">
+                  <div className="bg-background rounded-xl overflow-hidden h-full">
+                    <div className="h-32 md:h-44 bg-muted animate-pulse" />
+                    <div className="p-2.5 md:p-4 space-y-2">
+                      <div className="h-4 bg-muted rounded w-3/4 animate-pulse" />
+                      <div className="h-3 bg-muted rounded w-full animate-pulse" />
+                    </div>
+                  </div>
+                </GradientBorder>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Featured Article Section */}
+            {filteredFeatured && featuredPost && (
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                viewport={{ once: true }}
+                className="mb-8 md:mb-12"
+              >
+                <Link href={`/blog/${featuredPost.slug}`}>
               <GradientBorder containerClassName="relative">
                 <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
                   <div className="grid md:grid-cols-2 gap-0">
@@ -195,16 +188,16 @@ const BlogSection = () => {
                     </div>
                   </div>
                 </FloatingCard>
-              </GradientBorder>
-            </Link>
-          </motion.div>
-        )}
+                </GradientBorder>
+              </Link>
+            </motion.div>
+            )}
 
-        {/* Other Articles Grid */}
-        {filteredPosts.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-6 items-stretch">
-            {filteredPosts.map((post, index) => (
-              <Link key={post.id} href={`/blog/${post.id}`} className="h-full">
+            {/* Other Articles Grid */}
+            {filteredPosts.length > 0 && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 items-stretch">
+                {filteredPosts.map((post, index) => (
+                  <Link key={post.id} href={`/blog/${post.slug}`} className="h-full">
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -260,10 +253,27 @@ const BlogSection = () => {
                     </FloatingCard>
                   </GradientBorder>
                 </motion.div>
-              </Link>
-            ))}
-          </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </>
         )}
+
+        {/* View All Link */}
+        <motion.div 
+          className="flex justify-center mt-8 md:mt-12"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+          viewport={{ once: true }}
+        >
+          <Link href="/blog">
+            <Button variant="outline" className="border-primary/30 hover:border-primary/50">
+              Xem tất cả bài viết
+            </Button>
+          </Link>
+        </motion.div>
       </div>
     </section>
   );
