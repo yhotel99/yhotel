@@ -4,10 +4,10 @@ import { use } from "react";
 import { motion } from "framer-motion";
 import { Calendar, User, Clock, ArrowLeft, Share2, ArrowRight } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CardContent } from "@/components/ui/card";
-import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { useScrollThreshold } from "@/hooks/use-scroll";
@@ -148,14 +148,19 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
         {/* Hero Image */}
         <section className="relative h-[50vh] md:h-[60vh] overflow-hidden">
           {blog.image ? (
-            <motion.img
-              src={blog.image}
-              alt={blog.title}
-              className="w-full h-full object-cover"
+            <motion.div
               initial={{ scale: 1.1 }}
               animate={{ scale: 1 }}
               transition={{ duration: 0.8 }}
-            />
+              className="w-full h-full"
+            >
+              <Image
+                src={blog.image}
+                alt={blog.title}
+                fill
+                className="object-cover"
+              />
+            </motion.div>
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5" />
           )}
@@ -275,7 +280,6 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                       >
                         <CarouselContent className="ml-2 md:ml-4 pr-4 md:pr-8 items-stretch">
                           {relatedPosts.map((relatedPost) => {
-                            const relatedReadTime = calculateReadTime(relatedPost.content);
                             const relatedFormattedDate = formatDate(relatedPost.date);
                             return (
                               <CarouselItem
@@ -290,9 +294,11 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                                     >
                                       {/* Image */}
                                       <div className="relative overflow-hidden rounded-t-xl flex-shrink-0">
-                                        <img
+                                        <Image
                                           src={relatedPost.image || "/placeholder.svg"}
                                           alt={relatedPost.title}
+                                          width={400}
+                                          height={300}
                                           className="w-full h-36 sm:h-44 md:h-48 lg:h-52 object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />

@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Calendar, Users, CreditCard, Check, ArrowLeft, Phone, Mail, MapPin, Download, Printer, Bed, Clock, FileText } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useScrollThreshold } from "@/hooks/use-scroll";
@@ -15,7 +15,8 @@ import Footer from "@/components/Footer";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
-import { rooms, Room } from "@/data/rooms";
+import { rooms } from "@/data/rooms";
+import Image from "next/image";
 
 interface BookingDetailPageProps {
   params: Promise<{ id: string }>;
@@ -32,7 +33,6 @@ const BookingDetailPage = ({ params }: BookingDetailPageProps) => {
   const roomId = searchParams.get("roomId");
   const checkIn = searchParams.get("checkIn");
   const checkOut = searchParams.get("checkOut");
-  const guests = searchParams.get("guests") || "2";
   const adults = searchParams.get("adults") || "1";
   const children = searchParams.get("children") || "0";
   const fullName = searchParams.get("fullName") || "";
@@ -89,15 +89,6 @@ const BookingDetailPage = ({ params }: BookingDetailPageProps) => {
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("vi-VN").format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("vi-VN", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    });
   };
 
   const formatDateTime = (dateString: string) => {
@@ -279,9 +270,11 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
                         {/* Room Info */}
                         {room && (
                           <div className="flex gap-4 pb-6 border-b">
-                            <img
+                            <Image
                               src={room.image}
                               alt={room.name}
+                              width={128}
+                              height={96}
                               className="w-32 h-24 object-cover rounded-lg"
                             />
                             <div className="flex-1">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, User, ArrowRight, Clock, Search, X, ArrowLeft } from "lucide-react";
+import { Calendar, ArrowRight, Search, X, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,14 @@ import Footer from "@/components/Footer";
 import { useBlogs } from "@/hooks/use-blogs";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import Image from "next/image";
 
 const BlogListingPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<string>("default");
   const isScrolled = useScrollThreshold(100);
 
-  const { blogs, isLoading, pagination } = useBlogs({
+  const { blogs, isLoading } = useBlogs({
     page: 1,
     limit: 100, // Load all blogs for filtering/sorting
     search: searchQuery,
@@ -61,13 +62,6 @@ const BlogListingPage = () => {
     } catch {
       return dateString;
     }
-  };
-
-  const calculateReadTime = (content: string) => {
-    const wordsPerMinute = 200;
-    const words = content.split(/\s+/).length;
-    const minutes = Math.ceil(words / wordsPerMinute);
-    return `${minutes} phút đọc`;
   };
 
   return (
@@ -234,7 +228,7 @@ const BlogListingPage = () => {
               </motion.div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
-                {sortedBlogs.map((post, index) => (
+                {sortedBlogs.map((post) => (
                   <motion.div
                     key={post.id}
                     initial={{ opacity: 0, y: 50 }}
@@ -249,9 +243,11 @@ const BlogListingPage = () => {
                         >
                           {/* Image */}
                           <div className="relative overflow-hidden rounded-t-xl">
-                            <img
+                            <Image
                               src={post.image || "/placeholder.svg"}
                               alt={post.title}
+                              width={400}
+                              height={300}
                               className="w-full h-36 sm:h-44 md:h-48 lg:h-52 object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />

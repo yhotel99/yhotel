@@ -1,6 +1,5 @@
 "use client";
 
-import { Suspense } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import BookingSection from "@/components/BookingSection";
