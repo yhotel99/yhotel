@@ -109,11 +109,12 @@ export async function GET(
       profiles: {
         full_name: string;
         email: string;
-      } | null;
+      }[] | null;
     };
 
     const blog = data as BlogWithAuthor;
     const publishedDate = blog.published_at || blog.created_at;
+    const profile = blog.profiles && blog.profiles.length > 0 ? blog.profiles[0] : null;
 
     const response: BlogDetailResponse = {
       id: blog.id,
@@ -122,10 +123,10 @@ export async function GET(
       excerpt: blog.excerpt,
       content: blog.content,
       image: blog.featured_image,
-      author: blog.profiles
+      author: profile
         ? {
-            full_name: blog.profiles.full_name,
-            email: blog.profiles.email,
+            full_name: profile.full_name,
+            email: profile.email,
           }
         : null,
       date: publishedDate,
