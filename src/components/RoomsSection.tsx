@@ -2,19 +2,26 @@
 
 import { Bed, Wifi, Car, Coffee, Bath, Users } from "lucide-react";
 import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { GradientBorder } from "@/components/ui/gradient-border";
-import { rooms } from "@/data/rooms";
+import { useRooms, usePrefetchRoom } from "@/hooks/use-rooms";
+import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
 
 const categoryLabels: Record<string, string> = {
   standard: "Standard",
   deluxe: "Deluxe",
-  suite: "Suite",
+  superior: "Superior",
   family: "Family",
+};
+
+// Helper to get category label with fallback
+const getCategoryLabel = (category: string): string => {
+  return categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
 };
 
 // Mapping amenities to their display names
@@ -35,6 +42,9 @@ const getAmenityName = (IconComponent: React.ComponentType): string => {
 };
 
 const RoomsSection = () => {
+  const { data: rooms = [], isLoading: loading } = useRooms();
+  const prefetchRoom = usePrefetchRoom();
+
   // Show only first 4 rooms on homepage
   const displayRooms = rooms.slice(0, 4);
 
@@ -60,8 +70,15 @@ const RoomsSection = () => {
         </motion.div>
 
         {/* Room Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
-          {displayRooms.map((room, index) => (
+        {loading ? (
+          <RoomGridSkeleton count={4} />
+        ) : displayRooms.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">Chưa có phòng nào.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
+            {displayRooms.map((room, index) => (
             <motion.div
               key={room.id}
               initial={{ opacity: 0, y: 50 }}
@@ -69,7 +86,11 @@ const RoomsSection = () => {
               transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
               viewport={{ once: true, margin: "-100px" }}
             >
-              <Link href={`/rooms/${room.id}`} className="block h-full">
+              <Link 
+                href={`/rooms/${encodeURIComponent(room.id)}`} 
+                className="block h-full"
+                onMouseEnter={() => prefetchRoom(room.id)}
+              >
                 <GradientBorder 
                   containerClassName="relative h-full"
                 >
@@ -96,7 +117,7 @@ const RoomsSection = () => {
                         </Badge>
                       )}
                       <Badge variant="outline" className="bg-background/90 text-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm border-background/50">
-                        {categoryLabels[room.category]}
+                        {getCategoryLabel(room.category)}
                       </Badge>
                     </div>
 
@@ -108,11 +129,15 @@ const RoomsSection = () => {
                             <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                             <span className="font-medium">{room.guests}</span>
                           </div>
-                          <span className="text-white/60">•</span>
-                          <div className="flex items-center gap-1">
-                            <Bed className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                            <span className="hidden sm:inline">{room.size}</span>
-                          </div>
+                          {room.size && (
+                            <>
+                              <span className="text-white/60">•</span>
+                              <div className="flex items-center gap-1">
+                                <Bed className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                <span className="hidden sm:inline">{room.size}</span>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -149,7 +174,7 @@ const RoomsSection = () => {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        window.location.href = `/rooms/${room.id}`;
+                        window.location.href = `/rooms/${encodeURIComponent(room.id)}`;
                       }}
                     >
                       Đặt Ngay
@@ -159,8 +184,9 @@ const RoomsSection = () => {
               </GradientBorder>
               </Link>
             </motion.div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* View All Button */}
         <motion.div 

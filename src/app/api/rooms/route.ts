@@ -2,9 +2,6 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 import { Room, RoomWithImages, RoomResponse } from '@/types/database';
 
-// Mark as dynamic route since we use request.url for query params
-export const dynamic = 'force-dynamic';
-
 // Cache for 5 minutes
 export const revalidate = 300; // 5 minutes in seconds
 

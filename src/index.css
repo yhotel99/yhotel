@@ -177,8 +177,26 @@ Sophisticated cyan gradients with elegant typography and smooth animations
 }
 
 @layer base {
+  /* Hide scrollbar globally for all elements */
   * {
     @apply border-border;
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  *::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
+  }
+
+  html,
+  body {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
   }
 
   body {

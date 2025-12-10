@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Bed, Wifi, Car, Coffee, Bath, Users, Search, X, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -15,13 +15,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useScrollThreshold } from "@/hooks/use-scroll";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { rooms, Room } from "@/data/rooms";
+import { useRooms, usePrefetchRoom } from "@/hooks/use-rooms";
+import { getCategories, type Category } from "@/lib/api/categories";
+import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
 
 const categoryLabels: Record<string, string> = {
   standard: "Standard",
   deluxe: "Deluxe",
-  suite: "Suite",
+  superior: "Superior",
   family: "Family",
+};
+
+// Helper to get category label with fallback
+const getCategoryLabel = (category: string): string => {
+  return categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
 };
 
 // Mapping amenities to their display names
@@ -42,55 +49,87 @@ const getAmenityName = (IconComponent: React.ComponentType): string => {
 };
 
 const RoomsPage = () => {
+  const { data: rooms = [], isLoading: loading, error: queryError } = useRooms();
+  const prefetchRoom = usePrefetchRoom();
+  const [categories, setCategories] = useState<Category[]>([
+    { value: "all", label: "Tất cả" },
+    { value: "standard", label: "Standard" },
+    { value: "family", label: "Family" },
+    { value: "superior", label: "Superior" },
+    { value: "deluxe", label: "Deluxe" },
+  ]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("default");
   const isScrolled = useScrollThreshold(100);
+  
+  const error = queryError ? 'Đã xảy ra lỗi khi tải danh sách phòng. Vui lòng thử lại sau.' : null;
+
+  // Fetch categories from database
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const cats = await getCategories();
+        setCategories(cats);
+      } catch (error) {
+        console.error('Error fetching categories:', error);
+        // Keep default categories on error
+      }
+    }
+    fetchCategories();
+  }, []);
 
   // Filter and search rooms
   const filteredRooms = useMemo(() => {
+    console.log('Filtering rooms - Total:', rooms.length, 'Category:', selectedCategory, 'Search:', searchQuery); // Debug log
+    
     let result = rooms;
 
     // Filter by category
     if (selectedCategory !== "all") {
+      const beforeCategory = result.length;
       result = result.filter((room) => room.category === selectedCategory);
+      console.log('After category filter:', result.length, 'from', beforeCategory); // Debug log
     }
 
     // Filter by search query
     if (searchQuery) {
+      const beforeSearch = result.length;
       const query = searchQuery.toLowerCase();
       result = result.filter(
         (room) =>
           room.name.toLowerCase().includes(query) ||
-          room.features.some((feature) => feature.toLowerCase().includes(query))
+          (room.features && room.features.some((feature) => feature.toLowerCase().includes(query)))
       );
+      console.log('After search filter:', result.length, 'from', beforeSearch); // Debug log
     }
 
     // Sort rooms
     if (sortBy === "price-low") {
       result = [...result].sort(
-        (a, b) =>
-          parseInt(a.price.replace(/,/g, "")) - parseInt(b.price.replace(/,/g, ""))
+        (a, b) => {
+          // Parse price correctly - Vietnamese format uses dots as thousand separators
+          const priceA = parseFloat(a.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) || 0;
+          const priceB = parseFloat(b.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) || 0;
+          return priceA - priceB;
+        }
       );
     } else if (sortBy === "price-high") {
       result = [...result].sort(
-        (a, b) =>
-          parseInt(b.price.replace(/,/g, "")) - parseInt(a.price.replace(/,/g, ""))
+        (a, b) => {
+          // Parse price correctly - Vietnamese format uses dots as thousand separators
+          const priceA = parseFloat(a.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) || 0;
+          const priceB = parseFloat(b.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) || 0;
+          return priceB - priceA;
+        }
       );
     } else if (sortBy === "popular") {
       result = [...result].sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
     }
 
+    console.log('Final filtered rooms:', result.length); // Debug log
     return result;
-  }, [searchQuery, selectedCategory, sortBy]);
-
-  const categories = [
-    { value: "all", label: "Tất cả" },
-    { value: "standard", label: "Standard" },
-    { value: "deluxe", label: "Deluxe" },
-    { value: "suite", label: "Suite" },
-    { value: "family", label: "Family" },
-  ];
+  }, [rooms, searchQuery, selectedCategory, sortBy]); // Added 'rooms' to dependencies
 
   return (
     <div className="min-h-screen bg-luxury-gradient">
@@ -161,17 +200,17 @@ const RoomsPage = () => {
               <div className="flex flex-col sm:flex-row gap-3">
                 {/* Search */}
                 <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none z-10" />
                   <Input
                     placeholder="Tìm kiếm phòng..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 pr-9 h-11 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 transition-colors"
+                    className="pl-10 pr-9 h-11 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 transition-colors"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery("")}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 rounded-full hover:bg-muted transition-colors z-10"
                       aria-label="Xóa tìm kiếm"
                     >
                       <X className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
@@ -235,7 +274,20 @@ const RoomsPage = () => {
         {/* Rooms Grid */}
         <section className="py-12 bg-gradient-subtle">
           <div className="container-luxury">
-            {filteredRooms.length > 0 ? (
+            {loading ? (
+              <RoomGridSkeleton count={8} />
+            ) : error ? (
+              <div className="text-center py-16">
+                <p className="text-lg text-destructive mb-4">{error}</p>
+                <Button
+                  onClick={() => {
+                    window.location.reload();
+                  }}
+                >
+                  Thử lại
+                </Button>
+              </div>
+            ) : filteredRooms.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
                 {filteredRooms.map((room, index) => (
                   <motion.div
@@ -244,7 +296,11 @@ const RoomsPage = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                   >
-                    <Link href={`/rooms/${room.id}`} className="block h-full">
+                    <Link 
+                      href={`/rooms/${encodeURIComponent(room.id)}`} 
+                      className="block h-full"
+                      onMouseEnter={() => prefetchRoom(room.id)}
+                    >
                       <GradientBorder containerClassName="relative h-full">
                         <FloatingCard
                           className="group overflow-hidden h-full bg-background rounded-xl border-0 backdrop-blur-none shadow-none hover:shadow-lg transition-shadow cursor-pointer"
@@ -269,7 +325,7 @@ const RoomsPage = () => {
                                 </Badge>
                               )}
                               <Badge variant="outline" className="bg-background/90 text-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm border-background/50">
-                                {categoryLabels[room.category]}
+                                {getCategoryLabel(room.category)}
                               </Badge>
                             </div>
 
@@ -279,13 +335,17 @@ const RoomsPage = () => {
                                 <div className="flex items-center gap-2 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-md">
                                   <div className="flex items-center gap-1">
                                     <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                    <span className="font-medium">{room.guests}</span>
-                                  </div>
-                                  <span className="text-white/60">•</span>
-                                  <div className="flex items-center gap-1">
-                                    <Bed className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                    <span className="hidden sm:inline">{room.size}</span>
-                                  </div>
+                                  <span className="font-medium">{room.guests}</span>
+                                </div>
+                                {room.size && (
+                                  <>
+                                    <span className="text-white/60">•</span>
+                                    <div className="flex items-center gap-1">
+                                      <Bed className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                      <span className="hidden sm:inline">{room.size}</span>
+                                    </div>
+                                  </>
+                                )}
                                 </div>
                               </div>
                             </div>
@@ -322,7 +382,7 @@ const RoomsPage = () => {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                window.location.href = `/rooms/${room.id}`;
+                                window.location.href = `/rooms/${encodeURIComponent(room.id)}`;
                               }}
                             >
                               Đặt Ngay
