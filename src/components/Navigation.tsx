@@ -16,8 +16,7 @@ const Navigation = () => {
   const navItems = [
     { name: "Trang Chủ", href: "/" },
     { name: "Phòng & Suites", href: "/rooms" },
-    { name: "Blog", href: "/blog" },
-    { name: "Tra Cứu Đặt Phòng", href: "/lookup" },
+    { name: "Chi Tiết Đặt Phòng", href: "/booking" },
   ];
 
   return (

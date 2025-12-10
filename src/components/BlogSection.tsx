@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Calendar, User, ArrowRight } from "lucide-react";
+import { useState } from "react";
+import { Calendar, User, ArrowRight, Clock } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -10,24 +10,89 @@ import { Badge } from "@/components/ui/badge";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { GradientBorder } from "@/components/ui/gradient-border";
-import { useBlogs } from "@/hooks/use-blogs";
-import { format } from "date-fns";
-import { vi } from "date-fns/locale";
 
 const BlogSection = () => {
-  const { blogs, isLoading } = useBlogs({ page: 1, limit: 6 });
+  const [selectedCategory, setSelectedCategory] = useState("Tất cả");
 
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return format(date, "dd MMM yyyy", { locale: vi });
-    } catch {
-      return dateString;
+  const blogPosts = [
+    {
+      id: 1,
+      title: "10 Trải Nghiệm Không Thể Bỏ Lỡ Tại Y Hotel",
+      excerpt: "Khám phá những trải nghiệm độc đáo và đáng nhớ nhất mà Y Hotel mang đến cho du khách từ khắp nơi trên thế giới.",
+      image: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
+      author: "Admin Y Hotel",
+      date: "15 Dec 2024",
+      category: "Kinh nghiệm",
+      readTime: "5 phút đọc",
+      featured: true
+    },
+    {
+      id: 2,
+      title: "Bí Quyết Tận Hưởng Kỳ Nghỉ Luxury Hoàn Hảo",
+      excerpt: "Hướng dẫn chi tiết về cách tận hưởng trọn vẹn kỳ nghỉ sang trọng tại Y Hotel với những dịch vụ cao cấp.",
+      image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?w=600",
+      author: "Travel Expert",
+      date: "12 Dec 2024",
+      category: "Du lịch",
+      readTime: "7 phút đọc",
+      featured: false
+    },
+    {
+      id: 3,
+      title: "Ẩm Thực Đỉnh Cao: Hành Trình Khám Phá Các Nhà Hàng",
+      excerpt: "Khám phá những món ăn tinh tế và độc đáo tại các nhà hàng sang trọng của Y Hotel.",
+      image: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600",
+      author: "Chef Y Hotel",
+      date: "10 Dec 2024",
+      category: "Ẩm thực",
+      readTime: "6 phút đọc",
+      featured: false
+    },
+    {
+      id: 4,
+      title: "Spa & Wellness: Hành Trình Tái Tạo Năng Lượng",
+      excerpt: "Trải nghiệm các liệu pháp spa và wellness độc đáo giúp bạn thư giãn và tái tạo năng lượng.",
+      image: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=600",
+      author: "Wellness Expert",
+      date: "8 Dec 2024",
+      category: "Wellness",
+      readTime: "4 phút đọc",
+      featured: false
+    },
+    {
+      id: 5,
+      title: "Sự Kiện Đặc Biệt: Gala Dinner Mùa Đông 2024",
+      excerpt: "Tham gia sự kiện Gala Dinner đặc biệt với menu cao cấp và chương trình giải trí hấp dẫn.",
+      image: "https://images.unsplash.com/photo-1543589077-47d81606c1bf?w=600",
+      author: "Event Manager",
+      date: "5 Dec 2024",
+      category: "Sự kiện",
+      readTime: "3 phút đọc",
+      featured: false
+    },
+    {
+      id: 6,
+      title: "Khám Phá Văn Hóa Địa Phương Xung Quanh Khách Sạn",
+      excerpt: "Tìm hiểu những điểm đến văn hóa thú vị và các trải nghiệm địa phương gần Y Hotel.",
+      image: "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=600",
+      author: "Local Guide",
+      date: "3 Dec 2024",
+      category: "Khám phá",
+      readTime: "8 phút đọc",
+      featured: false
     }
-  };
+  ];
 
-  const featuredPost = blogs.length > 0 ? blogs[0] : null;
-  const otherPosts = blogs.slice(1, 5); // Chỉ hiển thị 4 bài viết
+  const categories = ["Tất cả", "Kinh nghiệm", "Du lịch", "Ẩm thực", "Wellness", "Sự kiện", "Khám phá"];
+
+  const featuredPost = blogPosts.find(post => post.featured) || blogPosts[0];
+  const otherPosts = blogPosts.filter(post => !post.featured).slice(0, 2);
+
+  const filteredPosts = selectedCategory === "Tất cả" 
+    ? otherPosts 
+    : otherPosts.filter(post => post.category === selectedCategory);
+
+  const filteredFeatured = selectedCategory === "Tất cả" || featuredPost.category === selectedCategory;
 
   return (
     <section id="blog" className="py-12 md:py-20 bg-gradient-subtle">
@@ -40,215 +105,164 @@ const BlogSection = () => {
           transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
           viewport={{ once: true }}
         >
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground mb-6 whitespace-nowrap">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-black mb-3 md:mb-6">
             Blog & Tin Tức
           </h2>
-          <p className="text-base text-muted-foreground max-w-3xl mx-auto">
+          <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             Khám phá những câu chuyện thú vị, kinh nghiệm du lịch và cập nhật mới nhất từ Y Hotel
           </p>
         </motion.div>
 
-        {isLoading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="overflow-hidden">
-                <div className="h-32 md:h-48 lg:h-52 bg-muted animate-pulse" />
-                <CardContent className="p-2 md:p-3">
-                  <div className="h-3 md:h-4 bg-muted rounded animate-pulse mb-2" />
-                  <div className="h-2 md:h-3 bg-muted rounded animate-pulse w-3/4 mb-2" />
-                  <div className="h-6 md:h-8 bg-muted rounded animate-pulse w-full" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : blogs.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">Chưa có bài viết nào.</p>
-          </div>
-        ) : (
-          <>
-            {/* Featured Article Section */}
-            {featuredPost && (
+        {/* Category Filter Bar */}
+        <div className="flex flex-wrap justify-center gap-2 md:gap-3 mb-8 md:mb-12">
+          {categories.map((category) => (
+            <button
+              key={category}
+              onClick={() => setSelectedCategory(category)}
+              className={`px-4 py-2 rounded-full text-sm md:text-base font-medium transition-all duration-300 ${
+                selectedCategory === category
+                  ? "bg-primary text-primary-foreground shadow-lg"
+                  : "bg-background/60 text-foreground border border-primary/30 hover:border-primary/50"
+              }`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+
+        {/* Featured Article Section */}
+        {filteredFeatured && (
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true }}
             className="mb-8 md:mb-12"
           >
-              <Link href={`/blog/${featuredPost.slug}`} className="group/featured">
-                <GradientBorder containerClassName="relative">
-                  <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none hover:shadow-lg overflow-hidden cursor-pointer transition-shadow">
-                    <div className="flex flex-col md:flex-row gap-0">
-                      {/* Image Column */}
-                      <div className="relative overflow-hidden w-full md:w-1/3 h-48 md:h-auto">
-                        <img
-                          src={featuredPost.image || "/placeholder.svg"}
-                          alt={featuredPost.title}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            <Link href={`/blog/${featuredPost.id}`}>
+              <GradientBorder containerClassName="relative">
+                <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
+                  <div className="grid md:grid-cols-2 gap-0">
+                    {/* Image Column */}
+                    <div className="relative overflow-hidden h-64 md:h-auto">
+                      <img
+                        src={featuredPost.image}
+                        alt={featuredPost.title}
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Featured Badge - Top Left */}
+                      <Badge className="absolute top-4 left-4 z-10 bg-primary text-primary-foreground px-4 py-1.5 text-sm font-semibold">
+                        BÀI VIẾT NỔI BẬT
+                      </Badge>
+                    </div>
+                    
+                    {/* Content Column */}
+                    <div className="p-6 md:p-8 flex flex-col justify-between">
+                      <div>
+                        <Badge className="bg-primary/10 text-primary border-primary/20 mb-4">
+                          {featuredPost.category}
+                        </Badge>
                         
-                        {/* Featured Badge */}
-                        <div className="absolute top-4 left-4 z-10">
-                          <Badge className="bg-primary text-primary-foreground px-4 py-1.5 text-sm font-semibold">
-                            BÀI VIẾT NỔI BẬT
-                          </Badge>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            <span>{featuredPost.date}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <User className="w-4 h-4" />
+                            <span>{featuredPost.author}</span>
+                          </div>
                         </div>
+                        
+                        <h3 className="text-2xl md:text-3xl font-display font-bold text-foreground mb-4">
+                          {featuredPost.title}
+                        </h3>
+                        
+                        <p className="text-muted-foreground leading-relaxed mb-6">
+                          {featuredPost.excerpt}
+                        </p>
                       </div>
                       
-                      {/* Content Column */}
-                      <div className="p-6 md:p-8 flex flex-col justify-between flex-1">
-                        <div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
-                            <div className="flex items-center gap-1">
-                              <Calendar className="w-4 h-4" />
-                              <span>{formatDate(featuredPost.date)}</span>
-                            </div>
-                            {featuredPost.author && (
-                              <div className="flex items-center gap-1">
-                                <User className="w-4 h-4" />
-                                <span>{featuredPost.author.full_name}</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <h3 className="text-xl md:text-2xl lg:text-3xl font-display font-bold text-foreground mb-4">
-                            {featuredPost.title}
-                          </h3>
-                          
-                          {featuredPost.excerpt && (
-                            <p className="text-muted-foreground leading-relaxed mb-6 line-clamp-1">
-                              {featuredPost.excerpt}
-                            </p>
-                          )}
+                      <div className="flex items-center justify-between pt-4 border-t border-border">
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Clock className="w-4 h-4" />
+                          <span>{featuredPost.readTime}</span>
                         </div>
-                        
-                        <div className="flex items-center justify-end pt-4 border-t border-border">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="group/btn relative overflow-hidden border-primary/30 hover:border-primary hover:bg-primary/5 transition-all duration-300"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              window.location.href = `/blog/${featuredPost.slug}`;
-                            }}
-                          >
-                            <span className="relative z-10 flex items-center gap-2">
-                              Đọc Tiếp
-                              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
-                            </span>
-                            <span className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover/btn:opacity-100 transition-opacity duration-300" />
-                          </Button>
-                        </div>
+                        <ShimmerButton variant="luxury" size="sm">
+                          Đọc Tiếp →
+                        </ShimmerButton>
                       </div>
                     </div>
-                  </FloatingCard>
-                </GradientBorder>
-              </Link>
+                  </div>
+                </FloatingCard>
+              </GradientBorder>
+            </Link>
           </motion.div>
         )}
 
-            {/* Other Articles Grid - Responsive like Rooms */}
-            {otherPosts.length > 0 && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
-                {otherPosts.map((post, index) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, y: 50 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-                    viewport={{ once: true, margin: "-100px" }}
-                  >
-                    <Link href={`/blog/${post.slug}`} className="block h-full">
-                      <GradientBorder containerClassName="relative h-full">
-                        <FloatingCard 
-                          className="group overflow-hidden h-full bg-background rounded-xl border-0 backdrop-blur-none shadow-none hover:shadow-lg transition-shadow cursor-pointer"
-                          delay={0}
-                        >
-                          {/* Image */}
-                          <div className="relative overflow-hidden rounded-t-xl">
-                            <img
-                              src={post.image || "/placeholder.svg"}
-                              alt={post.title}
-                              className="w-full h-32 md:h-48 lg:h-52 object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                            
-                            {/* Badges */}
-                            <div className="absolute top-2 right-2 flex gap-1.5">
-                              <Badge className="bg-primary/95 text-primary-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm shadow-sm">
-                                Blog
-                              </Badge>
-                            </div>
-
-                            {/* Quick Info Overlay */}
-                            <div className="absolute bottom-2 left-2 right-2">
-                              <div className="flex items-center justify-between text-white text-xs sm:text-sm">
-                                <div className="flex items-center gap-2 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-md">
-                                  <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                  <span className="font-medium">{formatDate(post.date)}</span>
-                                </div>
-                              </div>
-                            </div>
+        {/* Other Articles Grid */}
+        {filteredPosts.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-3 md:gap-6 items-stretch">
+            {filteredPosts.map((post, index) => (
+              <Link key={post.id} href={`/blog/${post.id}`} className="h-full">
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                  viewport={{ once: true }}
+                  className="h-full"
+                >
+                  <GradientBorder containerClassName="relative h-full">
+                    <FloatingCard className="group overflow-hidden h-full bg-background rounded-xl border-0 backdrop-blur-none shadow-none hover:shadow-lg transition-shadow cursor-pointer flex flex-col">
+                      {/* Image */}
+                      <div className="relative overflow-hidden">
+                        <img
+                          src={post.image}
+                          alt={post.title}
+                          className="w-full h-32 md:h-44 object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                        />
+                        <Badge className="absolute top-2 left-2 md:top-3 md:left-3 bg-primary text-primary-foreground text-[10px] md:text-xs px-1.5 md:px-2 py-0.5">
+                          {post.category}
+                        </Badge>
+                      </div>
+                      
+                      {/* Content */}
+                      <CardContent className="p-2.5 md:p-4 flex flex-col flex-1">
+                        <div className="flex items-center gap-1.5 md:gap-3 text-[10px] md:text-xs text-muted-foreground mb-1.5 md:mb-2">
+                          <div className="flex items-center gap-0.5 md:gap-1">
+                            <Calendar className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                            <span className="line-clamp-1">{post.date}</span>
                           </div>
-
-                          <CardContent className="p-2 md:p-3 flex flex-col flex-1">
-                            {/* Title */}
-                            <h3 className="text-xs md:text-base lg:text-lg font-display font-semibold text-foreground mb-1 line-clamp-1 group-hover:text-primary transition-colors">
-                              {post.title}
-                            </h3>
-
-                            {/* Excerpt - Single line */}
-                            {post.excerpt && (
-                              <p className="text-xs md:text-sm text-muted-foreground mb-1.5 line-clamp-1">
-                                {post.excerpt}
-                              </p>
-                            )}
-
-                            {/* Action Button */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-full mt-auto group/readmore text-[10px] md:text-sm py-1 md:py-1.5 h-auto hover:bg-primary/5 hover:text-primary transition-all duration-300"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                window.location.href = `/blog/${post.slug}`;
-                              }}
-                            >
-                              <span className="flex items-center justify-center gap-1.5">
-                                <span>Đọc thêm</span>
-                                <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5 transition-transform duration-300 group-hover/readmore:translate-x-0.5 opacity-70 group-hover/readmore:opacity-100" />
-                              </span>
-                            </Button>
-                          </CardContent>
-                        </FloatingCard>
-                      </GradientBorder>
-                    </Link>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-
-            {/* View All Button */}
-            {blogs.length > 0 && (
-              <motion.div 
-                className="text-center mt-12"
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.2 }}
-                viewport={{ once: true, margin: "-100px" }}
-              >
-                <Link href="/blog">
-                  <ShimmerButton variant="luxury" size="lg" className="px-8">
-                    Xem Tất Cả Bài Viết
-                  </ShimmerButton>
-                </Link>
-              </motion.div>
-            )}
-          </>
+                          <div className="flex items-center gap-0.5 md:gap-1">
+                            <User className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                            <span className="line-clamp-1">{post.author}</span>
+                          </div>
+                        </div>
+                        
+                        <h3 className="text-xs md:text-base font-display font-semibold text-foreground mb-1 md:mb-1.5 line-clamp-2">
+                          {post.title}
+                        </h3>
+                        
+                        <p className="text-[10px] md:text-sm text-muted-foreground mb-2 md:mb-2.5 line-clamp-2 flex-1">
+                          {post.excerpt}
+                        </p>
+                        
+                        <div className="flex items-center justify-between pt-1.5 md:pt-2 border-t border-border mt-auto">
+                          <div className="flex items-center gap-0.5 md:gap-1 text-[10px] md:text-xs text-muted-foreground">
+                            <Clock className="w-2.5 h-2.5 md:w-3 md:h-3" />
+                            <span>{post.readTime}</span>
+                          </div>
+                          <ShimmerButton variant="luxury" size="sm" className="text-[10px] md:text-xs px-1.5 md:px-3 py-0.5 md:py-1">
+                            Đọc tiếp →
+                          </ShimmerButton>
+                        </div>
+                      </CardContent>
+                    </FloatingCard>
+                  </GradientBorder>
+                </motion.div>
+              </Link>
+            ))}
+          </div>
         )}
       </div>
     </section>

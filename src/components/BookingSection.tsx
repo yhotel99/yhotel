@@ -1,9 +1,7 @@
 "use client";
 
-import { useState, Suspense, useMemo } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { useRooms } from "@/hooks/use-rooms";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Calendar as CalendarIcon, Users, MapPin, Phone } from "lucide-react";
@@ -36,60 +34,19 @@ const BookingSectionContent = () => {
     phone: "",
     specialRequests: ""
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Get room types from database
-  const { data: categories = [] } = useQuery({
-    queryKey: ['room-types'],
-    queryFn: async () => {
-      const response = await fetch('/api/rooms/categories');
-      if (!response.ok) return [];
-      return response.json();
-    },
-    staleTime: 1000 * 60 * 10,
-  });
-  
-  const { data: allRooms = [] } = useRooms();
-  
-  // Calculate average price per room type
-  const roomTypes = useMemo(() => {
-    const typesMap: Record<string, { price: number; count: number }> = {};
-    
-    allRooms.forEach((room) => {
-      const type = room.category || 'standard';
-      // Parse price from string format (e.g., "1,500,000")
-      const price = typeof room.price === 'string' 
-        ? parseInt(room.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) || 0
-        : 0;
-      
-      if (!typesMap[type]) {
-        typesMap[type] = { price: 0, count: 0 };
-      }
-      
-      typesMap[type].price += price;
-      typesMap[type].count += 1;
-    });
-    
-    return categories
-      .filter((c: { value: string }) => c.value !== 'all')
-      .map((cat: { value: string; label?: string }) => {
-        const avgPrice = typesMap[cat.value]?.count > 0
-          ? Math.round(typesMap[cat.value].price / typesMap[cat.value].count)
-          : 0;
-        
-        return {
-          value: cat.value,
-          label: `Phòng ${cat.label} - ${avgPrice.toLocaleString('vi-VN')}đ/đêm`,
-          price: avgPrice.toLocaleString('vi-VN'),
-        };
-      });
-  }, [categories, allRooms]);
+  const roomTypes = [
+    { value: "standard", label: "Phòng Standard - 1,500,000đ/đêm", price: "1,500,000" },
+    { value: "deluxe", label: "Phòng Deluxe - 2,200,000đ/đêm", price: "2,200,000" },
+    { value: "suite", label: "Phòng Suite - 3,500,000đ/đêm", price: "3,500,000" },
+    { value: "presidential", label: "Phòng Presidential - 5,000,000đ/đêm", price: "5,000,000" }
+  ];
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
     // Basic validation
@@ -102,78 +59,30 @@ const BookingSectionContent = () => {
       return;
     }
 
-    setIsSubmitting(true);
+    // Calculate total guests
+    const totalGuests = parseInt(formData.adults) + parseInt(formData.children);
 
-    try {
-      // Calculate total guests
-      const totalGuests = parseInt(formData.adults) + parseInt(formData.children);
+    // Format dates for URL
+    const checkInStr = format(formData.checkIn, "yyyy-MM-dd");
+    const checkOutStr = format(formData.checkOut, "yyyy-MM-dd");
 
-      // Format dates as ISO timestamps according to SCHEMAS.md
-      const checkInDate = new Date(formData.checkIn);
-      checkInDate.setHours(14, 0, 0, 0); // Default check-in time 14:00
-      const checkOutDate = new Date(formData.checkOut);
-      checkOutDate.setHours(12, 0, 0, 0); // Default check-out time 12:00
+    // Build query params for checkout page
+    const params = new URLSearchParams({
+      checkIn: checkInStr,
+      checkOut: checkOutStr,
+      adults: formData.adults,
+      children: formData.children,
+      guests: totalGuests.toString(),
+      roomType: formData.roomType,
+      fullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      ...(formData.specialRequests && { specialRequests: formData.specialRequests }),
+      ...(roomIdFromUrl && { roomId: roomIdFromUrl }),
+    });
 
-      // Prepare booking data
-      const bookingData = {
-        check_in: checkInDate.toISOString(),
-        check_out: checkOutDate.toISOString(),
-        total_guests: totalGuests,
-        customer_name: formData.fullName,
-        customer_email: formData.email,
-        customer_phone: formData.phone,
-        ...(formData.specialRequests && { notes: formData.specialRequests }),
-        ...(formData.roomType && { roomType: formData.roomType }),
-        ...(roomIdFromUrl && { room_id: roomIdFromUrl }),
-      };
-
-      // Call API to create booking
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookingData),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Không thể tạo booking');
-      }
-
-      // Success - redirect to checkout page
-      const bookingId = result.booking?.id || result.booking_id;
-      if (bookingId) {
-        router.push(`/checkout?booking_id=${bookingId}`);
-      } else {
-        toast({
-          title: "Đặt phòng thành công!",
-          description: result.message || "Chúng tôi đã nhận được yêu cầu đặt phòng của bạn.",
-        });
-        // Reset form
-        setFormData({
-          checkIn: undefined,
-          checkOut: undefined,
-          adults: "1",
-          children: "0",
-          roomType: "",
-          fullName: "",
-          email: "",
-          phone: "",
-          specialRequests: ""
-        });
-      }
-    } catch (error) {
-      console.error('Error creating booking:', error);
-      toast({
-        title: "Đặt phòng thất bại",
-        description: error instanceof Error ? error.message : "Đã xảy ra lỗi. Vui lòng thử lại sau hoặc liên hệ trực tiếp với khách sạn.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
+    // Redirect to checkout page
+    router.push(`/checkout?${params.toString()}`);
   };
 
   return (
@@ -381,14 +290,8 @@ const BookingSectionContent = () => {
                     />
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    variant="luxury" 
-                    size="lg" 
-                    className="w-full text-base py-3"
-                    disabled={isSubmitting}
-                  >
-                    {isSubmitting ? "Đang xử lý..." : "Đặt Phòng Ngay"}
+                  <Button type="submit" variant="luxury" size="lg" className="w-full text-base py-3">
+                    Đặt Phòng Ngay
                   </Button>
                 </form>
               </CardContent>
