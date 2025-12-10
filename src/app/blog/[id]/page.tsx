@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import React, { use, useMemo } from "react";
 import { notFound } from "next/navigation";
 import { motion } from "framer-motion";
 import { Calendar, User, Clock, ArrowLeft, Tag, Share2 } from "lucide-react";
@@ -28,7 +28,7 @@ const MarkdownContent = ({ content }: { content: string }) => {
     }
     // Split content by lines
     const lines = content.split('\n');
-    const result: JSX.Element[] = [];
+    const result: React.ReactElement[] = [];
     let currentList: string[] = [];
     let listKey = 0;
     let elementKey = 0;
