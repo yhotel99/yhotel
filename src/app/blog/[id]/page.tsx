@@ -3,30 +3,100 @@
 import { use, useMemo } from "react";
 import { notFound } from "next/navigation";
 import { motion } from "framer-motion";
-import { Calendar, User, Clock, ArrowLeft, Tag, Share2 } from "lucide-react";
+import { Calendar, User, ArrowLeft, ArrowRight, Tag, Share2 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CardContent } from "@/components/ui/card";
-import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { GradientBorder } from "@/components/ui/gradient-border";
+import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
 import { useScrollThreshold } from "@/hooks/use-scroll";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { getBlogPostById, getRelatedPosts } from "@/data/blog";
+import { useBlog, useBlogs } from "@/hooks/use-blogs";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 
 interface BlogDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-// Component để render markdown content đơn giản
+// Component để render HTML content từ Tiptap editor hoặc markdown
 const MarkdownContent = ({ content }: { content: string }) => {
-  const elements = useMemo(() => {
+  // Process HTML content from Tiptap
+  const processedHTML = useMemo(() => {
     if (!content || !content.trim()) {
-      return [];
+      return null;
     }
-    // Split content by lines
+
+    // Check if content contains HTML tags
+    const hasHTML = /<[a-z][\s\S]*>/i.test(content);
+    
+    if (!hasHTML) {
+      return null; // Not HTML, will use markdown parser
+    }
+    
+    // Content is HTML from Tiptap editor
+    let html = content;
+    
+    // Ensure images have proper styling (preserve existing classes if any)
+    html = html.replace(
+      /<img([^>]*?)(?:\s+class="[^"]*")?([^>]*)>/gi,
+      (match, before, after) => {
+        const hasClass = /class="/i.test(match);
+        if (hasClass) {
+          return match.replace(/class="([^"]*)"/i, 'class="$1 max-w-full h-auto rounded-lg my-4 shadow-md"');
+        }
+        return `<img${before}${after} class="max-w-full h-auto rounded-lg my-4 shadow-md" loading="lazy">`;
+      }
+    );
+    
+    // Ensure paragraphs have proper styling
+    html = html.replace(
+      /<p([^>]*?)(?:\s+class="[^"]*")?([^>]*)>/gi,
+      (match) => {
+        if (/class="/i.test(match)) {
+          return match.replace(/class="([^"]*)"/i, 'class="$1 text-muted-foreground leading-relaxed mb-6 text-base md:text-lg"');
+        }
+        return match.replace(/<p([^>]*)>/i, '<p$1 class="text-muted-foreground leading-relaxed mb-6 text-base md:text-lg">');
+      }
+    );
+    
+    // Style headings
+    html = html.replace(/<h1([^>]*)>/gi, '<h1$1 class="text-3xl md:text-4xl font-display font-bold text-foreground mt-12 mb-6 first:mt-0">');
+    html = html.replace(/<h2([^>]*)>/gi, '<h2$1 class="text-2xl md:text-3xl font-display font-bold text-foreground mt-10 mb-5">');
+    html = html.replace(/<h3([^>]*)>/gi, '<h3$1 class="text-xl md:text-2xl font-display font-semibold text-foreground mt-8 mb-4">');
+    
+    // Style lists
+    html = html.replace(/<ul([^>]*)>/gi, '<ul$1 class="list-disc ml-6 mb-6 space-y-2 text-muted-foreground">');
+    html = html.replace(/<ol([^>]*)>/gi, '<ol$1 class="list-decimal ml-6 mb-6 space-y-2 text-muted-foreground">');
+    html = html.replace(/<li([^>]*)>/gi, '<li$1 class="leading-relaxed">');
+    
+    // Style strong and em
+    html = html.replace(/<strong([^>]*)>/gi, '<strong$1 class="font-semibold text-foreground">');
+    html = html.replace(/<em([^>]*)>/gi, '<em$1 class="italic">');
+    
+    // Style links
+    html = html.replace(/<a([^>]*)>/gi, '<a$1 class="text-primary hover:underline" target="_blank" rel="noopener noreferrer">');
+    
+    // Style blockquotes
+    html = html.replace(/<blockquote([^>]*)>/gi, '<blockquote$1 class="border-l-4 border-primary pl-4 my-6 italic text-muted-foreground">');
+    
+    // Style code blocks
+    html = html.replace(/<pre([^>]*)>/gi, '<pre$1 class="bg-muted p-4 rounded-lg overflow-x-auto my-4 text-sm">');
+    html = html.replace(/<code([^>]*)>/gi, '<code$1 class="bg-muted px-1 py-0.5 rounded text-sm font-mono">');
+    
+    return html;
+  }, [content]);
+
+  // Render markdown if not HTML
+  const markdownElements = useMemo(() => {
+    if (!content || !content.trim() || processedHTML) {
+      return null; // Empty or HTML content
+    }
+
+    // Content is plain text or markdown
     const lines = content.split('\n');
     const result: JSX.Element[] = [];
     let currentList: string[] = [];
@@ -51,13 +121,11 @@ const MarkdownContent = ({ content }: { content: string }) => {
     lines.forEach((line) => {
       const trimmedLine = line.trim();
       
-      // Skip empty lines
       if (!trimmedLine) {
         flushList();
         return;
       }
       
-      // Handle headings
       if (trimmedLine.startsWith('# ')) {
         flushList();
         result.push(
@@ -86,16 +154,13 @@ const MarkdownContent = ({ content }: { content: string }) => {
         return;
       }
       
-      // Handle list items
       if (trimmedLine.startsWith('- ')) {
         currentList.push(trimmedLine.substring(2).trim());
         return;
       }
       
-      // Flush list if we encounter non-list item
       flushList();
       
-      // Handle bold text and regular paragraphs
       if (trimmedLine.includes('**')) {
         const parts = trimmedLine.split('**');
         result.push(
@@ -110,7 +175,6 @@ const MarkdownContent = ({ content }: { content: string }) => {
           </p>
         );
       } else if (trimmedLine) {
-        // Regular paragraph
         result.push(
           <p key={`p-${elementKey++}`} className="text-muted-foreground leading-relaxed mb-6 text-base md:text-lg">
             {trimmedLine}
@@ -119,34 +183,91 @@ const MarkdownContent = ({ content }: { content: string }) => {
       }
     });
     
-    // Flush any remaining list
     flushList();
     
-    return result;
-  }, [content]);
+    return result.length > 0 ? result : null;
+  }, [content, processedHTML]);
 
-  if (elements.length === 0) {
+  if (!content || !content.trim()) {
     return <p className="text-muted-foreground">Nội dung đang được cập nhật...</p>;
   }
+
+  // Render HTML content
+  if (processedHTML) {
+    return (
+      <div 
+        className="prose prose-lg max-w-none blog-content"
+        dangerouslySetInnerHTML={{ __html: processedHTML }}
+      />
+    );
+  }
   
-  return (
-    <div className="prose prose-lg max-w-none">
-      {elements}
-    </div>
-  );
+  // Render markdown content
+  if (markdownElements) {
+    return (
+      <div className="prose prose-lg max-w-none">
+        {markdownElements}
+      </div>
+    );
+  }
+  
+  return <p className="text-muted-foreground">Nội dung đang được cập nhật...</p>;
 };
 
 const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
   const { id } = use(params);
-  const postId = parseInt(id);
-  const post = getBlogPostById(postId);
+  const { blog: post, isLoading, error } = useBlog(id);
   const isScrolled = useScrollThreshold(100);
+  
+  // Helper functions
+  const formatDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return format(date, "dd MMM yyyy", { locale: vi });
+    } catch {
+      return dateString;
+    }
+  };
 
-  if (!post) {
-    notFound();
+  // Fetch related posts
+  const { blogs: allBlogs } = useBlogs({ page: 1, limit: 100 });
+  const relatedPosts = useMemo(() => {
+    if (!post || !allBlogs) return [];
+    return allBlogs
+      .filter((b) => b.id !== post.id)
+      .slice(0, 8)
+      .map((b) => ({
+        id: b.id,
+        slug: b.slug,
+        title: b.title,
+        excerpt: b.excerpt || "",
+        image: b.image || "/placeholder.svg",
+        date: formatDate(b.date),
+        category: "Blog",
+      }));
+  }, [post, allBlogs]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-luxury-gradient">
+        <Navigation />
+        <main className="pt-14 lg:pt-16">
+          <div className="container-luxury py-12">
+            <div className="animate-pulse space-y-4">
+              <div className="h-64 bg-muted rounded" />
+              <div className="h-8 bg-muted rounded w-3/4" />
+              <div className="h-4 bg-muted rounded w-1/2" />
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
-  const relatedPosts = getRelatedPosts(postId, 3);
+  if (error || !post) {
+    notFound();
+  }
 
   const handleShare = () => {
     if (navigator.share) {
@@ -169,7 +290,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
         {/* Hero Image */}
         <section className="relative h-[50vh] md:h-[60vh] overflow-hidden">
           <motion.img
-            src={post.image}
+            src={post.image || "/placeholder.svg"}
             alt={post.title}
             className="w-full h-full object-cover"
             initial={{ scale: 1.1 }}
@@ -180,7 +301,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
           
           {/* Back Button */}
           <div className="absolute top-4 left-4 z-10">
-            <Link href="/#blog">
+            <Link href="/blog">
               <Button variant="secondary" size="sm" className="gap-2 backdrop-blur-sm bg-background/80">
                 <ArrowLeft className="w-4 h-4" />
                 Quay lại
@@ -198,7 +319,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
             transition={{ duration: 0.3 }}
             className={`fixed top-20 left-4 z-40 ${isScrolled ? 'pointer-events-auto' : 'pointer-events-none'}`}
           >
-            <Link href="/#blog">
+            <Link href="/blog">
               <Button 
                 variant="secondary" 
                 size="sm" 
@@ -219,17 +340,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                 transition={{ delay: 0.2 }}
               >
                 <div className="flex items-center gap-3 mb-4 flex-wrap">
-                  <Badge className="bg-primary text-white">{post.category}</Badge>
-                  {post.featured && (
-                    <Badge className="bg-yellow-500 text-white">
-                      Bài viết nổi bật
-                    </Badge>
-                  )}
-                  {post.tags && post.tags.map((tag, index) => (
-                    <Badge key={index} variant="outline" className="bg-white/20 text-white border-white/30">
-                      {tag}
-                    </Badge>
-                  ))}
+                  <Badge className="bg-primary text-white">Blog</Badge>
                 </div>
                 <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold mb-4">
                   {post.title}
@@ -237,16 +348,14 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                 <div className="flex flex-wrap items-center gap-6 text-sm md:text-base">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
-                    <span>{post.date}</span>
+                    <span>{formatDate(post.date)}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    <span>{post.author}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    <span>{post.readTime}</span>
-                  </div>
+                  {post.author && (
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      <span>{post.author.full_name}</span>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             </div>
@@ -298,22 +407,6 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                           )}
                         </div>
 
-                        {/* Tags */}
-                        {post.tags && post.tags.length > 0 && (
-                          <div className="mt-8 pt-6 border-t border-border">
-                            <div className="flex items-center gap-2 mb-4">
-                              <Tag className="w-5 h-5 text-muted-foreground" />
-                              <span className="font-semibold text-foreground">Tags:</span>
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                              {post.tags.map((tag, index) => (
-                                <Badge key={index} variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          </div>
-                        )}
                       </CardContent>
                     </FloatingCard>
                   </GradientBorder>
@@ -329,46 +422,83 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                     className="mt-8"
                   >
                     <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold mb-6">Bài viết liên quan</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {relatedPosts.map((relatedPost) => (
-                        <Link key={relatedPost.id} href={`/blog/${relatedPost.id}`}>
-                          <GradientBorder containerClassName="relative h-full">
-                            <FloatingCard className="group overflow-hidden h-full bg-background rounded-xl border-0 backdrop-blur-none shadow-none hover:shadow-none">
-                              <div className="relative overflow-hidden">
-                                <img
-                                  src={relatedPost.image}
-                                  alt={relatedPost.title}
-                                  className="w-full h-40 md:h-44 object-cover transition-transform duration-500 group-hover:scale-110"
-                                />
-                                <Badge className="absolute top-3 left-3 bg-primary text-primary-foreground">
-                                  {relatedPost.category}
-                                </Badge>
-                              </div>
-                              <CardContent className="p-4 flex flex-col h-full">
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                                  <Calendar className="w-3 h-3" />
-                                  <span>{relatedPost.date}</span>
-                                </div>
-                                <h3 className="text-sm md:text-lg font-display font-semibold text-foreground mb-2 line-clamp-2">
-                                  {relatedPost.title}
-                                </h3>
-                                <p className="text-sm text-muted-foreground mb-4 line-clamp-2 flex-grow">
-                                  {relatedPost.excerpt}
-                                </p>
-                                <div className="flex items-center justify-between pt-2 border-t border-border">
-                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                    <Clock className="w-3 h-3" />
-                                    <span>{relatedPost.readTime}</span>
-                                  </div>
-                                  <ShimmerButton variant="luxury" size="sm" className="text-xs px-3 py-1">
-                                    Đọc tiếp →
-                                  </ShimmerButton>
-                                </div>
-                              </CardContent>
-                            </FloatingCard>
-                          </GradientBorder>
-                        </Link>
-                      ))}
+                    <div className="overflow-visible relative -mx-4 sm:-mx-6 lg:-mx-8">
+                      <Carousel
+                        opts={{
+                          align: "start",
+                          loop: false,
+                        }}
+                        className="w-full"
+                      >
+                        <CarouselContent className="ml-2 md:ml-4 pr-4 md:pr-8">
+                          {relatedPosts.map((relatedPost) => (
+                            <CarouselItem
+                              key={relatedPost.id}
+                              className="pl-2 md:pl-4 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4"
+                            >
+                              <Link href={`/blog/${relatedPost.slug}`} className="block h-full">
+                                <GradientBorder containerClassName="relative h-full">
+                                  <FloatingCard className="group overflow-hidden h-full bg-background rounded-xl border-0 backdrop-blur-none shadow-none hover:shadow-lg transition-shadow cursor-pointer">
+                                    <div className="relative overflow-hidden rounded-t-xl">
+                                      <img
+                                        src={relatedPost.image}
+                                        alt={relatedPost.title}
+                                        className="w-full h-32 md:h-48 lg:h-52 object-cover transition-transform duration-500 group-hover:scale-110"
+                                      />
+                                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+                                      
+                                      {/* Badges */}
+                                      <div className="absolute top-2 right-2 flex gap-1.5">
+                                        <Badge className="bg-primary/95 text-primary-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm shadow-sm">
+                                          {relatedPost.category}
+                                        </Badge>
+                                      </div>
+
+                                      {/* Quick Info Overlay */}
+                                      <div className="absolute bottom-2 left-2 right-2">
+                                        <div className="flex items-center justify-between text-white text-xs sm:text-sm">
+                                          <div className="flex items-center gap-1.5 bg-black/50 backdrop-blur-md px-2.5 py-1.5 rounded-lg shadow-lg border border-white/10">
+                                            <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 flex-shrink-0" />
+                                            <span className="font-medium text-white/95">{relatedPost.date}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    <CardContent className="p-2 md:p-3 flex flex-col flex-1">
+                                      <h3 className="text-xs md:text-base lg:text-lg font-display font-semibold text-foreground mb-1 line-clamp-1 group-hover:text-primary transition-colors">
+                                        {relatedPost.title}
+                                      </h3>
+                                      {relatedPost.excerpt && (
+                                        <p className="text-xs md:text-sm text-muted-foreground mb-1.5 line-clamp-1">
+                                          {relatedPost.excerpt}
+                                        </p>
+                                      )}
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full mt-auto group/readmore text-[10px] md:text-sm py-1 md:py-1.5 h-auto hover:bg-primary/5 hover:text-primary transition-all duration-300"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          window.location.href = `/blog/${relatedPost.slug}`;
+                                        }}
+                                      >
+                                        <span className="flex items-center justify-center gap-1.5">
+                                          <span>Đọc thêm</span>
+                                          <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5 transition-transform duration-300 group-hover/readmore:translate-x-0.5 opacity-70 group-hover/readmore:opacity-100" />
+                                        </span>
+                                      </Button>
+                                    </CardContent>
+                                  </FloatingCard>
+                                </GradientBorder>
+                              </Link>
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                      </Carousel>
+                      
+                      {/* Swipe indicator - Gradient fade */}
+                      <div className="absolute right-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-l from-background/60 via-background/30 to-transparent pointer-events-none" />
                     </div>
                   </motion.div>
                 )}
@@ -387,18 +517,20 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                     <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
                       <CardContent className="p-6">
                         {/* Author Section */}
-                        <div className="mb-6 pb-6 border-b border-border">
-                          <h3 className="text-lg font-display font-bold mb-4">Tác giả</h3>
-                          <div className="flex items-center gap-3">
-                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                              <User className="w-6 h-6 text-primary" />
-                            </div>
-                            <div>
-                              <p className="font-semibold text-foreground">{post.author}</p>
-                              <p className="text-sm text-muted-foreground">{post.category}</p>
+                        {post.author && (
+                          <div className="mb-6 pb-6 border-b border-border">
+                            <h3 className="text-lg font-display font-bold mb-4">Tác giả</h3>
+                            <div className="flex items-center gap-3">
+                              <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                <User className="w-6 h-6 text-primary" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-foreground">{post.author.full_name}</p>
+                                <p className="text-sm text-muted-foreground">{post.author.email}</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )}
 
                         {/* Post Info Section */}
                         <div>
@@ -407,20 +539,22 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                             <div className="flex items-center gap-2 text-sm">
                               <Calendar className="w-4 h-4 text-muted-foreground" />
                               <span className="text-muted-foreground">Ngày đăng:</span>
-                              <span className="font-medium text-foreground">{post.date}</span>
+                              <span className="font-medium text-foreground">{formatDate(post.date)}</span>
                             </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Clock className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">Thời gian đọc:</span>
-                              <span className="font-medium text-foreground">{post.readTime}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <Tag className="w-4 h-4 text-muted-foreground" />
-                              <span className="text-muted-foreground">Danh mục:</span>
-                              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                                {post.category}
-                              </Badge>
-                            </div>
+                            {post.author && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <User className="w-4 h-4 text-muted-foreground" />
+                                <span className="text-muted-foreground">Tác giả:</span>
+                                <span className="font-medium text-foreground">{post.author.full_name}</span>
+                              </div>
+                            )}
+                            {post.excerpt && (
+                              <div className="pt-2 border-t border-border">
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                  {post.excerpt}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </CardContent>
