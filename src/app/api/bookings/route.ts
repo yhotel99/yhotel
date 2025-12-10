@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 import { PAYMENT_TYPE, PAYMENT_METHOD, PAYMENT_STATUS } from '@/lib/constants';
 
+// Mark as dynamic route since we use request.url for query params
+export const dynamic = 'force-dynamic';
+
 /**
  * GET endpoint to fetch bookings list
  * Supports pagination and search (same as dashboard)

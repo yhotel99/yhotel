@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 
+// Mark as dynamic route since we use request.url for query params
+export const dynamic = 'force-dynamic';
+
 // Cache for 5 minutes
 export const revalidate = 300;
 
