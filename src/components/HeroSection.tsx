@@ -1,11 +1,44 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "framer-motion";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarIcon, Search } from "lucide-react";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import heroImage from "@/assets/hero-hotel.jpg";
 
 const HeroSection = () => {
+  const router = useRouter();
+  const [checkIn, setCheckIn] = useState<Date | undefined>(undefined);
+  const [checkOut, setCheckOut] = useState<Date | undefined>(undefined);
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+
+  const handleCheckAvailable = () => {
+    if (!checkIn || !checkOut) {
+      return;
+    }
+
+    // Format dates as ISO timestamps
+    const checkInDate = new Date(checkIn);
+    checkInDate.setHours(14, 0, 0, 0); // Default check-in time 14:00
+    const checkOutDate = new Date(checkOut);
+    checkOutDate.setHours(12, 0, 0, 0); // Default check-out time 12:00
+
+    // Navigate to rooms page with query params
+    const params = new URLSearchParams({
+      check_in: checkInDate.toISOString(),
+      check_out: checkOutDate.toISOString(),
+    });
+
+    router.push(`/rooms?${params.toString()}`);
+    setIsPopoverOpen(false);
+  };
+
   return (
     <section id="home" className="relative min-h-[70vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -74,16 +107,123 @@ const HeroSection = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Link href="/rooms">
-                <Button variant="luxury" size="lg" className="text-lg px-8 py-6 hover:shadow-glow">
-                  Đặt Phòng Ngay
-                </Button>
-              </Link>
+              <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="luxury" 
+                    size="lg" 
+                    className="text-lg px-8 py-6 hover:shadow-glow"
+                  >
+                    <Search className="mr-2 h-5 w-5" />
+                    Kiểm Tra Phòng Trống
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-6" align="center">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-lg">Chọn ngày</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Chọn ngày nhận phòng và ngày trả phòng
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="flex items-center gap-2 mb-2 text-sm font-medium">
+                          <CalendarIcon className="w-4 h-4" />
+                          Ngày nhận phòng
+                        </label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !checkIn && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {checkIn ? (
+                                format(checkIn, "dd/MM/yyyy", { locale: vi })
+                              ) : (
+                                <span>Chọn ngày</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={checkIn}
+                              onSelect={(date) => {
+                                setCheckIn(date);
+                                if (date && checkOut && checkOut <= date) {
+                                  setCheckOut(undefined);
+                                }
+                              }}
+                              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div>
+                        <label className="flex items-center gap-2 mb-2 text-sm font-medium">
+                          <CalendarIcon className="w-4 h-4" />
+                          Ngày trả phòng
+                        </label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className={cn(
+                                "w-full justify-start text-left font-normal",
+                                !checkOut && "text-muted-foreground"
+                              )}
+                              disabled={!checkIn}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {checkOut ? (
+                                format(checkOut, "dd/MM/yyyy", { locale: vi })
+                              ) : (
+                                <span>Chọn ngày</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={checkOut}
+                              onSelect={(date) => setCheckOut(date)}
+                              disabled={(date) => {
+                                const today = new Date(new Date().setHours(0, 0, 0, 0));
+                                if (checkIn) {
+                                  return date <= checkIn || date < today;
+                                }
+                                return date < today;
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleCheckAvailable}
+                      disabled={!checkIn || !checkOut}
+                      className="w-full"
+                      variant="luxury"
+                    >
+                      <Search className="mr-2 h-4 w-4" />
+                      Tìm phòng trống
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </motion.div>
           </motion.div>
         </div>
       </div>
-
     </section>
   );
 };

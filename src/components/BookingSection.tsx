@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRooms } from "@/hooks/use-rooms";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { Calendar as CalendarIcon, Users, MapPin, Phone } from "lucide-react";
+import { Calendar as CalendarIcon, Users, MapPin, Phone, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import type { RoomResponse } from "@/types/database";
 
 const BookingSectionContent = () => {
   const router = useRouter();
@@ -37,6 +40,9 @@ const BookingSectionContent = () => {
     specialRequests: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckAvailableOpen, setIsCheckAvailableOpen] = useState(false);
+  const [isCheckingAvailable, setIsCheckingAvailable] = useState(false);
+  const [availableRooms, setAvailableRooms] = useState<RoomResponse[]>([]);
 
   // Get room types from database
   const { data: categories = [] } = useQuery({
@@ -87,6 +93,64 @@ const BookingSectionContent = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCheckAvailable = async () => {
+    if (!formData.checkIn || !formData.checkOut) {
+      toast({
+        title: "Vui lòng chọn ngày",
+        description: "Bạn cần chọn ngày nhận phòng và ngày trả phòng trước",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsCheckingAvailable(true);
+    setAvailableRooms([]);
+    setIsCheckAvailableOpen(true);
+
+    try {
+      // Format dates as ISO timestamps
+      const checkInDate = new Date(formData.checkIn);
+      checkInDate.setHours(14, 0, 0, 0); // Default check-in time 14:00
+      const checkOutDate = new Date(formData.checkOut);
+      checkOutDate.setHours(12, 0, 0, 0); // Default check-out time 12:00
+
+      const response = await fetch(
+        `/api/rooms/available?check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}`
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Không thể kiểm tra phòng trống');
+      }
+
+      const rooms = await response.json();
+      setAvailableRooms(rooms);
+
+      if (rooms.length === 0) {
+        toast({
+          title: "Không có phòng trống",
+          description: "Không tìm thấy phòng trống trong khoảng thời gian đã chọn",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Tìm thấy phòng trống",
+          description: `Có ${rooms.length} phòng trống trong khoảng thời gian này`,
+        });
+      }
+    } catch (error) {
+      console.error('Error checking available rooms:', error);
+      toast({
+        title: "Lỗi kiểm tra phòng trống",
+        description: error instanceof Error ? error.message : "Đã xảy ra lỗi. Vui lòng thử lại sau.",
+        variant: "destructive",
+      });
+      setAvailableRooms([]);
+    } finally {
+      setIsCheckingAvailable(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -280,6 +344,31 @@ const BookingSectionContent = () => {
                     </div>
                   </div>
 
+                  {/* Check Available Rooms Button */}
+                  {formData.checkIn && formData.checkOut && (
+                    <div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleCheckAvailable}
+                        disabled={isCheckingAvailable}
+                        className="w-full"
+                      >
+                        {isCheckingAvailable ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Đang kiểm tra...
+                          </>
+                        ) : (
+                          <>
+                            <Search className="mr-2 h-4 w-4" />
+                            Kiểm tra phòng trống
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
+
                   {/* Guests */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -446,6 +535,85 @@ const BookingSectionContent = () => {
           </div>
         </div>
       </div>
+
+      {/* Check Available Rooms Dialog */}
+      <Dialog open={isCheckAvailableOpen} onOpenChange={setIsCheckAvailableOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Kiểm tra phòng trống</DialogTitle>
+            <DialogDescription>
+              {formData.checkIn && formData.checkOut && (
+                <>
+                  Từ {format(formData.checkIn, "dd/MM/yyyy", { locale: vi })} đến{" "}
+                  {format(formData.checkOut, "dd/MM/yyyy", { locale: vi })}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto min-h-0 space-y-4 py-4">
+            {isCheckingAvailable ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <span className="ml-3 text-muted-foreground">Đang kiểm tra phòng trống...</span>
+              </div>
+            ) : availableRooms.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">
+                  Không có phòng trống trong khoảng thời gian này
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold">
+                    Kết quả tìm kiếm ({availableRooms.length} phòng)
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {availableRooms.map((room) => (
+                    <Card key={room.id} className="p-4">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                          <div>
+                            <h4 className="font-semibold">{room.name}</h4>
+                            <p className="text-sm text-muted-foreground capitalize">
+                              {room.category}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Tối đa {room.guests} khách
+                            </p>
+                          </div>
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">Giá: </span>
+                            <span className="font-semibold text-primary">
+                              {room.price}₫/đêm
+                            </span>
+                          </div>
+                          <div className="flex justify-end">
+                            <Badge
+                              variant="outline"
+                              className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
+                            >
+                              Trống
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCheckAvailableOpen(false)}>
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Bed, Wifi, Car, Coffee, Bath, Users, Search, X, ArrowLeft } from "lucide-react";
+import { Bed, Wifi, Car, Coffee, Bath, Users, Search, X, ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,6 +19,10 @@ import Footer from "@/components/Footer";
 import { useRooms, usePrefetchRoom } from "@/hooks/use-rooms";
 import { getCategories, type Category } from "@/lib/api/categories";
 import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
+import { format } from "date-fns";
+import { vi } from "date-fns/locale";
+import { useQuery } from "@tanstack/react-query";
+import type { RoomResponse } from "@/types/database";
 
 const categoryLabels: Record<string, string> = {
   standard: "Standard",
@@ -48,7 +53,11 @@ const getAmenityName = (IconComponent: React.ComponentType): string => {
   return 'Tiện ích';
 };
 
-const RoomsPage = () => {
+const RoomsPageContent = () => {
+  const searchParams = useSearchParams();
+  const checkInParam = searchParams.get('check_in');
+  const checkOutParam = searchParams.get('check_out');
+  
   const { data: rooms = [], isLoading: loading, error: queryError } = useRooms();
   const prefetchRoom = usePrefetchRoom();
   const [categories, setCategories] = useState<Category[]>([
@@ -64,6 +73,30 @@ const RoomsPage = () => {
   const isScrolled = useScrollThreshold(100);
   
   const error = queryError ? 'Đã xảy ra lỗi khi tải danh sách phòng. Vui lòng thử lại sau.' : null;
+
+  // Fetch available rooms if check_in and check_out params exist
+  const { data: availableRooms = [], isLoading: loadingAvailable } = useQuery<RoomResponse[]>({
+    queryKey: ['available-rooms', checkInParam, checkOutParam],
+    queryFn: async () => {
+      if (!checkInParam || !checkOutParam) return [];
+      
+      const response = await fetch(
+        `/api/rooms/available?check_in=${encodeURIComponent(checkInParam)}&check_out=${encodeURIComponent(checkOutParam)}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Không thể tải danh sách phòng trống');
+      }
+      
+      return response.json();
+    },
+    enabled: !!checkInParam && !!checkOutParam,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  // Use available rooms if we have date params, otherwise use all rooms
+  const roomsToDisplay = checkInParam && checkOutParam ? availableRooms : rooms;
+  const isLoading = checkInParam && checkOutParam ? loadingAvailable : loading;
 
   // Fetch categories from database
   useEffect(() => {
@@ -81,9 +114,9 @@ const RoomsPage = () => {
 
   // Filter and search rooms
   const filteredRooms = useMemo(() => {
-    console.log('Filtering rooms - Total:', rooms.length, 'Category:', selectedCategory, 'Search:', searchQuery); // Debug log
+    console.log('Filtering rooms - Total:', roomsToDisplay.length, 'Category:', selectedCategory, 'Search:', searchQuery); // Debug log
     
-    let result = rooms;
+    let result = roomsToDisplay;
 
     // Filter by category
     if (selectedCategory !== "all") {
@@ -129,7 +162,7 @@ const RoomsPage = () => {
 
     console.log('Final filtered rooms:', result.length); // Debug log
     return result;
-  }, [rooms, searchQuery, selectedCategory, sortBy]); // Added 'rooms' to dependencies
+  }, [roomsToDisplay, searchQuery, selectedCategory, sortBy]);
 
   return (
     <div className="min-h-screen bg-luxury-gradient">
@@ -182,10 +215,37 @@ const RoomsPage = () => {
               
               {/* Description */}
               <div className="text-center">
-                <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
-                  Khám phá không gian nghỉ ngơi đẳng cấp với thiết kế hiện đại, tiện nghi cao cấp
-                  và dịch vụ tận tâm. Mỗi phòng đều được chăm chút tỉ mỉ để mang đến sự thoải mái tối đa.
-                </p>
+                {checkInParam && checkOutParam ? (
+                  <div className="space-y-2">
+                    <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
+                      Phòng trống từ{" "}
+                      <span className="font-semibold text-foreground">
+                        {format(new Date(checkInParam), "dd/MM/yyyy", { locale: vi })}
+                      </span>{" "}
+                      đến{" "}
+                      <span className="font-semibold text-foreground">
+                        {format(new Date(checkOutParam), "dd/MM/yyyy", { locale: vi })}
+                      </span>
+                    </p>
+                    <div className="flex items-center justify-center gap-2">
+                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
+                        <CalendarIcon className="w-3 h-3 mr-1" />
+                        Đã lọc theo ngày
+                      </Badge>
+                      <Link href="/rooms">
+                        <Button variant="ghost" size="sm" className="h-7 text-xs">
+                          <X className="w-3 h-3 mr-1" />
+                          Xóa bộ lọc ngày
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
+                    Khám phá không gian nghỉ ngơi đẳng cấp với thiết kế hiện đại, tiện nghi cao cấp
+                    và dịch vụ tận tâm. Mỗi phòng đều được chăm chút tỉ mỉ để mang đến sự thoải mái tối đa.
+                  </p>
+                )}
               </div>
             </motion.div>
 
@@ -249,9 +309,17 @@ const RoomsPage = () => {
               {/* Results count and clear */}
               <div className="flex items-center justify-between text-sm">
                 <p className="text-muted-foreground">
-                  Tìm thấy <span className="font-medium text-foreground">{filteredRooms.length}</span> phòng
+                  {checkInParam && checkOutParam ? (
+                    <>
+                      Tìm thấy <span className="font-medium text-foreground">{filteredRooms.length}</span> phòng trống
+                    </>
+                  ) : (
+                    <>
+                      Tìm thấy <span className="font-medium text-foreground">{filteredRooms.length}</span> phòng
+                    </>
+                  )}
                 </p>
-                {(searchQuery || selectedCategory !== "all" || sortBy !== "default") && (
+                {(searchQuery || selectedCategory !== "all" || sortBy !== "default" || (checkInParam && checkOutParam)) && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -259,6 +327,9 @@ const RoomsPage = () => {
                       setSearchQuery("");
                       setSelectedCategory("all");
                       setSortBy("default");
+                      if (checkInParam && checkOutParam) {
+                        window.location.href = '/rooms';
+                      }
                     }}
                     className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   >
@@ -318,7 +389,12 @@ const RoomsPage = () => {
                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                             
                             {/* Badges */}
-                            <div className="absolute top-2 right-2 flex gap-1.5">
+                            <div className="absolute top-2 right-2 flex gap-1.5 flex-wrap justify-end">
+                              {checkInParam && checkOutParam && (
+                                <Badge className="bg-green-500/95 text-white text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm shadow-sm">
+                                  Trống
+                                </Badge>
+                              )}
                               {room.popular && (
                                 <Badge className="bg-primary/95 text-primary-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm shadow-sm">
                                   ⭐ Phổ biến
@@ -394,6 +470,36 @@ const RoomsPage = () => {
                   </motion.div>
                 ))}
               </div>
+            ) : checkInParam && checkOutParam ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                className="text-center py-16"
+              >
+                <p className="text-lg text-muted-foreground mb-4">
+                  Không có phòng trống trong khoảng thời gian từ{" "}
+                  <span className="font-semibold text-foreground">
+                    {format(new Date(checkInParam), "dd/MM/yyyy", { locale: vi })}
+                  </span>{" "}
+                  đến{" "}
+                  <span className="font-semibold text-foreground">
+                    {format(new Date(checkOutParam), "dd/MM/yyyy", { locale: vi })}
+                  </span>
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <Link href="/rooms">
+                    <Button variant="outline">
+                      Xem tất cả phòng
+                    </Button>
+                  </Link>
+                  <Link href="/book">
+                    <Button variant="luxury">
+                      Đặt phòng khác
+                    </Button>
+                  </Link>
+                </div>
+              </motion.div>
             ) : (
               <motion.div
                 initial={{ opacity: 0 }}
@@ -420,6 +526,24 @@ const RoomsPage = () => {
       </main>
       <Footer />
     </div>
+  );
+};
+
+const RoomsPage = () => {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-luxury-gradient">
+        <Navigation />
+        <main className="pt-14 lg:pt-16">
+          <div className="container-luxury py-20">
+            <RoomGridSkeleton count={8} />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    }>
+      <RoomsPageContent />
+    </Suspense>
   );
 };
 
