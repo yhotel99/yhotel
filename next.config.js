@@ -15,6 +15,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'img.vietqr.io',
       },
+      {
+        protocol: 'https',
+        hostname: 'rnuuftucapucuavqlgbx.supabase.co',
+      },
     ],
   },
   // Turbopack is enabled via --turbo flag in dev script

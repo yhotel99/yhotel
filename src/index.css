@@ -283,6 +283,50 @@ Sophisticated cyan gradients with elegant typography and smooth animations
     background: var(--gradient-section);
   }
 
+  /* Blog Content Responsive Text */
+  [class*="dangerously"] {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+  }
+
+  div[class*="text-sm"] {
+    overflow-wrap: break-word;
+  }
+
+  /* Blog Content Text Wrapping */
+  .prose * {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .prose li {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    max-width: 100%;
+  }
+
+  .prose ul,
+  .prose ol {
+    margin-left: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .prose ul,
+    .prose ol {
+      margin-left: 1.5rem;
+    }
+  }
+
+  .prose p,
+  .prose a,
+  .prose code,
+  .prose span {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+  }
+
   /* Scrollbar Hide */
   .scrollbar-hide {
     -ms-overflow-style: none;
