@@ -104,3 +104,63 @@ export async function PATCH(
   }
 }
 
+/**
+ * DELETE /api/bookings/[id]
+ * Delete a booking (only if it's pending)
+ */
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // Check if booking exists and get its status
+    const { data: booking } = await supabase
+      .from('bookings')
+      .select('id, status')
+      .eq('id', id)
+      .is('deleted_at', null)
+      .single();
+
+    if (!booking) {
+      return NextResponse.json(
+        { error: 'Không tìm thấy booking' },
+        { status: 404 }
+      );
+    }
+
+    // Only allow deletion of pending bookings
+    if (booking.status !== 'pending') {
+      return NextResponse.json(
+        { error: 'Chỉ có thể xóa booking ở trạng thái pending' },
+        { status: 400 }
+      );
+    }
+
+    // Soft delete the booking
+    const { error } = await supabase
+      .from('bookings')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting booking:', error);
+      return NextResponse.json(
+        { error: error.message || 'Không thể xóa booking' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      message: 'Xóa booking thành công',
+    });
+  } catch (error) {
+    console.error('Error deleting booking:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Lỗi hệ thống' },
+      { status: 500 }
+    );
+  }
+}
+

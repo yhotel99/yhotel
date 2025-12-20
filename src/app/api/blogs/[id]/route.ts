@@ -147,3 +147,174 @@ export async function GET(
   }
 }
 
+/**
+ * PATCH /api/blogs/[id]
+ * Update a blog post
+ */
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+
+    const {
+      title,
+      slug,
+      excerpt,
+      content,
+      featured_image,
+      status,
+    } = body;
+
+    // Validate required fields
+    if (!title || !content) {
+      return NextResponse.json(
+        { error: 'Tiêu đề và nội dung là bắt buộc' },
+        { status: 400 }
+      );
+    }
+
+    // Validate status if provided
+    if (status && !['draft', 'published', 'archived'].includes(status)) {
+      return NextResponse.json(
+        { error: 'Trạng thái không hợp lệ' },
+        { status: 400 }
+      );
+    }
+
+    // Build update object - only include fields that are provided
+    const updateData: any = {
+      title,
+      content,
+    };
+
+    if (slug !== undefined) updateData.slug = slug;
+    if (excerpt !== undefined) updateData.excerpt = excerpt;
+    if (featured_image !== undefined) updateData.featured_image = featured_image;
+    if (status !== undefined) {
+      updateData.status = status;
+      // Set published_at when publishing
+      if (status === 'published' && !updateData.published_at) {
+        updateData.published_at = new Date().toISOString();
+      }
+    }
+
+    const { data: updatedBlog, error } = await supabase
+      .from('blogs')
+      .update(updateData)
+      .eq('id', id)
+      .select(`
+        id,
+        title,
+        slug,
+        excerpt,
+        content,
+        featured_image,
+        status,
+        published_at,
+        created_at,
+        updated_at,
+        profiles!blogs_author_id_fkey (
+          full_name,
+          email
+        )
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error updating blog:', error);
+      return NextResponse.json(
+        { error: error.message || 'Không thể cập nhật blog' },
+        { status: 500 }
+      );
+    }
+
+    if (!updatedBlog) {
+      return NextResponse.json(
+        { error: 'Không tìm thấy blog để cập nhật' },
+        { status: 404 }
+      );
+    }
+
+    // Transform response
+    const blog = updatedBlog as any;
+    const publishedDate = blog.published_at || blog.created_at;
+    const profile = blog.profiles && blog.profiles.length > 0 ? blog.profiles[0] : null;
+
+    const response: BlogDetailResponse = {
+      id: blog.id,
+      title: blog.title,
+      slug: blog.slug,
+      excerpt: blog.excerpt,
+      content: blog.content,
+      image: blog.featured_image,
+      author: profile
+        ? {
+            full_name: profile.full_name,
+            email: profile.email,
+          }
+        : null,
+      date: publishedDate,
+      published_at: blog.published_at,
+      status: blog.status as 'draft' | 'published' | 'archived',
+    };
+
+    return NextResponse.json({
+      blog: response,
+      message: 'Cập nhật blog thành công',
+    });
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : 'Không thể cập nhật blog';
+    console.error('Error updating blog:', err);
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
+/**
+ * DELETE /api/blogs/[id]
+ * Delete a blog post (soft delete)
+ */
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // Soft delete the blog
+    const { data: deletedBlog, error } = await supabase
+      .from('blogs')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error deleting blog:', error);
+      return NextResponse.json(
+        { error: error.message || 'Không thể xóa blog' },
+        { status: 500 }
+      );
+    }
+
+    if (!deletedBlog) {
+      return NextResponse.json(
+        { error: 'Không tìm thấy blog để xóa' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      message: 'Xóa blog thành công',
+    });
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : 'Không thể xóa blog';
+    console.error('Error deleting blog:', err);
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+

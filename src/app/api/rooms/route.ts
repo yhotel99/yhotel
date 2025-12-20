@@ -195,3 +195,101 @@ export async function GET(request: Request) {
   }
 }
 
+/**
+ * POST /api/rooms
+ * Create a new room
+ */
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+
+    const {
+      name,
+      description,
+      room_type,
+      price_per_night,
+      max_guests,
+      amenities,
+      status = 'available',
+    } = body;
+
+    // Validate required fields
+    if (!name || !room_type || !price_per_night || !max_guests) {
+      return NextResponse.json(
+        { error: 'Thiếu thông tin bắt buộc: name, room_type, price_per_night, max_guests' },
+        { status: 400 }
+      );
+    }
+
+    // Validate room type
+    const validRoomTypes = ['standard', 'deluxe', 'superior', 'family'];
+    if (!validRoomTypes.includes(room_type)) {
+      return NextResponse.json(
+        { error: 'Loại phòng không hợp lệ' },
+        { status: 400 }
+      );
+    }
+
+    // Validate price
+    if (price_per_night <= 0) {
+      return NextResponse.json(
+        { error: 'Giá phòng phải lớn hơn 0' },
+        { status: 400 }
+      );
+    }
+
+    // Validate max guests
+    if (max_guests <= 0) {
+      return NextResponse.json(
+        { error: 'Số khách tối đa phải lớn hơn 0' },
+        { status: 400 }
+      );
+    }
+
+    // Validate status
+    const validStatuses = ['available', 'maintenance', 'occupied', 'not_clean', 'clean', 'blocked'];
+    if (!validStatuses.includes(status)) {
+      return NextResponse.json(
+        { error: 'Trạng thái phòng không hợp lệ' },
+        { status: 400 }
+      );
+    }
+
+    // Create room
+    const roomData = {
+      name,
+      description: description || null,
+      room_type,
+      price_per_night: parseFloat(price_per_night),
+      max_guests: parseInt(max_guests),
+      amenities: Array.isArray(amenities) ? amenities : [],
+      status,
+    };
+
+    const { data: newRoom, error } = await supabase
+      .from('rooms')
+      .insert([roomData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating room:', error);
+      return NextResponse.json(
+        { error: error.message || 'Không thể tạo phòng' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      room: newRoom,
+      message: 'Tạo phòng thành công',
+    }, { status: 201 });
+  } catch (error) {
+    console.error('Unexpected error creating room:', error);
+    return NextResponse.json(
+      { error: 'Lỗi hệ thống. Vui lòng thử lại sau.' },
+      { status: 500 }
+    );
+  }
+}
+

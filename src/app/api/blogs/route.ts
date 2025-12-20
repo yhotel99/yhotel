@@ -160,3 +160,139 @@ export async function GET(req: NextRequest) {
   }
 }
 
+/**
+ * POST /api/blogs
+ * Create a new blog post
+ */
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+
+    const {
+      title,
+      slug,
+      excerpt,
+      content,
+      featured_image,
+      status = 'draft',
+    } = body;
+
+    // Validate required fields
+    if (!title || !content) {
+      return NextResponse.json(
+        { error: 'Tiêu đề và nội dung là bắt buộc' },
+        { status: 400 }
+      );
+    }
+
+    // Validate status
+    if (!['draft', 'published', 'archived'].includes(status)) {
+      return NextResponse.json(
+        { error: 'Trạng thái không hợp lệ' },
+        { status: 400 }
+      );
+    }
+
+    // Get current user for author_id (this would require authentication)
+    // For now, we'll use a default author or require it to be passed
+    const author_id = body.author_id;
+    if (!author_id) {
+      return NextResponse.json(
+        { error: 'Thiếu thông tin tác giả' },
+        { status: 400 }
+      );
+    }
+
+    // Create blog post
+    const blogData = {
+      title,
+      slug: slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+      excerpt: excerpt || null,
+      content,
+      featured_image: featured_image || null,
+      status,
+      author_id,
+      published_at: status === 'published' ? new Date().toISOString() : null,
+    };
+
+    const { data: newBlog, error } = await supabase
+      .from('blogs')
+      .insert([blogData])
+      .select(`
+        id,
+        title,
+        slug,
+        excerpt,
+        content,
+        featured_image,
+        status,
+        published_at,
+        created_at,
+        updated_at,
+        profiles!blogs_author_id_fkey (
+          full_name,
+          email
+        )
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error creating blog:', error);
+      return NextResponse.json(
+        { error: error.message || 'Không thể tạo blog' },
+        { status: 500 }
+      );
+    }
+
+    // Transform response
+    type BlogWithAuthor = {
+      id: string;
+      title: string;
+      slug: string;
+      excerpt: string | null;
+      content: string;
+      featured_image: string | null;
+      status: string;
+      published_at: string | null;
+      created_at: string;
+      updated_at: string;
+      profiles: Array<{
+        full_name: string;
+        email: string;
+      }> | null;
+    };
+
+    const blog = newBlog as BlogWithAuthor;
+    const publishedDate = blog.published_at || blog.created_at;
+    const profile = blog.profiles && blog.profiles.length > 0 ? blog.profiles[0] : null;
+
+    const response: BlogResponse = {
+      id: blog.id,
+      title: blog.title,
+      slug: blog.slug,
+      excerpt: blog.excerpt,
+      content: blog.content,
+      image: blog.featured_image,
+      author: profile
+        ? {
+            full_name: profile.full_name,
+            email: profile.email,
+          }
+        : null,
+      date: publishedDate,
+      published_at: blog.published_at,
+      status: blog.status as 'draft' | 'published' | 'archived',
+    };
+
+    return NextResponse.json({
+      blog: response,
+      message: 'Tạo blog thành công',
+    }, { status: 201 });
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : 'Không thể tạo blog';
+    console.error('Error creating blog:', err);
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+

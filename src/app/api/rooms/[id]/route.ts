@@ -147,3 +147,169 @@ export async function GET(
   }
 }
 
+/**
+ * PATCH /api/rooms/[id]
+ * Update room information
+ */
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+
+    const {
+      name,
+      description,
+      room_type,
+      price_per_night,
+      max_guests,
+      amenities,
+      status,
+    } = body;
+
+    // Validate room type if provided
+    if (room_type) {
+      const validRoomTypes = ['standard', 'deluxe', 'superior', 'family'];
+      if (!validRoomTypes.includes(room_type)) {
+        return NextResponse.json(
+          { error: 'Loại phòng không hợp lệ' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validate price if provided
+    if (price_per_night !== undefined && price_per_night <= 0) {
+      return NextResponse.json(
+        { error: 'Giá phòng phải lớn hơn 0' },
+        { status: 400 }
+      );
+    }
+
+    // Validate max guests if provided
+    if (max_guests !== undefined && max_guests <= 0) {
+      return NextResponse.json(
+        { error: 'Số khách tối đa phải lớn hơn 0' },
+        { status: 400 }
+      );
+    }
+
+    // Validate status if provided
+    if (status) {
+      const validStatuses = ['available', 'maintenance', 'occupied', 'not_clean', 'clean', 'blocked'];
+      if (!validStatuses.includes(status)) {
+        return NextResponse.json(
+          { error: 'Trạng thái phòng không hợp lệ' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Build update object - only include fields that are provided
+    const updateData: any = {};
+    if (name !== undefined) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (room_type !== undefined) updateData.room_type = room_type;
+    if (price_per_night !== undefined) updateData.price_per_night = parseFloat(price_per_night);
+    if (max_guests !== undefined) updateData.max_guests = parseInt(max_guests);
+    if (amenities !== undefined) updateData.amenities = Array.isArray(amenities) ? amenities : [];
+    if (status !== undefined) updateData.status = status;
+
+    const { data: updatedRoom, error } = await supabase
+      .from('rooms')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating room:', error);
+      return NextResponse.json(
+        { error: error.message || 'Không thể cập nhật phòng' },
+        { status: 500 }
+      );
+    }
+
+    if (!updatedRoom) {
+      return NextResponse.json(
+        { error: 'Không tìm thấy phòng để cập nhật' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      room: updatedRoom,
+      message: 'Cập nhật phòng thành công',
+    });
+  } catch (error) {
+    console.error('Error updating room:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Lỗi hệ thống' },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/rooms/[id]
+ * Delete a room (soft delete)
+ */
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+
+    // Check if room has active bookings
+    const { data: activeBookings } = await supabase
+      .from('bookings')
+      .select('id')
+      .eq('room_id', id)
+      .in('status', ['pending', 'confirmed', 'checked_in'])
+      .is('deleted_at', null);
+
+    if (activeBookings && activeBookings.length > 0) {
+      return NextResponse.json(
+        { error: 'Không thể xóa phòng có booking đang hoạt động' },
+        { status: 400 }
+      );
+    }
+
+    // Soft delete the room
+    const { data: deletedRoom, error } = await supabase
+      .from('rooms')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error deleting room:', error);
+      return NextResponse.json(
+        { error: error.message || 'Không thể xóa phòng' },
+        { status: 500 }
+      );
+    }
+
+    if (!deletedRoom) {
+      return NextResponse.json(
+        { error: 'Không tìm thấy phòng để xóa' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      message: 'Xóa phòng thành công',
+    });
+  } catch (error) {
+    console.error('Error deleting room:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Lỗi hệ thống' },
+      { status: 500 }
+    );
+  }
+}
+
