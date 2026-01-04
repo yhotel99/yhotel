@@ -344,7 +344,7 @@ const CheckoutContent = () => {
                             <BookingStatusBadge status={booking.status} />
                           </div>
                           <p className="text-xs text-muted-foreground mb-1">Mã đặt phòng</p>
-                          <p className="font-mono font-bold text-xl text-primary pr-24">{booking.id.slice(0, 8).toUpperCase()}</p>
+                          <p className="font-mono font-bold text-xl text-primary pr-24">{booking.booking_code || booking.id.slice(0, 8).toUpperCase()}</p>
                         </div>
                       </CardHeader>
                       <CardContent className="px-6 md:px-8 pb-6 md:pb-8 pt-4 md:pt-0 space-y-4">

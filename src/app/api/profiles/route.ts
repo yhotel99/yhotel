@@ -157,7 +157,10 @@ export async function PATCH(request: Request) {
     } = body;
 
     // Build update object - only include fields that are provided
-    const updateData: any = {};
+    const updateData: {
+      full_name?: string;
+      avatar_url?: string | null;
+    } = {};
     if (full_name !== undefined) updateData.full_name = full_name;
     if (avatar_url !== undefined) updateData.avatar_url = avatar_url;
 

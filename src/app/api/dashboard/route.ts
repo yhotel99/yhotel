@@ -129,7 +129,16 @@ export async function GET(request: Request) {
       occupancy_rate: Math.round(occupancyRate * 100) / 100, // Round to 2 decimal places
     };
 
-    const response: any = {
+    interface DashboardResponse {
+      stats: DashboardStats;
+      period: string;
+      charts?: {
+        revenue: RevenueChartData[];
+        occupancy: OccupancyChartData[];
+      };
+    }
+
+    const response: DashboardResponse = {
       stats,
       period,
     };

@@ -185,7 +185,15 @@ export async function PATCH(
     }
 
     // Build update object - only include fields that are provided
-    const updateData: any = {
+    const updateData: {
+      title: string;
+      content: string;
+      slug?: string;
+      excerpt?: string | null;
+      featured_image?: string | null;
+      status?: 'draft' | 'published' | 'archived';
+      published_at?: string;
+    } = {
       title,
       content,
     };
@@ -239,7 +247,23 @@ export async function PATCH(
     }
 
     // Transform response
-    const blog = updatedBlog as any;
+    type UpdatedBlogWithAuthor = {
+      id: string;
+      title: string;
+      slug: string;
+      excerpt: string | null;
+      content: string;
+      featured_image: string | null;
+      status: string;
+      published_at: string | null;
+      created_at: string;
+      profiles: {
+        full_name: string;
+        email: string;
+      }[] | null;
+    };
+
+    const blog = updatedBlog as unknown as UpdatedBlogWithAuthor;
     const publishedDate = blog.published_at || blog.created_at;
     const profile = blog.profiles && blog.profiles.length > 0 ? blog.profiles[0] : null;
 

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
-import { PAYMENT_TYPE, PAYMENT_METHOD, PAYMENT_STATUS } from '@/lib/constants';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * GET endpoint to fetch bookings list
@@ -163,6 +163,65 @@ async function findOrCreateCustomer(
     console.error('Error in findOrCreateCustomer:', error);
     return null;
   }
+}
+
+/**
+ * Generate booking code (fallback when RPC doesn't generate it)
+ * Format: BK + timestamp (last 10 digits) + random (3 digits)
+ */
+function generateBookingCode(): string {
+  const timestamp = Date.now().toString().slice(-10);
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `BK${timestamp}${random}`;
+}
+
+/**
+ * Create booking using direct database insert (fallback when RPC is not available)
+ */
+async function createBookingFallback(
+  supabaseClient: SupabaseClient,
+  customerId: string,
+  roomId: string,
+  checkIn: string,
+  checkOut: string,
+  numberOfNights: number,
+  totalAmount: number,
+  totalGuests: number,
+  notes: string | null
+): Promise<string> {
+  const bookingCode = generateBookingCode();
+
+  // Create booking directly
+  const { data: booking, error: bookingError } = await supabaseClient
+    .from('bookings')
+    .insert([
+      {
+        customer_id: customerId,
+        room_id: roomId,
+        check_in: checkIn,
+        check_out: checkOut,
+        number_of_nights: numberOfNights,
+        total_amount: totalAmount,
+        advance_payment: 0,
+        total_guests: totalGuests,
+        notes: notes,
+        status: 'pending',
+        booking_code: bookingCode,
+      },
+    ])
+    .select('id')
+    .single();
+
+  if (bookingError) {
+    console.error('Error creating booking:', bookingError);
+    throw new Error(`Không thể tạo booking: ${bookingError.message}`);
+  }
+
+  if (!booking || !booking.id) {
+    throw new Error('Không thể tạo booking');
+  }
+
+  return booking.id;
 }
 
 /**
@@ -378,28 +437,58 @@ export async function POST(request: Request) {
     // Calculate total amount (same as dashboard)
     const total_amount = room.price_per_night * number_of_nights;
 
-    // Create booking using RPC function (exactly same as dashboard)
-    // Thứ tự tham số theo function SQL definition trong dashboard
-    const { data: bookingId, error: rpcError } = await supabase.rpc(
-      'create_booking_secure',
-      {
-        p_customer_id: customerId,
-        p_room_id: room.id,
-        p_check_in: check_in, // TIMESTAMPTZ
-        p_check_out: check_out, // TIMESTAMPTZ
-        p_number_of_nights: number_of_nights,
-        p_total_amount: total_amount,
-        p_total_guests: total_guests ?? 1,
-        p_notes: notes || null,
-        p_advance_payment: 0, // Đặt cọc luôn là 0 như dashboard
-      }
-    );
+    let bookingId: string;
 
-    if (rpcError) {
-      console.error('RPC Error:', rpcError);
-      return NextResponse.json(
-        { error: rpcError.message || 'Không thể tạo booking' },
-        { status: 500 }
+    // Try to use RPC function first (if available)
+    // The RPC function will automatically create payments (advance_payment and room_charge)
+    try {
+      const { data: rpcBookingId, error: rpcError } = await supabase.rpc(
+        'create_booking_secure',
+        {
+          p_customer_id: customerId,
+          p_room_id: room.id,
+          p_check_in: check_in, // TIMESTAMPTZ
+          p_check_out: check_out, // TIMESTAMPTZ
+          p_number_of_nights: number_of_nights,
+          p_total_amount: total_amount,
+          p_payment_method: 'pay_at_hotel', // Payment method for created payments
+          p_total_guests: total_guests ?? 1,
+          p_notes: notes || null,
+          p_advance_payment: 0, // Đặt cọc luôn là 0 như dashboard
+        }
+      );
+
+      // If RPC function exists and succeeds, use it
+      if (!rpcError && rpcBookingId) {
+        bookingId = rpcBookingId;
+      } else {
+        // If RPC function doesn't exist or errors, use fallback
+        console.log('RPC function not available, using fallback logic');
+        bookingId = await createBookingFallback(
+          supabase,
+          customerId,
+          room.id,
+          check_in,
+          check_out,
+          number_of_nights,
+          total_amount,
+          total_guests ?? 1,
+          notes || null
+        );
+      }
+    } catch (rpcError) {
+      // If RPC fails for any reason, fallback to direct query
+      console.warn('RPC function error, using fallback:', rpcError);
+      bookingId = await createBookingFallback(
+        supabase,
+        customerId,
+        room.id,
+        check_in,
+        check_out,
+        number_of_nights,
+        total_amount,
+        total_guests ?? 1,
+        notes || null
       );
     }
 
@@ -441,45 +530,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create payments for the booking (same as dashboard)
-    // This ensures payments are created when booking is created from yhotel
-    const paymentsToCreate = [];
-
-    // Payment 1: advance_payment (only if advance_payment > 0)
-    if (booking.advance_payment > 0) {
-      paymentsToCreate.push({
-        booking_id: booking.id,
-        amount: booking.advance_payment,
-        payment_type: PAYMENT_TYPE.ADVANCE_PAYMENT,
-        payment_method: PAYMENT_METHOD.PAY_AT_HOTEL,
-        payment_status: PAYMENT_STATUS.PENDING,
-      });
-    }
-
-    // Payment 2: room_charge (remaining amount after advance_payment)
-    const roomChargeAmount = booking.total_amount - (booking.advance_payment || 0);
-    if (roomChargeAmount > 0) {
-      paymentsToCreate.push({
-        booking_id: booking.id,
-        amount: roomChargeAmount,
-        payment_type: PAYMENT_TYPE.ROOM_CHARGE,
-        payment_method: PAYMENT_METHOD.PAY_AT_HOTEL,
-        payment_status: PAYMENT_STATUS.PENDING,
-      });
-    }
-
-    // Insert payments if any
-    if (paymentsToCreate.length > 0) {
-      const { error: paymentsError } = await supabase
-        .from('payments')
-        .insert(paymentsToCreate);
-
-      if (paymentsError) {
-        console.error('Error creating payments:', paymentsError);
-        // Don't fail the booking creation, just log the error
-        // Payments can be created later from dashboard
-      }
-    }
+    // Payments are automatically created by create_booking_secure RPC function
+    // No need to create them manually
 
     return NextResponse.json(
       {

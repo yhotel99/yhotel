@@ -61,7 +61,10 @@ const PaymentContent = () => {
     owner: "Tran Quang Khai"
   };
 
-  const paymentContent = bookingId ? bookingId.slice(0, 8).toUpperCase() : "";
+  // Use booking_code if available, otherwise fallback to booking ID
+  // Use booking_code from database (format: YH20251230000001)
+  // Fallback to booking ID if booking_code is not available
+  const paymentContent = booking?.booking_code || (bookingId ? bookingId.slice(0, 8).toUpperCase() : "");
   
   // Generate VietQR API URL
   // Format: https://img.vietqr.io/image/{acqId}-{accountNo}-{template}.png
@@ -373,7 +376,7 @@ const PaymentContent = () => {
                             <BookingStatusBadge status={booking.status} useCheckoutLabel={false} />
                           </div>
                           <p className="text-xs text-muted-foreground mb-1">Mã đặt phòng</p>
-                          <p className="font-mono font-bold text-xl text-primary pr-24">{paymentContent}</p>
+                          <p className="font-mono font-bold text-xl text-primary pr-24">{booking?.booking_code || paymentContent}</p>
                         </div>
                       </CardHeader>
                       <CardContent className="px-6 md:px-8 pb-6 md:pb-8 pt-4 md:pt-0 space-y-4">

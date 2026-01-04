@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -10,13 +10,32 @@ import { Calendar as CalendarIcon, Search } from "lucide-react";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import heroImage from "@/assets/hero-hotel.jpg";
+
+// Banner images from Supabase
+const bannerImages = [
+  "https://rnuuftucapucuavqlgbx.supabase.co/storage/v1/object/public/yhotel/gallery/Artboard%205.png",
+  "https://rnuuftucapucuavqlgbx.supabase.co/storage/v1/object/public/yhotel/gallery/Artboard%204.png",
+  "https://rnuuftucapucuavqlgbx.supabase.co/storage/v1/object/public/yhotel/gallery/Artboard%203.png",
+  "https://rnuuftucapucuavqlgbx.supabase.co/storage/v1/object/public/yhotel/gallery/Artboard%203-1.png",
+  "https://rnuuftucapucuavqlgbx.supabase.co/storage/v1/object/public/yhotel/gallery/Artboard%201-1.png",
+  "https://rnuuftucapucuavqlgbx.supabase.co/storage/v1/object/public/yhotel/gallery/Artboard%201.png",
+];
 
 const HeroSection = () => {
   const router = useRouter();
   const [checkIn, setCheckIn] = useState<Date | undefined>(undefined);
   const [checkOut, setCheckOut] = useState<Date | undefined>(undefined);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Auto-scroll images every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % bannerImages.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const handleCheckAvailable = () => {
     if (!checkIn || !checkOut) {
@@ -41,18 +60,24 @@ const HeroSection = () => {
 
   return (
     <section id="home" className="relative min-h-[70vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden">
-      {/* Background Image */}
-      <motion.div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url(${typeof heroImage === 'string' ? heroImage : heroImage.src})`,
-        }}
-        initial={{ scale: 1.1 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-        role="img"
-        aria-label="Y Hotel - Khách sạn sang trọng với kiến trúc hiện đại và cảnh quan tuyệt đẹp"
-      />
+      {/* Background Images with Horizontal Slide */}
+      <motion.div
+        className="absolute inset-0 flex"
+        animate={{ x: `-${currentImageIndex * 100}%` }}
+        transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+      >
+        {bannerImages.map((imageUrl, index) => (
+          <motion.div
+            key={index}
+            className="flex-shrink-0 w-full h-full bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: `url(${imageUrl})`,
+            }}
+            role="img"
+            aria-label={`Y Hotel - Khách sạn sang trọng với kiến trúc hiện đại và cảnh quan tuyệt đẹp - Ảnh ${index + 1}`}
+          />
+        ))}
+      </motion.div>
       
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-overlay" />

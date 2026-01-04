@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Search, Mail, Phone, Calendar, Users, Building2, Clock, AlertCircle, Loader2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
@@ -13,11 +13,11 @@ import Footer from "@/components/Footer";
 import { BookingStatusBadge } from "@/components/BookingStatusBadge";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { motion } from "framer-motion";
 import type { BookingRecord } from "@/lib/types";
+import { formatBookingCode } from "@/lib/utils";
 
 export default function LookupPage() {
   const [email, setEmail] = useState("");
@@ -28,11 +28,11 @@ export default function LookupPage() {
   const { toast } = useToast();
 
   const handleSearch = async () => {
-    // Validate that at least one field is provided
-    if (!email.trim() && !phone.trim()) {
+    // Validate that both fields are provided
+    if (!email.trim() || !phone.trim()) {
       toast({
-        title: "Vui lòng nhập thông tin",
-        description: "Bạn cần nhập ít nhất email hoặc số điện thoại để tra cứu",
+        title: "Vui lòng nhập đủ thông tin",
+        description: "Bạn cần nhập cả email và số điện thoại để tra cứu đặt phòng",
         variant: "destructive",
       });
       return;
@@ -110,7 +110,7 @@ export default function LookupPage() {
                   Tra Cứu Đặt Phòng
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                  Nhập email hoặc số điện thoại đã sử dụng khi đặt phòng để tra cứu thông tin đặt phòng của bạn
+                  Nhập email và số điện thoại đã sử dụng khi đặt phòng để tra cứu thông tin đặt phòng của bạn
                 </p>
               </div>
             </motion.div>
@@ -131,7 +131,7 @@ export default function LookupPage() {
                         Thông Tin Tra Cứu
                       </CardTitle>
                       <CardDescription className="text-sm mt-2">
-                        Vui lòng nhập ít nhất một trong hai thông tin dưới đây
+                        Vui lòng nhập đầy đủ cả hai thông tin dưới đây
                       </CardDescription>
                     </div>
                   </CardHeader>
@@ -232,7 +232,7 @@ export default function LookupPage() {
                                 </div>
                                 <p className="text-xs text-muted-foreground mb-1">Mã đặt phòng</p>
                                 <p className="font-mono font-bold text-xl text-primary pr-24">
-                                  {booking.id.slice(0, 8).toUpperCase()}
+                                  {formatBookingCode(booking.id)}
                                 </p>
                               </div>
                             </div>
@@ -376,7 +376,7 @@ export default function LookupPage() {
                           Không tìm thấy đặt phòng
                         </h3>
                         <p className="text-muted-foreground">
-                          Không tìm thấy đặt phòng nào với email hoặc số điện thoại đã nhập.
+                          Không tìm thấy đặt phòng nào với email và số điện thoại đã nhập.
                           <br />
                           Vui lòng kiểm tra lại thông tin và thử lại.
                         </p>

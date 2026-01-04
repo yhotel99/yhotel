@@ -105,7 +105,7 @@ export async function GET(request: Request) {
       }> | null;
     };
 
-    const customers: CustomerResponse[] = (data || []).map((customer: CustomerWithBookings) => {
+    const customers: CustomerResponse[] = (data || []).map((customer: CustomerWithBookings): CustomerResponse => {
       const bookings = customer.bookings || [];
       const completedBookings = bookings.filter((b) => b.status === 'checked_out');
 
@@ -117,7 +117,7 @@ export async function GET(request: Request) {
         full_name: customer.full_name,
         email: customer.email,
         phone: customer.phone,
-        customer_type: customer.customer_type,
+        customer_type: customer.customer_type as 'regular' | 'vip' | 'corporate',
         total_bookings: bookings.length,
         total_spent: totalSpent,
         last_booking_date: lastBooking ? lastBooking.created_at : null,

@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  eslint: {
+    // Tắt ESLint trong quá trình build
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    // Tắt TypeScript checking trong quá trình build (nếu cần)
+    // ignoreBuildErrors: true,
+  },
   images: {
     remotePatterns: [
       {

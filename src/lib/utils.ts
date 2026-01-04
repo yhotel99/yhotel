@@ -6,6 +6,23 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Format booking code to display format
+ * If booking_code exists (format: YH20251230000001), return it as is
+ * Otherwise, return first 8 characters of UUID in uppercase (fallback)
+ * @param bookingCode - Booking code (can be booking_code from DB or UUID)
+ * @returns Formatted booking code
+ */
+export function formatBookingCode(bookingCode: string | null | undefined): string {
+  if (!bookingCode) return '';
+  // If it's a booking_code (starts with YH), return as is
+  if (bookingCode.startsWith('YH')) {
+    return bookingCode;
+  }
+  // Otherwise, return first 8 characters (UUID fallback)
+  return bookingCode.slice(0, 8).toUpperCase();
+}
+
+/**
  * Generate CRC16 checksum for EMV QR Code
  */
 function crc16(data: string): string {

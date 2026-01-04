@@ -62,7 +62,14 @@ export async function GET(
       size: image.size,
       mime_type: image.mime_type,
       created_at: image.created_at,
-      room_images: image.room_images?.map((ri: any) => ({
+      room_images: image.room_images?.map((ri: {
+        room_id: string;
+        position: number;
+        is_main: boolean;
+        rooms: {
+          name: string;
+        } | null;
+      }) => ({
         room_id: ri.room_id,
         position: ri.position,
         is_main: ri.is_main,

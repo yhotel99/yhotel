@@ -65,10 +65,22 @@ export async function GET(
     }
 
     // Transform data with booking statistics
-    const bookings = customer.bookings || [];
-    const completedBookings = bookings.filter((b: any) => b.status === 'checked_out');
-    const totalSpent = completedBookings.reduce((sum: number, booking: any) => sum + (booking.total_amount || 0), 0);
-    const lastBooking = bookings.length > 0 ? bookings.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] : null;
+    type BookingWithRoom = {
+      id: string;
+      check_in: string;
+      check_out: string;
+      status: string;
+      total_amount: number;
+      created_at: string;
+      rooms: {
+        name: string;
+      } | null;
+    };
+
+    const bookings = (customer.bookings || []) as BookingWithRoom[];
+    const completedBookings = bookings.filter((b) => b.status === 'checked_out');
+    const totalSpent = completedBookings.reduce((sum: number, booking) => sum + (booking.total_amount || 0), 0);
+    const lastBooking = bookings.length > 0 ? bookings.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] : null;
 
     const customerDetail: CustomerDetailResponse = {
       id: customer.id,
@@ -79,7 +91,7 @@ export async function GET(
       total_bookings: bookings.length,
       total_spent: totalSpent,
       last_booking_date: lastBooking ? lastBooking.created_at : null,
-      bookings: bookings.map((booking: any) => ({
+      bookings: bookings.map((booking) => ({
         id: booking.id,
         check_in: booking.check_in,
         check_out: booking.check_out,

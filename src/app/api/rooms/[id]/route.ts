@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
-import { Room, RoomWithImages, RoomResponse } from '@/types/database';
+import { Room, RoomWithImages, RoomResponse, RoomType, RoomStatus } from '@/types/database';
 
 // Cache for 5 minutes
 export const revalidate = 300; // 5 minutes in seconds
@@ -208,7 +208,15 @@ export async function PATCH(
     }
 
     // Build update object - only include fields that are provided
-    const updateData: any = {};
+    const updateData: {
+      name?: string;
+      description?: string | null;
+      room_type?: RoomType;
+      price_per_night?: number;
+      max_guests?: number;
+      amenities?: string[];
+      status?: RoomStatus;
+    } = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (room_type !== undefined) updateData.room_type = room_type;

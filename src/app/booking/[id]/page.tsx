@@ -245,7 +245,7 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
                 </Badge>
               </div>
               <p className="text-muted-foreground">
-                Mã đặt phòng: <span className="font-mono font-bold text-foreground">#{bookingId}</span>
+                Mã đặt phòng: <span className="font-mono font-bold text-foreground">#{bookingId.startsWith('YH') ? bookingId : bookingId.slice(0, 8).toUpperCase()}</span>
               </p>
             </motion.div>
 

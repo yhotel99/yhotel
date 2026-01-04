@@ -158,7 +158,7 @@ const SuccessContent = () => {
                             <BookingStatusBadge status={booking.status} />
                           </div>
                           <p className="text-xs text-muted-foreground mb-1">Mã đặt phòng</p>
-                          <p className="font-mono font-bold text-2xl text-primary pr-32">{booking.id.slice(0, 8).toUpperCase()}</p>
+                          <p className="font-mono font-bold text-2xl text-primary pr-32">{booking.booking_code || booking.id.slice(0, 8).toUpperCase()}</p>
                           <p className="text-xs text-muted-foreground mt-2">
                             Vui lòng lưu lại mã này để tra cứu đặt phòng
                           </p>

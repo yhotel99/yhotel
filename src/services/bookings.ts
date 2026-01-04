@@ -89,33 +89,41 @@ export async function countBookings(searchTerm: string | null = null): Promise<n
 
 /**
  * Create booking using secure RPC function
+ * Same logic as dashboard's createBookingSecure
+ * The RPC function will automatically create payments (advance_payment and room_charge)
+ * @param input - Booking input data
+ * @returns Created booking ID
  */
 export async function createBookingSecure(input: BookingInput): Promise<string> {
   try {
-    const { data: bookingId, error } = await supabase.rpc('create_booking_secure', {
-      p_customer_id: input.customer_id,
-      p_room_id: input.room_id,
-      p_check_in: input.check_in,
-      p_check_out: input.check_out,
-      p_number_of_nights: input.number_of_nights,
-      p_total_amount: input.total_amount,
-      p_total_guests: input.total_guests,
-      p_notes: input.notes || null,
-      p_advance_payment: input.advance_payment || 0,
-    });
+    const { data: bookingId, error } = await supabase.rpc(
+      'create_booking_secure',
+      {
+        p_customer_id: input.customer_id || null,
+        p_room_id: input.room_id || null,
+        p_check_in: input.check_in,
+        p_check_out: input.check_out,
+        p_number_of_nights: input.number_of_nights || 0,
+        p_total_amount: input.total_amount,
+        p_payment_method: 'pay_at_hotel', // Payment method for created payments
+        p_total_guests: input.total_guests ?? 1,
+        p_notes: input.notes || null,
+        p_advance_payment: input.advance_payment ?? 0,
+      }
+    );
 
     if (error) {
       throw new Error(error.message);
     }
 
     if (!bookingId) {
-      throw new Error('Failed to create booking');
+      throw new Error('Không thể tạo booking');
     }
 
     return bookingId;
-  } catch (error) {
-    console.error('Error creating booking:', error);
-    throw error;
+  } catch (err) {
+    console.error('Error creating booking:', err);
+    throw err;
   }
 }
 
@@ -157,5 +165,55 @@ export async function getBookingByIdWithRelations(bookingId: string): Promise<Bo
   } catch (error) {
     console.error('Error fetching booking by ID:', error);
     throw error;
+  }
+}
+
+/**
+ * Create booking with payments
+ * Same logic as dashboard's createBookingWithPayments
+ * Payments are automatically created by create_booking_secure RPC function
+ * @param input - Booking input data
+ * @returns Created booking record with relations
+ */
+export async function createBookingWithPayments(
+  input: BookingInput
+): Promise<BookingRecord> {
+  try {
+    // Create booking using secure RPC function
+    // The RPC function will automatically create payments (advance_payment and room_charge)
+    const bookingId = await createBookingSecure(input);
+
+    // Fetch booking with relations
+    const bookingData = await getBookingByIdWithRelations(bookingId);
+
+    if (!bookingData) {
+      throw new Error('Không thể lấy thông tin booking vừa tạo');
+    }
+
+    // Payments are automatically created by create_booking_secure RPC function
+    // No need to create them manually
+
+    return bookingData;
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : 'Không thể tạo booking';
+    throw new Error(errorMessage);
+  }
+}
+
+/**
+ * Create booking (wrapper function matching dashboard)
+ * @param input - Booking input data
+ * @returns Created booking ID
+ */
+export async function createBooking(input: BookingInput): Promise<string> {
+  try {
+    // Create booking using secure RPC function
+    const bookingId = await createBookingSecure(input);
+    return bookingId;
+  } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : 'Không thể tạo booking';
+    throw new Error(errorMessage);
   }
 }

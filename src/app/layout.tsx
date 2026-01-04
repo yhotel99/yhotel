@@ -24,20 +24,24 @@ export const metadata: Metadata = {
   description: "Y Hotel Cần Thơ - Khách sạn 5 sao sang trọng với thiết bị hiện đại, không gian tinh tế và dịch vụ đẳng cấp quốc tế. Đặt phòng trực tuyến dễ dàng, giá tốt nhất. Trải nghiệm nghỉ dưỡng đẳng cấp tại trung tâm Cần Thơ.",
   keywords: "khách sạn Cần Thơ, khách sạn 5 sao Cần Thơ, khách sạn sang trọng, đặt phòng khách sạn, Y Hotel, nghỉ dưỡng cao cấp, phòng khách sạn cao cấp, khách sạn trung tâm Cần Thơ, hotel luxury Cần Thơ, booking khách sạn, khách sạn hiện đại, dịch vụ 5 sao, khách sạn miền Tây",
   authors: [{ name: "Y Hotel" }],
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
   openGraph: {
     title: "Y Hotel Cần Thơ - Khách Sạn 5 Sao Sang Trọng",
     description: "Khách sạn 5 sao tại Cần Thơ với thiết bị hiện đại, không gian sang trọng và dịch vụ đẳng cấp quốc tế. Đặt phòng ngay để trải nghiệm sự khác biệt.",
     type: "website",
     locale: "vi_VN",
     siteName: "Y Hotel",
-    images: ["https://lovable.dev/opengraph-image-p98pqg.png"],
+    images: ["/logo.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Y Hotel Cần Thơ - Khách Sạn 5 Sao",
     description: "Khách sạn 5 sao tại Cần Thơ - Thiết bị hiện đại, dịch vụ đẳng cấp",
     site: "@lovable_dev",
-    images: ["https://lovable.dev/opengraph-image-p98pqg.png"],
+    images: ["/logo.png"],
   },
   robots: {
     index: true,
@@ -179,7 +183,7 @@ export default function RootLayout({
         <meta name="geo.position" content="10.034149;105.722198" />
         <meta name="ICBM" content="10.034149, 105.722198" />
       </head>
-      <body className="antialiased">
+      <body className="antialiased" suppressHydrationWarning>
         <Script
           id="structured-data-hotel"
           type="application/ld+json"

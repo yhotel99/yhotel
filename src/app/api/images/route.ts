@@ -65,7 +65,16 @@ export async function GET(request: NextRequest) {
     }
 
     // Transform data
-    const images: ImageResponse[] = (data || []).map((image: any) => ({
+    type DatabaseImage = {
+      id: string;
+      url: string;
+      filename: string;
+      size: number;
+      mime_type: string;
+      created_at: string;
+    };
+
+    const images: ImageResponse[] = (data || []).map((image: DatabaseImage) => ({
       id: image.id,
       url: image.url,
       filename: image.filename,
@@ -151,7 +160,7 @@ export async function POST(request: NextRequest) {
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
 
     // Upload file to Supabase Storage
-    const { data: uploadData, error: uploadError } = await supabaseService.storage
+    const { error: uploadError } = await supabaseService.storage
       .from('images')
       .upload(fileName, file, {
         contentType: file.type,
