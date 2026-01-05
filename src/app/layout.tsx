@@ -1,22 +1,16 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Playfair_Display, Inter } from "next/font/google";
+import { Cabin } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Providers from "./providers";
 import "@/index.css";
 
-const playfairDisplay = Playfair_Display({
+const cabin = Cabin({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
-  variable: "--font-display",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-  variable: "--font-sans",
+  variable: "--font-cabin",
 });
 
 export const metadata: Metadata = {
@@ -175,7 +169,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="vi" className={`${playfairDisplay.variable} ${inter.variable}`}>
+    <html lang="vi" className={`${cabin.variable}`}>
       <head>
         <link rel="canonical" href="https://yhotel.lovable.app" />
         <meta name="geo.region" content="VN-CT" />

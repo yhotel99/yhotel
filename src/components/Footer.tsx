@@ -17,7 +17,7 @@ const Footer = () => {
       <div className="container-luxury">
         {/* Main Footer Content */}
         <div className="py-10 md:py-12 lg:py-16">
-          <div className="grid md:grid-cols-2 gap-10 lg:gap-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
             {/* Column 1: Brand & Description */}
             <div className="space-y-6">
               <div>
@@ -81,6 +81,59 @@ const Footer = () => {
                     </a>
                   </div>
                 </div>
+              </div>
+            </div>
+
+            {/* Column 3: Customer Service */}
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold text-background mb-4">DỊCH VỤ KHÁCH HÀNG</h3>
+                <ul className="space-y-3">
+                  <li>
+                    <Link href="/privacy" className="text-sm text-background/70 hover:text-primary transition-colors">
+                      Chính sách bảo mật
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="#" className="text-sm text-background/70 hover:text-primary transition-colors">
+                      Chương trình giá ưu đãi
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/#contact" className="text-sm text-background/70 hover:text-primary transition-colors">
+                      Liên hệ
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Column 4: Quick Links */}
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold text-background mb-4">LIÊN KẾT NHANH</h3>
+                <ul className="space-y-3">
+                  <li>
+                    <Link href="/" className="text-sm text-background/70 hover:text-primary transition-colors">
+                      Giới thiệu
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/rooms" className="text-sm text-background/70 hover:text-primary transition-colors">
+                      Đặt phòng
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/blog" className="text-sm text-background/70 hover:text-primary transition-colors">
+                      Tin tức sự kiện
+                    </Link>
+                  </li>
+                  <li>
+                    <Link href="/lookup" className="text-sm text-background/70 hover:text-primary transition-colors">
+                      Tra cứu thông tin đặt phòng
+                    </Link>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>

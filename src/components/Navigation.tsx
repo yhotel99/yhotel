@@ -22,7 +22,7 @@ const Navigation = () => {
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-      isScrolled ? "bg-slate-900/95 backdrop-blur-lg shadow-card" : "bg-slate-900/80"
+      isScrolled ? "bg-foreground/95 backdrop-blur-lg shadow-card" : "bg-foreground/80"
     }`}>
       <div className="container-luxury">
         <div className="relative flex items-center justify-between h-14 lg:h-16">
@@ -36,7 +36,7 @@ const Navigation = () => {
               alt="Y Hotel Logo"
               width={180}
               height={60}
-              className="h-14 w-auto md:h-16 lg:h-20 drop-shadow-2xl"
+              className="h-14 w-auto lg:h-16 drop-shadow-2xl"
               priority
             />
           </Link>
@@ -48,7 +48,7 @@ const Navigation = () => {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="text-white hover:text-primary transition-colors duration-300 font-medium"
+                  className="text-background hover:text-primary transition-colors duration-300 font-medium"
                 >
                   {item.name}
                 </Link>
@@ -58,7 +58,7 @@ const Navigation = () => {
 
           {/* Contact Info & CTA - Desktop */}
           <div className="hidden lg:flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-sm text-slate-300">
+            <div className="flex items-center space-x-2 text-sm text-background/70">
               <Phone className="w-4 h-4" />
               <span>+84 123 456 789</span>
             </div>
@@ -90,7 +90,7 @@ const Navigation = () => {
               transition={{ duration: 0.3, ease: "easeInOut" }}
               className="lg:hidden overflow-hidden"
             >
-              <div className="bg-gradient-to-b from-slate-900/98 via-slate-900/95 to-slate-900/98 backdrop-blur-xl border-t border-slate-700/50 shadow-2xl">
+              <div className="bg-gradient-to-b from-foreground/98 via-foreground/95 to-foreground/98 backdrop-blur-xl border-t border-background/20 shadow-2xl">
                 <div className="px-6 py-8 space-y-1">
                   {/* Navigation Items */}
                   {navItems.map((item, index) => (
@@ -102,7 +102,7 @@ const Navigation = () => {
                     >
                       <Link
                         href={item.href}
-                        className="group flex items-center justify-between w-full px-4 py-3.5 rounded-lg text-white hover:text-primary hover:bg-primary/10 transition-all duration-300 font-medium text-base relative overflow-hidden"
+                        className="group flex items-center justify-between w-full px-4 py-3.5 rounded-lg text-background hover:text-primary hover:bg-primary/10 transition-all duration-300 font-medium text-base relative overflow-hidden"
                         onClick={() => setIsOpen(false)}
                       >
                         <span className="relative z-10">{item.name}</span>
@@ -119,7 +119,7 @@ const Navigation = () => {
                     transition={{ delay: navItems.length * 0.1, duration: 0.3 }}
                     className="pt-4 pb-2"
                   >
-                    <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent" />
+                    <div className="h-px bg-gradient-to-r from-transparent via-background/20 to-transparent" />
                   </motion.div>
 
                   {/* Contact Info Section */}
@@ -132,14 +132,14 @@ const Navigation = () => {
                     {/* Phone */}
                     <a
                       href="tel:+84123456789"
-                      className="group flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700/50 hover:border-primary/30 transition-all duration-300"
+                      className="group flex items-center gap-3 px-4 py-3 rounded-lg bg-background/10 hover:bg-background/20 border border-background/20 hover:border-primary/30 transition-all duration-300"
                     >
                       <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
                         <Phone className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Điện thoại</p>
-                        <p className="text-white font-medium text-sm group-hover:text-primary transition-colors duration-300">
+                        <p className="text-xs text-background/60 uppercase tracking-wider mb-0.5">Điện thoại</p>
+                        <p className="text-background font-medium text-sm group-hover:text-primary transition-colors duration-300">
                           +84 123 456 789
                         </p>
                       </div>
@@ -148,14 +148,14 @@ const Navigation = () => {
                     {/* Email */}
                     <a
                       href="mailto:info@yhotel.com"
-                      className="group flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-800/50 hover:bg-slate-800/70 border border-slate-700/50 hover:border-primary/30 transition-all duration-300"
+                      className="group flex items-center gap-3 px-4 py-3 rounded-lg bg-background/10 hover:bg-background/20 border border-background/20 hover:border-primary/30 transition-all duration-300"
                     >
                       <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
                         <Mail className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs text-slate-400 uppercase tracking-wider mb-0.5">Email</p>
-                        <p className="text-white font-medium text-sm group-hover:text-primary transition-colors duration-300 break-all">
+                        <p className="text-xs text-background/60 uppercase tracking-wider mb-0.5">Email</p>
+                        <p className="text-background font-medium text-sm group-hover:text-primary transition-colors duration-300 break-all">
                           info@yhotel.com
                         </p>
                       </div>
