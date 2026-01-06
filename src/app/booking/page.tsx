@@ -314,7 +314,7 @@ const BookingLookupPage = () => {
                   transition={{ duration: 0.4, delay: 0.1 }}
                 >
                   <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardHeader>
                         <CardTitle className="text-2xl font-display flex items-center gap-2">
                           <Search className="w-6 h-6 text-primary" />
@@ -387,7 +387,7 @@ const BookingLookupPage = () => {
                           transition={{ duration: 0.4, delay: index * 0.1 }}
                         >
                           <GradientBorder containerClassName="relative">
-                            <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                            <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                               <CardContent className="p-6">
                                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                   <div className="flex-1 space-y-3">
@@ -470,7 +470,7 @@ const BookingLookupPage = () => {
                   className="sticky top-24 space-y-6"
                 >
                   <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardHeader>
                         <CardTitle className="text-lg font-display">Hướng Dẫn</CardTitle>
                       </CardHeader>
@@ -494,7 +494,7 @@ const BookingLookupPage = () => {
 
                   {/* Sample Data Info */}
                   <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardHeader>
                         <CardTitle className="text-lg font-display flex items-center gap-2">
                           <Database className="w-5 h-5 text-primary" />
@@ -529,7 +529,7 @@ const BookingLookupPage = () => {
                   </GradientBorder>
 
                   <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardHeader>
                         <CardTitle className="text-lg font-display">Liên Hệ Hỗ Trợ</CardTitle>
                       </CardHeader>

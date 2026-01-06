@@ -110,3 +110,34 @@ export const paymentStatusLabels: Record<
   [PAYMENT_STATUS.CANCELLED]: "Đã hủy",
 };
 
+/**
+ * Amenities options for rooms
+ */
+export const AMENITIES_OPTIONS = [
+  { label: "WiFi Tốc độ cao", value: "wifi_high_speed" },
+  { label: "Bãi đỗ xe", value: "parking" },
+  { label: "Cà phê", value: "coffee" },
+  { label: "Có phục vụ bữa sáng", value: "breakfast_service" },
+  { label: "Giặt ủi", value: "laundry" },
+  { label: "Hỗ trợ liên hệ Tài Xế", value: "taxi_support" },
+] as const;
+
+/**
+ * Amenity value to label mapping
+ */
+export const amenityLabels: Record<string, string> = {
+  wifi_high_speed: "WiFi Tốc độ cao",
+  parking: "Bãi đỗ xe",
+  coffee: "Cà phê",
+  breakfast_service: "Có phục vụ bữa sáng",
+  laundry: "Giặt ủi",
+  taxi_support: "Hỗ trợ liên hệ Tài Xế",
+};
+
+/**
+ * Get amenity label by value
+ */
+export const getAmenityLabel = (value: string): string => {
+  return amenityLabels[value] || value;
+};
+

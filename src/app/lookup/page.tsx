@@ -27,12 +27,45 @@ export default function LookupPage() {
   const [hasSearched, setHasSearched] = useState(false);
   const { toast } = useToast();
 
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    const normalized = phone.replace(/\D/g, '');
+    return normalized.length >= 8 && normalized.length <= 15;
+  };
+
   const handleSearch = async () => {
     // Validate that both fields are provided
     if (!email.trim() || !phone.trim()) {
+      setBookings([]); // Clear previous results when validation fails
       toast({
         title: "Vui lòng nhập đủ thông tin",
         description: "Bạn cần nhập cả email và số điện thoại để tra cứu đặt phòng",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate email format
+    if (!validateEmail(email.trim())) {
+      setBookings([]); // Clear previous results when validation fails
+      toast({
+        title: "Email không hợp lệ",
+        description: "Vui lòng nhập đúng định dạng email (ví dụ: example@email.com)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate phone format
+    if (!validatePhone(phone.trim())) {
+      setBookings([]); // Clear previous results when validation fails
+      toast({
+        title: "Số điện thoại không hợp lệ",
+        description: "Vui lòng nhập số điện thoại từ 8 đến 15 chữ số",
         variant: "destructive",
       });
       return;
@@ -123,7 +156,7 @@ export default function LookupPage() {
               className="max-w-2xl mx-auto mb-12"
             >
               <GradientBorder>
-                <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                   <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                     <div className="mb-4 md:mb-1">
                       <CardTitle className="text-xl md:text-2xl font-display flex items-center gap-2">
@@ -223,7 +256,7 @@ export default function LookupPage() {
                       transition={{ duration: 0.3, delay: index * 0.1, ease: [0.25, 0.1, 0.25, 1] }}
                     >
                       <GradientBorder>
-                        <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                        <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                           <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                             <div className="mb-4">
                               <div className="relative p-3 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-lg border border-primary/20 mb-4">
@@ -369,7 +402,7 @@ export default function LookupPage() {
                   className="max-w-2xl mx-auto"
                 >
                   <GradientBorder>
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardContent className="py-12 text-center">
                         <AlertCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                         <h3 className="text-xl font-display font-semibold text-foreground mb-2">

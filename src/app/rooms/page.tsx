@@ -374,7 +374,7 @@ const RoomsPageContent = () => {
                     >
                       <GradientBorder containerClassName="relative h-full">
                         <FloatingCard
-                          className="group overflow-hidden h-full bg-background rounded-xl border-0 backdrop-blur-none shadow-none hover:shadow-lg transition-shadow cursor-pointer"
+                          className="group overflow-hidden h-full bg-card rounded-xl border border-border shadow-card hover:shadow-hover transition-shadow cursor-pointer"
                           delay={0}
                         >
                           {/* Image */}

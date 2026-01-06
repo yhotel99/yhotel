@@ -38,9 +38,9 @@ export function FloatingCard({
         transition: { duration: 0.2 }
       }}
       className={cn(
-        "backdrop-blur-sm bg-background/90 border border-border/30",
+        "backdrop-blur-sm bg-card border border-border",
         "shadow-card hover:shadow-hover transition-all duration-300",
-        "hover:border-primary/20 rounded-xl",
+        "hover:border-primary/30 rounded-xl",
         className
       )}
     >

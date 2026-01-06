@@ -6,7 +6,7 @@ import { FloatingCard } from "@/components/ui/floating-card";
 export function RoomCardSkeleton() {
   return (
     <GradientBorder containerClassName="relative h-full">
-      <FloatingCard className="overflow-hidden h-full bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+      <FloatingCard className="overflow-hidden h-full bg-card rounded-xl border border-border shadow-card">
         {/* Image skeleton */}
         <div className="relative overflow-hidden rounded-t-xl">
           <Skeleton className="w-full h-32 md:h-48 lg:h-52" />

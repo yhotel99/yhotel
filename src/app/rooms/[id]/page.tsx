@@ -10,7 +10,6 @@ import {
   Bath,
   Users,
   ArrowLeft,
-  Check,
   Calendar as CalendarIcon,
   MapPin,
   Phone,
@@ -52,6 +51,7 @@ import Footer from "@/components/Footer";
 import { useRoom, usePrefetchRoom, useRooms } from "@/hooks/use-rooms";
 import { RoomDetailSkeleton } from "@/components/RoomDetailSkeleton";
 import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
+import { getAmenityLabel } from "@/lib/constants";
 
 interface RoomDetailPageProps {
   params: Promise<{ id: string }>;
@@ -79,7 +79,9 @@ const getAmenityName = (IconComponent: React.ComponentType): string => {
 };
 
 const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
-  const { id } = use(params);
+  // Unwrap params immediately to prevent enumeration
+  const unwrappedParams = use(params);
+  const { id } = unwrappedParams;
   const router = useRouter();
   const { toast } = useToast();
   const isScrolled = useScrollThreshold(100);
@@ -584,7 +586,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                   transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                 >
                   <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardContent className="p-6 md:p-8">
                         <div className="prose prose-sm md:prose-base max-w-none space-y-6">
                           {/* Mô tả phòng */}
@@ -597,24 +599,6 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                             </p>
                           </div>
 
-                          {/* Đặc điểm phòng */}
-                          <div className="pt-4 border-t">
-                            <h3 className="text-xl md:text-2xl font-display font-bold mb-3 text-foreground">
-                              Đặc điểm phòng
-                            </h3>
-                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 list-none pl-0">
-                              {room.features.map((feature, idx) => (
-                                <li
-                                  key={idx}
-                                  className="flex items-start gap-2 md:gap-3 text-muted-foreground text-sm md:text-base"
-                                >
-                                  <Check className="w-4 h-4 md:w-5 md:h-5 text-primary mt-0.5 flex-shrink-0" />
-                                  <span>{feature}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-
                           {/* Tiện ích */}
                           <div className="pt-4 border-t">
                             <h3 className="text-xl md:text-2xl font-display font-bold mb-3 text-foreground">
@@ -622,16 +606,19 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                             </h3>
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                               {room.amenities && room.amenities.length > 0 ? (
-                                room.amenities.map((amenity, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="flex flex-col items-center gap-2 p-3 md:p-4 rounded-lg bg-muted/50"
-                                  >
-                                    <span className="text-xs md:text-sm text-muted-foreground text-center">
-                                      {amenity}
-                                    </span>
-                                  </div>
-                                ))
+                                room.amenities.map((amenity, idx) => {
+                                  const amenityLabel = getAmenityLabel(amenity);
+                                  return (
+                                    <div
+                                      key={idx}
+                                      className="flex flex-col items-center gap-2 p-3 md:p-4 rounded-lg bg-muted border border-border/50 hover:bg-muted/80 hover:border-primary/20 transition-colors"
+                                    >
+                                      <span className="text-xs md:text-sm text-foreground text-center font-medium">
+                                        {amenityLabel}
+                                      </span>
+                                    </div>
+                                  );
+                                })
                               ) : (
                                 <p className="text-muted-foreground text-sm">Chưa có thông tin tiện ích</p>
                               )}
@@ -654,22 +641,22 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                 >
                   {/* Booking Form Card */}
                   <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
-                      <CardHeader className="p-6 md:p-8">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card pt-2 pb-2">
+                      <CardHeader className="">
                         <CardTitle className="text-lg md:text-xl font-display">Đặt phòng ngay</CardTitle>
-                        <div className="flex justify-between items-center mt-2">
+                        <div className="flex justify-between items-center mt-1">
                           <span className="text-xl md:text-2xl font-bold text-primary">
                             {room.price}₫
                           </span>
                           <span className="text-xs md:text-sm text-muted-foreground">/đêm</span>
                         </div>
                       </CardHeader>
-                      <CardContent className="p-6 md:p-8 pt-0">
-                        <form onSubmit={handleSubmit} className="space-y-4">
+                      <CardContent className="px-6 md:px-8 pt-[5px] pb-[5px]">
+                        <form onSubmit={handleSubmit} className="space-y-5">
                           {/* Dates */}
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <Label className="text-xs md:text-sm">Ngày nhận phòng *</Label>
+                              <Label className="text-xs md:text-sm mb-1.5 block">Ngày nhận phòng *</Label>
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button
@@ -704,7 +691,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                               </Popover>
                             </div>
                             <div>
-                              <Label className="text-xs md:text-sm">Ngày trả phòng *</Label>
+                              <Label className="text-xs md:text-sm mb-1.5 block">Ngày trả phòng *</Label>
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button
@@ -737,7 +724,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
 
                           {/* Nights & Price Summary */}
                           {formData.checkIn && formData.checkOut && nights > 0 && (
-                            <div className="pt-2 border-t space-y-2">
+                            <div className="pt-4 border-t space-y-2.5">
                               <div className="flex justify-between items-center text-xs md:text-sm">
                                 <span className="text-muted-foreground">Số đêm ở:</span>
                                 <span className="font-medium">{nights} đêm</span>
@@ -755,9 +742,9 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
 
                           {/* Guests */}
                           <div>
-                            <Label className="text-xs md:text-sm">Số người *</Label>
+                            <Label className="text-xs md:text-sm mb-1.5 block">Số người *</Label>
                             <Select
-                              value={formData.guests || undefined}
+                              value={formData.guests || ""}
                               onValueChange={(value) => setFormData({ ...formData, guests: value })}
                             >
                               <SelectTrigger className={cn(
@@ -776,52 +763,56 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                           </div>
 
                           {/* Contact Information */}
-                          <div className="pt-2 border-t space-y-3">
+                          <div className="pt-4 border-t space-y-4">
                             <div>
-                              <Label className="text-xs md:text-sm">Họ và tên *</Label>
+                              <Label className="text-xs md:text-sm mb-1.5 block">Họ và tên *</Label>
                               <Input
                                 value={formData.fullName}
                                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                                 placeholder="Nguyễn Văn A"
                                 className="h-9 md:h-10 text-xs md:text-sm"
+                                maxLength={100}
                                 required
                               />
                             </div>
                             <div>
-                              <Label className="text-xs md:text-sm">Email *</Label>
+                              <Label className="text-xs md:text-sm mb-1.5 block">Email *</Label>
                               <Input
                                 type="email"
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 placeholder="email@example.com"
                                 className="h-9 md:h-10 text-xs md:text-sm"
+                                maxLength={255}
                                 required
                               />
                             </div>
                             <div>
-                              <Label className="text-xs md:text-sm">Số điện thoại *</Label>
+                              <Label className="text-xs md:text-sm mb-1.5 block">Số điện thoại *</Label>
                               <Input
                                 value={formData.phone}
                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                 placeholder="+84 123 456 789"
                                 className="h-9 md:h-10 text-xs md:text-sm"
+                                maxLength={20}
                                 required
                               />
                             </div>
                             <div>
-                              <Label className="text-xs md:text-sm">Yêu cầu đặc biệt</Label>
+                              <Label className="text-xs md:text-sm mb-1.5 block">Yêu cầu đặc biệt</Label>
                               <Textarea
                                 value={formData.specialRequests}
                                 onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
                                 placeholder="Ví dụ: Giường đôi, tầng cao..."
                                 rows={2}
                                 className="text-xs md:text-sm resize-none"
+                                maxLength={500}
                               />
                             </div>
                           </div>
 
                           {/* Terms & Conditions */}
-                          <div className="pt-2 border-t">
+                          <div className="pt-4 border-t">
                             <div className="flex items-start gap-2">
                               <Checkbox
                                 id="terms"
@@ -953,7 +944,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                         >
                       <GradientBorder containerClassName="relative h-full">
                         <FloatingCard
-                          className="group overflow-hidden h-full bg-background rounded-xl border-0 backdrop-blur-none shadow-none hover:shadow-lg transition-shadow cursor-pointer"
+                          className="group overflow-hidden h-full bg-card rounded-xl border border-border shadow-card hover:shadow-hover transition-shadow cursor-pointer"
                           delay={0}
                         >
                           {/* Image */}
@@ -1079,7 +1070,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                             >
                           <GradientBorder containerClassName="relative h-full">
                             <FloatingCard
-                              className="group overflow-hidden h-full bg-background rounded-xl border-0 backdrop-blur-none shadow-none hover:shadow-lg transition-shadow cursor-pointer"
+                              className="group overflow-hidden h-full bg-card rounded-xl border border-border shadow-card hover:shadow-hover transition-shadow cursor-pointer"
                               delay={0}
                             >
                               {/* Image */}

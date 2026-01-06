@@ -134,7 +134,7 @@ const BlogSection = () => {
               >
                 <Link href={`/blog/${featuredPost.slug}`}>
               <GradientBorder containerClassName="relative">
-                <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
+                <FloatingCard className="bg-card rounded-xl border border-border shadow-card overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
                   <div className="grid md:grid-cols-2 gap-0">
                     {/* Image Column */}
                     <div className="relative overflow-hidden h-64 md:h-auto">
@@ -206,7 +206,7 @@ const BlogSection = () => {
                   className="h-full"
                 >
                   <GradientBorder containerClassName="relative h-full">
-                    <FloatingCard className="group overflow-hidden h-full bg-background rounded-xl border-0 backdrop-blur-none shadow-none hover:shadow-lg transition-shadow cursor-pointer flex flex-col">
+                    <FloatingCard className="group overflow-hidden h-full bg-card rounded-xl border border-border shadow-card hover:shadow-lg transition-shadow cursor-pointer flex flex-col">
                       {/* Image */}
                       <div className="relative overflow-hidden">
                         <img

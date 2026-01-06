@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 import { Room, RoomWithImages, RoomResponse } from '@/types/database';
+import { isTestOrPlaceholderRoom, deduplicateRooms } from '@/lib/utils/room-filters';
 
 // Mark as dynamic route since we use request.url for query params
 export const dynamic = 'force-dynamic';
@@ -175,8 +176,22 @@ export async function GET(request: Request) {
 
     console.log('Transformed rooms:', rooms.length); // Debug log
 
+    // Filter out test/placeholder rooms
+    const productionRooms = rooms.filter(room => !isTestOrPlaceholderRoom(room));
+    const filteredCount = rooms.length - productionRooms.length;
+    if (filteredCount > 0) {
+      console.log(`Filtered out ${filteredCount} test/placeholder rooms`);
+    }
+
+    // Deduplicate rooms with same name
+    const deduplicatedRooms = deduplicateRooms(productionRooms);
+    const duplicateCount = productionRooms.length - deduplicatedRooms.length;
+    if (duplicateCount > 0) {
+      console.log(`Removed ${duplicateCount} duplicate rooms`);
+    }
+
     // Convert to API response format
-    const response: RoomResponse[] = rooms.map(transformRoomToResponse);
+    const response: RoomResponse[] = deduplicatedRooms.map(transformRoomToResponse);
 
     console.log('Final response:', response.length, 'rooms'); // Debug log
 

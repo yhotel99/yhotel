@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 import { Room, RoomWithImages, RoomResponse, RoomType, RoomStatus } from '@/types/database';
+import { isTestOrPlaceholderRoom } from '@/lib/utils/room-filters';
 
 // Cache for 5 minutes
 export const revalidate = 300; // 5 minutes in seconds
@@ -128,6 +129,14 @@ export async function GET(
           is_main: ri.is_main,
         })),
     };
+
+    // Block access to test/placeholder rooms
+    if (isTestOrPlaceholderRoom(room)) {
+      return NextResponse.json(
+        { error: 'Room not found' },
+        { status: 404 }
+      );
+    }
 
     // Convert to API response format
     const response: RoomResponse = transformRoomToResponse(room);

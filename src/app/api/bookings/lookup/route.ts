@@ -2,10 +2,28 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 
 /**
+ * Validate email format
+ */
+function isValidEmail(email: string): boolean {
+  // Basic email validation: must contain @ and have valid format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
  * Normalize phone number by removing spaces, dashes, and other non-digit characters
  */
 function normalizePhone(phone: string): string {
   return phone.replace(/\D/g, '');
+}
+
+/**
+ * Validate phone number format and length
+ */
+function isValidPhone(phone: string): boolean {
+  const normalized = normalizePhone(phone);
+  // Phone should be between 8 and 15 digits (international standard)
+  return normalized.length >= 8 && normalized.length <= 15;
 }
 
 /**
@@ -16,7 +34,8 @@ function normalizeEmail(email: string): string {
 }
 
 /**
- * GET endpoint to lookup bookings by email and/or phone number
+ * GET endpoint to lookup bookings by email and phone number
+ * SECURITY: Requires BOTH email and phone, and validates both formats
  */
 export async function GET(request: Request) {
   try {
@@ -24,111 +43,90 @@ export async function GET(request: Request) {
     const emailRaw = searchParams.get('email')?.trim() || null;
     const phoneRaw = searchParams.get('phone')?.trim() || null;
 
-    // Validate that at least one parameter is provided
-    if (!emailRaw && !phoneRaw) {
+    // SECURITY: Require BOTH email and phone for lookup
+    if (!emailRaw || !phoneRaw) {
       return NextResponse.json(
-        { error: 'Vui lòng nhập email hoặc số điện thoại để tra cứu' },
+        { error: 'Vui lòng nhập đầy đủ cả email và số điện thoại để tra cứu' },
         { status: 400 }
       );
     }
 
-    // Normalize inputs
-    const email = emailRaw ? normalizeEmail(emailRaw) : null;
-    const phone = phoneRaw ? normalizePhone(phoneRaw) : null;
+    // SECURITY: Validate email format before processing
+    if (!isValidEmail(emailRaw)) {
+      return NextResponse.json(
+        { error: 'Email không hợp lệ. Vui lòng nhập đúng định dạng email (ví dụ: example@email.com)' },
+        { status: 400 }
+      );
+    }
 
-    // Filter by email and/or phone
-    // Use case-insensitive comparison for email
+    // SECURITY: Validate phone number format and length
+    if (!isValidPhone(phoneRaw)) {
+      return NextResponse.json(
+        { error: 'Số điện thoại không hợp lệ. Vui lòng nhập số điện thoại từ 8 đến 15 chữ số' },
+        { status: 400 }
+      );
+    }
+
+    // Normalize inputs after validation
+    const email = normalizeEmail(emailRaw);
+    const phone = normalizePhone(phoneRaw);
+
+    // SECURITY: Find customers matching BOTH email AND phone (exact match required)
     type Customer = {
       id: string;
       full_name: string;
       email: string | null;
       phone: string | null;
     };
-    let customers: Customer[] = [];
     
-    if (email && phone) {
-      // If both are provided, find customers matching either email OR phone
-      const { data: emailCustomers } = await supabase
-        .from('customers')
-        .select('id, full_name, email, phone')
-        .ilike('email', email)
-        .is('deleted_at', null);
+    // First, find customers by exact email match (case-insensitive, no wildcards for exact match)
+    const { data: emailCustomers, error: emailError } = await supabase
+      .from('customers')
+      .select('id, full_name, email, phone')
+      .ilike('email', email) // Exact match (case-insensitive) - no wildcards
+      .is('deleted_at', null);
+    
+    if (emailError) {
+      console.error('Error fetching customers by email:', emailError);
+      return NextResponse.json(
+        { error: 'Lỗi khi tìm kiếm khách hàng' },
+        { status: 500 }
+      );
+    }
+    
+    if (!emailCustomers || emailCustomers.length === 0) {
+      return NextResponse.json(
+        { bookings: [], message: 'Không tìm thấy thông tin đặt phòng với email và số điện thoại đã nhập' },
+        { status: 200 }
+      );
+    }
+    
+    // SECURITY: Filter to only customers where BOTH email AND phone match exactly
+    const customers: Customer[] = [];
+    
+    // Check each customer from email match to verify phone also matches exactly
+    for (const emailCustomer of emailCustomers) {
+      // Verify email matches exactly (case-insensitive) - double check
+      const customerEmail = emailCustomer.email ? normalizeEmail(emailCustomer.email) : null;
+      if (customerEmail !== email) continue;
       
-      const { data: phoneCustomers } = await supabase
-        .from('customers')
-        .select('id, full_name, email, phone')
-        .eq('phone', phoneRaw)
-        .is('deleted_at', null);
-      
-      // Combine results, avoiding duplicates
-      const customerMap = new Map();
-      [...(emailCustomers || []), ...(phoneCustomers || [])].forEach(c => {
-        if (!customerMap.has(c.id)) {
-          customerMap.set(c.id, c);
-        }
-      });
-      customers = Array.from(customerMap.values());
-      
-    } else if (email) {
-      // Case-insensitive email search
-      const { data: emailCustomers, error: emailError } = await supabase
-        .from('customers')
-        .select('id, full_name, email, phone')
-        .ilike('email', email)
-        .is('deleted_at', null);
-      
-      if (emailError) {
-        console.error('Error fetching customers by email:', emailError);
-        return NextResponse.json(
-          { error: 'Lỗi khi tìm kiếm khách hàng' },
-          { status: 500 }
-        );
-      }
-      customers = emailCustomers || [];
-      
-    } else if (phone) {
-      // Try exact phone match first
-      const { data: exactPhoneCustomers, error: phoneError } = await supabase
-        .from('customers')
-        .select('id, full_name, email, phone')
-        .eq('phone', phoneRaw)
-        .is('deleted_at', null);
-      
-      if (phoneError) {
-        console.error('Error fetching customers by phone:', phoneError);
-        return NextResponse.json(
-          { error: 'Lỗi khi tìm kiếm khách hàng' },
-          { status: 500 }
-        );
-      }
-      
-      // If no exact match, try normalized phone search
-      if (!exactPhoneCustomers || exactPhoneCustomers.length === 0) {
-        // Fetch all customers and filter by normalized phone
-        const { data: allCustomers } = await supabase
-          .from('customers')
-          .select('id, full_name, email, phone')
-          .is('deleted_at', null);
-        
-        if (allCustomers) {
-          customers = allCustomers.filter(c => {
-            if (!c.phone) return false;
-            return normalizePhone(c.phone) === phone;
-          });
-        }
-      } else {
-        customers = exactPhoneCustomers;
+      // Verify phone matches exactly (after normalization)
+      if (!emailCustomer.phone) continue;
+      const customerPhone = normalizePhone(emailCustomer.phone);
+      if (customerPhone === phone) {
+        customers.push(emailCustomer);
       }
     }
 
+    // SECURITY: If no customer matches BOTH email AND phone, return empty results
     if (!customers || customers.length === 0) {
       return NextResponse.json(
-        { bookings: [], message: 'Không tìm thấy thông tin đặt phòng với email hoặc số điện thoại đã nhập' },
+        { bookings: [], message: 'Không tìm thấy thông tin đặt phòng với email và số điện thoại đã nhập' },
         { status: 200 }
       );
     }
 
-    // Get all customer IDs
+    // Get all customer IDs (these are already validated to match both email and phone)
     const customerIds = customers.map(c => c.id);
 
     // Fetch bookings for these customers
@@ -162,34 +160,18 @@ export async function GET(request: Request) {
       );
     }
 
-    // All bookings are already filtered by customer IDs, so we can use them directly
-    // But if both email and phone were provided, filter to match either
-    let filteredBookings = bookings || [];
-    
-    if (email && phone) {
-      // Filter to ensure customer matches at least one of the provided criteria
-      filteredBookings = filteredBookings.filter(booking => {
-        const customer = booking.customers;
-        if (!customer) return false;
-        
-        const customerEmail = customer.email ? normalizeEmail(customer.email) : null;
-        const customerPhone = customer.phone ? normalizePhone(customer.phone) : null;
-        
-        const emailMatch = customerEmail === email;
-        const phoneMatch = customerPhone === phone;
-        
-        return emailMatch || phoneMatch;
-      });
-    } else if (phone) {
-      // Ensure phone matches after normalization
-      filteredBookings = filteredBookings.filter(booking => {
-        const customer = booking.customers;
-        if (!customer || !customer.phone) return false;
-        
-        const customerPhone = normalizePhone(customer.phone);
-        return customerPhone === phone;
-      });
-    }
+    // SECURITY: Double-check that all bookings belong to customers matching BOTH email AND phone
+    // This is a final security check to prevent any edge cases
+    const filteredBookings = (bookings || []).filter(booking => {
+      const customer = booking.customers;
+      if (!customer) return false;
+      
+      const customerEmail = customer.email ? normalizeEmail(customer.email) : null;
+      const customerPhone = customer.phone ? normalizePhone(customer.phone) : null;
+      
+      // Both must match exactly
+      return customerEmail === email && customerPhone === phone;
+    });
 
     return NextResponse.json({
       bookings: filteredBookings || [],

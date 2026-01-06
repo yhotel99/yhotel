@@ -1,8 +1,8 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { 
@@ -25,39 +25,343 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { RoomDetailSkeleton } from "@/components/RoomDetailSkeleton";
 import { BookingStatusBadge } from "@/components/BookingStatusBadge";
-import { BOOKING_STATUS } from "@/lib/constants";
+import { BOOKING_STATUS, bookingStatusLabels } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { BANK_BIN_CODES } from "@/lib/utils";
 import Image from "next/image";
+import { supabase } from "@/lib/supabase/client";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 
 const PaymentContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const bookingId = searchParams.get("booking_id");
+  const channelRef = useRef<RealtimeChannel | null>(null);
+  const previousStatusRef = useRef<string | null>(null);
+  const hasRedirectedRef = useRef(false);
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
     queryFn: async () => {
-      if (!bookingId) return null;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Payment] Fetching booking data for:', bookingId);
+      }
+      if (!bookingId) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Payment] No bookingId provided');
+        }
+        return null;
+      }
       const response = await fetch(`/api/bookings/${bookingId}`);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Payment] API response:', {
+          status: response.status,
+          ok: response.ok,
+          bookingId,
+        });
+      }
       if (!response.ok) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[Payment] API error:', response.status, response.statusText);
+        }
         throw new Error('Không tìm thấy thông tin đặt phòng');
       }
-      return response.json();
+      const data = await response.json();
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Payment] Booking data fetched:', {
+          id: data.id,
+          status: data.status,
+          booking_code: data.booking_code,
+        });
+      }
+      return data;
     },
     enabled: !!bookingId,
+    refetchInterval: false, // Disable polling, use realtime instead
   });
+
+  // Log when booking data changes
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Payment] Component state:', {
+        bookingId,
+        isLoading,
+        hasError: !!error,
+        hasBooking: !!booking,
+        bookingStatus: booking?.status,
+      });
+    }
+  }, [bookingId, isLoading, error, booking]);
+
+  // Update previousStatusRef when booking changes from query (not from realtime)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Payment] Booking data changed:', {
+        bookingId,
+        status: booking?.status,
+        previousStatus: previousStatusRef.current,
+        hasBooking: !!booking,
+      });
+    }
+
+    // Initialize previousStatusRef with current status
+    if (booking?.status && previousStatusRef.current === null) {
+      previousStatusRef.current = booking.status;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Payment] Initial status set:', booking.status);
+      }
+    }
+
+    // Only update if it's different to avoid unnecessary updates
+    if (booking?.status && previousStatusRef.current !== booking.status) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Payment] Status updated from query:', {
+          from: previousStatusRef.current,
+          to: booking.status,
+        });
+      }
+      previousStatusRef.current = booking.status;
+    }
+    
+    // If booking is already confirmed when page loads, redirect to success page
+    // Use hasRedirectedRef to prevent double redirect
+    if (
+      !hasRedirectedRef.current &&
+      booking?.status === BOOKING_STATUS.CONFIRMED &&
+      bookingId
+    ) {
+      hasRedirectedRef.current = true;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Payment] Booking already confirmed, redirecting to success page...');
+      }
+      // Small delay to ensure page is fully loaded
+      const redirectTimer = setTimeout(() => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Payment] Executing redirect to success page');
+        }
+        router.push(`/checkout/success?booking_id=${bookingId}`);
+      }, 1000);
+      
+      return () => clearTimeout(redirectTimer);
+    }
+  }, [booking?.status, bookingId, router]);
+
+  // Setup realtime subscription for booking status changes
+  // Only depend on bookingId, not booking object to avoid recreating subscription
+  useEffect(() => {
+    if (!bookingId) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Realtime] Skipping subscription setup: no bookingId');
+      }
+      return;
+    }
+
+    // Initialize previousStatusRef if booking data is available
+    if (booking?.status && previousStatusRef.current === null) {
+      previousStatusRef.current = booking.status;
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Realtime] Initial status from booking:', booking.status);
+      }
+    }
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Realtime] Setting up subscription for booking:', bookingId);
+      console.log('[Realtime] Current booking status:', booking?.status);
+      console.log('[Realtime] Previous status ref:', previousStatusRef.current);
+    }
+
+    // Create realtime channel for this specific booking
+    const channelName = `booking-${bookingId}`;
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Realtime] Creating channel:', channelName);
+    }
+    
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings',
+          filter: `id=eq.${bookingId}`,
+        },
+        async (payload) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Realtime] Received UPDATE event:', {
+              event: payload.eventType,
+              table: payload.table,
+              schema: payload.schema,
+              new: payload.new,
+              old: payload.old,
+            });
+          }
+
+          const updatedBookingData = payload.new;
+          const oldStatus = previousStatusRef.current;
+          const newStatus = updatedBookingData.status;
+
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Realtime] Status change detected:', {
+              oldStatus,
+              newStatus,
+              bookingId,
+            });
+          }
+
+          // Refetch full booking data from API to get all related data (room, customer, etc.)
+          try {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[Realtime] Refetching booking data from API...');
+            }
+            const response = await fetch(`/api/bookings/${bookingId}`);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('[Realtime] API response status:', response.status);
+            }
+            
+            if (response.ok) {
+              const fullBookingData = await response.json();
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[Realtime] Full booking data received:', fullBookingData);
+              }
+              
+              // Update React Query cache with full booking data
+              queryClient.setQueryData(['booking', bookingId], fullBookingData);
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[Realtime] React Query cache updated');
+              }
+
+              // Show toast notification if status changed
+              // Check oldStatus !== null to ensure we have a valid previous status
+              if (oldStatus !== null && oldStatus !== newStatus) {
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('[Realtime] Status changed from', oldStatus, 'to', newStatus);
+                }
+                
+                const oldStatusLabel = bookingStatusLabels[oldStatus as keyof typeof bookingStatusLabels] || oldStatus;
+                const newStatusLabel = bookingStatusLabels[newStatus as keyof typeof bookingStatusLabels] || newStatus;
+                
+                toast({
+                  title: "Trạng thái đặt phòng đã thay đổi",
+                  description: `Từ "${oldStatusLabel}" sang "${newStatusLabel}"`,
+                  duration: 5000,
+                });
+
+                // If booking is confirmed, show success message and redirect
+                // Use hasRedirectedRef to prevent double redirect
+                if (newStatus === BOOKING_STATUS.CONFIRMED && !hasRedirectedRef.current) {
+                  hasRedirectedRef.current = true;
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('[Realtime] Booking confirmed! Redirecting to success page...');
+                  }
+                  toast({
+                    title: "Thanh toán thành công!",
+                    description: "Đặt phòng của bạn đã được xác nhận. Đang chuyển hướng...",
+                    duration: 3000,
+                  });
+                  
+                  // Redirect to success page after a short delay
+                  setTimeout(() => {
+                    if (process.env.NODE_ENV === 'development') {
+                      console.log('[Realtime] Executing redirect to success page');
+                    }
+                    router.push(`/checkout/success?booking_id=${bookingId}`);
+                  }, 1500);
+                }
+
+                // If booking is cancelled, show warning
+                if (newStatus === BOOKING_STATUS.CANCELLED) {
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('[Realtime] Booking cancelled');
+                  }
+                  toast({
+                    title: "Đặt phòng đã bị hủy",
+                    description: "Vui lòng liên hệ với chúng tôi nếu bạn có thắc mắc.",
+                    variant: "destructive",
+                    duration: 5000,
+                  });
+                }
+              } else {
+                if (process.env.NODE_ENV === 'development') {
+                  console.log('[Realtime] No status change detected (same status or no old status)');
+                }
+              }
+
+              // Update previous status
+              previousStatusRef.current = newStatus;
+              if (process.env.NODE_ENV === 'development') {
+                console.log('[Realtime] Previous status updated to:', newStatus);
+              }
+            } else {
+              if (process.env.NODE_ENV === 'development') {
+                console.error('[Realtime] API response not OK:', response.status, response.statusText);
+              }
+            }
+          } catch (error) {
+            if (process.env.NODE_ENV === 'development') {
+              console.error('[Realtime] Error refetching booking after realtime update:', error);
+            }
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Realtime] Subscription status changed:', {
+            status,
+            bookingId,
+            channelName,
+          });
+        }
+        
+        if (status === 'SUBSCRIBED') {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Realtime] ✅ Successfully subscribed to booking:', bookingId);
+          }
+        }
+        if (status === 'CHANNEL_ERROR') {
+          console.error('[Realtime] ❌ Channel error for booking:', bookingId);
+        }
+        if (status === 'TIMED_OUT') {
+          console.warn('[Realtime] ⚠️ Subscription timed out for booking:', bookingId);
+        }
+        if (status === 'CLOSED') {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('[Realtime] 🔒 Channel closed for booking:', bookingId);
+          }
+        }
+      });
+
+    channelRef.current = channel;
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[Realtime] Channel reference stored');
+    }
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('[Realtime] Cleaning up subscription for booking:', bookingId);
+      }
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[Realtime] Channel removed');
+        }
+        channelRef.current = null;
+      }
+    };
+  }, [bookingId, booking?.status, queryClient, toast, router]);
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
 
   const bankAccount = {
-    number: "1026917727",
-    bank: "Vietcombank",
-    bankBin: BANK_BIN_CODES["Vietcombank"] || "970436", // Vietcombank BIN code
+    number: "221003221003",
+    bank: "MB Bank",
+    bankBin: BANK_BIN_CODES["MBBank"] || "970422", // MB Bank BIN code
     owner: "Tran Quang Khai"
   };
 
@@ -239,7 +543,7 @@ const PaymentContent = () => {
               {/* Left Column - Payment Info */}
               <div className="lg:col-span-2 space-y-6">
                 <GradientBorder>
-                  <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                  <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                     <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                       <div className="mb-4 md:mb-1">
                         <CardTitle className="text-xl md:text-2xl font-display">
@@ -363,7 +667,7 @@ const PaymentContent = () => {
               <div className="lg:col-span-1">
                 <div className="sticky top-24 space-y-6">
                   <GradientBorder>
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                         <div className="mb-4">
                           <CardTitle className="text-xl md:text-2xl font-display">

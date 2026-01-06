@@ -23,7 +23,9 @@ interface BookingDetailPageProps {
 }
 
 const BookingDetailPage = ({ params }: BookingDetailPageProps) => {
-  const { id } = use(params);
+  // Unwrap params immediately to prevent enumeration
+  const unwrappedParams = use(params);
+  const { id } = unwrappedParams;
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
@@ -259,7 +261,7 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
                   transition={{ duration: 0.4, delay: 0.1 }}
                 >
                   <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardHeader>
                         <CardTitle className="text-2xl font-display flex items-center gap-2">
                           <FileText className="w-6 h-6 text-primary" />
@@ -343,7 +345,7 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
                   transition={{ duration: 0.4, delay: 0.2 }}
                 >
                   <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardHeader>
                         <CardTitle className="text-xl font-display flex items-center gap-2">
                           <Users className="w-5 h-5 text-primary" />
@@ -389,7 +391,7 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
                   transition={{ duration: 0.4, delay: 0.3 }}
                 >
                   <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardHeader>
                         <CardTitle className="text-xl font-display flex items-center gap-2">
                           <CreditCard className="w-5 h-5 text-primary" />
@@ -433,7 +435,7 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
                 >
                   {/* Contact Info */}
                   <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardHeader>
                         <CardTitle className="text-lg font-display">Liên Hệ Hỗ Trợ</CardTitle>
                       </CardHeader>
@@ -465,7 +467,7 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
 
                   {/* Actions */}
                   <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardContent className="p-6 space-y-3">
                         <Button
                           variant="outline"
@@ -494,7 +496,7 @@ Cảm ơn bạn đã đặt phòng tại Y Hotel!
 
                   {/* Important Notes */}
                   <GradientBorder containerClassName="relative">
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardHeader>
                         <CardTitle className="text-lg font-display">Lưu Ý Quan Trọng</CardTitle>
                       </CardHeader>

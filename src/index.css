@@ -12,12 +12,12 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
     --background: 60 4% 98%;
     --foreground: 111 54% 18%;
 
-    /* Card System */
-    --card: 60 4% 98%;
+    /* Card System - Increased contrast with white background */
+    --card: 0 0% 100%;
     --card-foreground: 111 54% 18%;
 
     /* Popover System */
-    --popover: 60 4% 98%;
+    --popover: 0 0% 100%;
     --popover-foreground: 111 54% 18%;
 
     /* Primary - Elegant Green Color System (#9bc78e) */
@@ -27,12 +27,12 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
     --primary-dark: 106 34% 55%;
     --primary-subtle: 106 14% 85%;
 
-    /* Secondary - Elegant Support Colors */
-    --secondary: 104 33% 96%;
+    /* Secondary - Elegant Support Colors - Increased contrast */
+    --secondary: 104 33% 94%;
     --secondary-foreground: 111 54% 18%;
 
-    /* Muted - Subtle Tones */
-    --muted: 104 33% 96%;
+    /* Muted - Subtle Tones - Increased contrast */
+    --muted: 104 33% 92%;
     --muted-foreground: 111 54% 28%;
 
     /* Accent - Highlight Colors */
@@ -49,9 +49,9 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
 
-    /* Interactive Elements */
-    --border: 104 33% 91%;
-    --input: 104 33% 91%;
+    /* Interactive Elements - Increased contrast */
+    --border: 104 33% 88%;
+    --input: 104 33% 88%;
     --ring: 106 34% 67%;
 
     /* Dark Gray Variations */
@@ -88,11 +88,11 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
       hsl(var(--gold) / 0.05) 75%, 
       hsl(var(--primary) / 0.05) 100%);
 
-    /* Shadows */
+    /* Shadows - Increased for better contrast */
     --shadow-luxury: 0 25px 50px -12px hsl(106 34% 67% / 0.25);
-    --shadow-card: 0 10px 25px -5px hsl(104 33% 89% / 0.1);
-    --shadow-hover: 0 20px 35px -10px hsl(106 34% 67% / 0.3);
-    --shadow-glass: 0 8px 32px 0 rgba(222, 236, 217, 0.15);
+    --shadow-card: 0 10px 25px -5px hsl(104 33% 85% / 0.2);
+    --shadow-hover: 0 20px 35px -10px hsl(106 34% 67% / 0.35);
+    --shadow-glass: 0 8px 32px 0 rgba(222, 236, 217, 0.25);
     --shadow-glow: 0 0 30px hsl(var(--primary) / 0.15);
 
     /* Spacing & Layout */

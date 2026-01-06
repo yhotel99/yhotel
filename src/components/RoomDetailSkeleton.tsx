@@ -48,7 +48,7 @@ export function RoomDetailSkeleton() {
 
               {/* Room Information Card */}
               <GradientBorder containerClassName="relative">
-                <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                   <CardContent className="p-6 md:p-8">
                     <Skeleton className="h-7 w-1/3 mb-4" />
                     <Skeleton className="h-4 w-full mb-2" />
@@ -80,7 +80,7 @@ export function RoomDetailSkeleton() {
             {/* Sidebar - Booking Card */}
             <div className="lg:col-span-1">
               <GradientBorder containerClassName="relative">
-                <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none sticky top-24">
+                <FloatingCard className="bg-card rounded-xl border border-border shadow-card sticky top-24">
                   <CardHeader className="p-6 md:p-8">
                     <Skeleton className="h-6 w-1/2 mb-2" />
                     <Skeleton className="h-8 w-1/3" />

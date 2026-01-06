@@ -143,7 +143,7 @@ const SuccessContent = () => {
                 {/* Left Column - Booking Details */}
                 <div className="lg:col-span-2 space-y-6">
                   <GradientBorder>
-                    <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                    <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                       <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                         <div className="mb-4 md:mb-1">
                           <CardTitle className="text-xl md:text-2xl font-display">
@@ -276,7 +276,7 @@ const SuccessContent = () => {
                 <div className="lg:col-span-1">
                   <div className="sticky top-24 space-y-6">
                     <GradientBorder>
-                      <FloatingCard className="bg-background rounded-xl border-0 backdrop-blur-none shadow-none">
+                      <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
                         <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                           <div className="mb-4">
                             <CardTitle className="text-xl md:text-2xl font-display">

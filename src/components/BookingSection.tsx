@@ -429,6 +429,7 @@ const BookingSectionContent = () => {
                         value={formData.fullName}
                         onChange={(e) => handleInputChange("fullName", e.target.value)}
                         placeholder="Nhập họ và tên"
+                        maxLength={100}
                         required
                       />
                     </div>
@@ -440,6 +441,7 @@ const BookingSectionContent = () => {
                         value={formData.email}
                         onChange={(e) => handleInputChange("email", e.target.value)}
                         placeholder="email@example.com"
+                        maxLength={255}
                         required
                       />
                     </div>
@@ -455,6 +457,7 @@ const BookingSectionContent = () => {
                       value={formData.phone}
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       placeholder="+84 123 456 789"
+                      maxLength={20}
                       required
                     />
                   </div>
@@ -467,6 +470,7 @@ const BookingSectionContent = () => {
                       onChange={(e) => handleInputChange("specialRequests", e.target.value)}
                       placeholder="Ví dụ: Giường đôi, tầng cao, view biển..."
                       rows={3}
+                      maxLength={500}
                     />
                   </div>
 

@@ -46,7 +46,9 @@ const HTMLContent = ({ content }: { content: string }) => {
 };
 
 const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
-  const { id } = use(params);
+  // Unwrap params immediately to prevent enumeration
+  const unwrappedParams = use(params);
+  const { id } = unwrappedParams;
   const { blog, isLoading, error } = useBlog(id);
   
   // Fetch related posts (exclude current blog)
