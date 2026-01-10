@@ -43,6 +43,10 @@ const PaymentContent = () => {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const previousStatusRef = useRef<string | null>(null);
   const hasRedirectedRef = useRef(false);
+  const retryCountRef = useRef(0);
+  const maxRetries = 3;
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [subscriptionKey, setSubscriptionKey] = useState(0); // Force re-subscription on retry
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
@@ -151,7 +155,7 @@ const PaymentContent = () => {
   }, [booking?.status, bookingId, router]);
 
   // Setup realtime subscription for booking status changes
-  // Only depend on bookingId, not booking object to avoid recreating subscription
+  // subscriptionKey is used to force re-subscription on retry
   useEffect(() => {
     if (!bookingId) {
       if (process.env.NODE_ENV === 'development') {
@@ -308,12 +312,13 @@ const PaymentContent = () => {
           }
         }
       )
-      .subscribe((status) => {
+      .subscribe((status, err) => {
         if (process.env.NODE_ENV === 'development') {
           console.log('[Realtime] Subscription status changed:', {
             status,
             bookingId,
             channelName,
+            error: err,
           });
         }
         
@@ -321,13 +326,70 @@ const PaymentContent = () => {
           if (process.env.NODE_ENV === 'development') {
             console.log('[Realtime] ✅ Successfully subscribed to booking:', bookingId);
           }
+          // Reset retry count on successful subscription
+          retryCountRef.current = 0;
         }
+        
         if (status === 'CHANNEL_ERROR') {
-          console.error('[Realtime] ❌ Channel error for booking:', bookingId);
+          const errorMessage = err?.message || 'Unknown error';
+          console.error('[Realtime] ❌ Channel error for booking:', bookingId, errorMessage);
+          
+          // Retry subscription if we haven't exceeded max retries
+          if (retryCountRef.current < maxRetries) {
+            retryCountRef.current += 1;
+            const retryDelay = Math.min(1000 * Math.pow(2, retryCountRef.current - 1), 5000); // Exponential backoff, max 5s
+            
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`[Realtime] Retrying subscription (attempt ${retryCountRef.current}/${maxRetries}) in ${retryDelay}ms...`);
+            }
+            
+            // Clear any existing retry timeout
+            if (retryTimeoutRef.current) {
+              clearTimeout(retryTimeoutRef.current);
+            }
+            
+            // Retry after delay by recreating the subscription
+            retryTimeoutRef.current = setTimeout(() => {
+              if (channelRef.current) {
+                supabase.removeChannel(channelRef.current);
+                channelRef.current = null;
+              }
+              // Force re-subscription by updating subscriptionKey
+              setSubscriptionKey(prev => prev + 1);
+            }, retryDelay);
+          } else {
+            // Max retries exceeded, show user-friendly message
+            console.warn('[Realtime] ⚠️ Max retries exceeded. Realtime subscription failed. Falling back to polling.');
+            toast({
+              title: "Kết nối cập nhật thời gian thực không khả dụng",
+              description: "Trang sẽ tự động làm mới để kiểm tra trạng thái đặt phòng.",
+              variant: "default",
+              duration: 5000,
+            });
+          }
         }
+        
         if (status === 'TIMED_OUT') {
           console.warn('[Realtime] ⚠️ Subscription timed out for booking:', bookingId);
+          
+          // Retry on timeout
+          if (retryCountRef.current < maxRetries) {
+            retryCountRef.current += 1;
+            const retryDelay = 2000;
+            
+            if (retryTimeoutRef.current) {
+              clearTimeout(retryTimeoutRef.current);
+            }
+            
+            retryTimeoutRef.current = setTimeout(() => {
+              if (channelRef.current) {
+                supabase.removeChannel(channelRef.current);
+                channelRef.current = null;
+              }
+            }, retryDelay);
+          }
         }
+        
         if (status === 'CLOSED') {
           if (process.env.NODE_ENV === 'development') {
             console.log('[Realtime] 🔒 Channel closed for booking:', bookingId);
@@ -345,6 +407,13 @@ const PaymentContent = () => {
       if (process.env.NODE_ENV === 'development') {
         console.log('[Realtime] Cleaning up subscription for booking:', bookingId);
       }
+      
+      // Clear any pending retry timeouts
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+      
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         if (process.env.NODE_ENV === 'development') {
@@ -352,17 +421,41 @@ const PaymentContent = () => {
         }
         channelRef.current = null;
       }
+      
+      // Reset retry count on cleanup
+      retryCountRef.current = 0;
     };
   }, [bookingId, booking?.status, queryClient, toast, router]);
 
+  const canProceedPayment = booking?.status === BOOKING_STATUS.PENDING;
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [countdown, setCountdown] = useState(600); // 10 minutes = 600 seconds
+
+  // Countdown timer effect
+  useEffect(() => {
+    if (canProceedPayment && countdown > 0) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            // Countdown finished, auto redirect to success page
+            router.push(`/checkout/success?booking_id=${bookingId}`);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [canProceedPayment, countdown, bookingId, router]);
 
   const bankAccount = {
-    number: "221003221003",
-    bank: "MB Bank",
-    bankBin: BANK_BIN_CODES["MBBank"] || "970422", // MB Bank BIN code
-    owner: "Tran Quang Khai"
+    number: "22102003",
+    bank: "ACB",
+    bankBin: BANK_BIN_CODES["ACB"] || "970416", // ACB BIN code
+    owner: "TRAN QUANG KHAI"
   };
 
   // Use booking_code if available, otherwise fallback to booking ID
@@ -426,13 +519,6 @@ const PaymentContent = () => {
     });
   };
 
-  const handleConfirmPayment = async () => {
-    if (!bookingId || !booking) return;
-
-    // Không cập nhật status, giữ nguyên trạng thái "chờ xác nhận"
-    // Chuyển đến trang thành công
-    router.push(`/checkout/success?booking_id=${bookingId}`);
-  };
 
   if (!bookingId) {
     return (
@@ -507,8 +593,6 @@ const PaymentContent = () => {
   const formatTime = (dateString: string) => {
     return format(new Date(dateString), "HH:mm", { locale: vi });
   };
-
-  const canProceedPayment = booking.status === BOOKING_STATUS.PENDING;
 
   return (
     <div className="min-h-screen bg-luxury-gradient">
@@ -648,7 +732,7 @@ const PaymentContent = () => {
                           <li>Chọn tính năng quét mã QR và quét mã VietQR bên trên</li>
                           <li>Kiểm tra thông tin: số tiền {formatPrice(booking.total_amount)}đ, nội dung chuyển khoản {paymentContent}</li>
                           <li>Xác nhận và hoàn tất giao dịch</li>
-                          <li>Nhấn &quot;Xác nhận đã chuyển khoản&quot; sau khi hoàn tất</li>
+                          <li>Chờ hệ thống tự động xác nhận thanh toán (tối đa 10 phút)</li>
                           <li>Chúng tôi sẽ gửi email xác nhận thanh toán thành công trong vài phút</li>
                         </ol>
                         <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
@@ -779,28 +863,34 @@ const PaymentContent = () => {
                           </div>
                         </div>
 
-                        {/* Confirm Button */}
-                        <Button
-                          onClick={handleConfirmPayment}
-                          disabled={isProcessing || !canProceedPayment}
-                          className="w-full h-12 text-base font-semibold"
-                          size="lg"
-                          variant="luxury"
-                        >
-                          {isProcessing ? (
-                            <>
-                              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                              Đang xử lý...
-                            </>
-                          ) : !canProceedPayment ? (
-                            "Đơn đặt phòng đã được xử lý"
-                          ) : (
-                            <>
-                              <CheckCircle className="mr-2 h-5 w-5" />
-                              Xác nhận đã chuyển khoản
-                            </>
-                          )}
-                        </Button>
+                        {/* Countdown Timer */}
+                        {canProceedPayment && countdown > 0 && (
+                          <div className="w-full p-6 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-lg border border-primary/20">
+                            <div className="text-center">
+                              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+                                <Clock className="h-8 w-8 text-primary animate-pulse" />
+                              </div>
+                              <h3 className="text-lg font-semibold mb-2">Đang chờ thanh toán</h3>
+                              <p className="text-sm text-muted-foreground mb-4">
+                                Hệ thống sẽ tự động xác nhận sau:
+                              </p>
+                              <div className="text-3xl font-bold text-primary font-mono">
+                                {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-2">
+                                Chúng tôi sẽ kiểm tra thanh toán và xác nhận đặt phòng của bạn
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {!canProceedPayment && (
+                          <div className="w-full p-4 bg-muted/30 rounded-lg border border-border/50">
+                            <p className="text-center text-muted-foreground">
+                              Đơn đặt phòng đã được xử lý
+                            </p>
+                          </div>
+                        )}
                       </CardContent>
                     </FloatingCard>
                   </GradientBorder>

@@ -148,6 +148,7 @@ async function findOrCreateCustomer(
           email: email,
           phone: phone || null,
           customer_type: 'regular',
+          source: 'website',
         },
       ])
       .select('id')

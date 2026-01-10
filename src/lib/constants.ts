@@ -141,3 +141,9 @@ export const getAmenityLabel = (value: string): string => {
   return amenityLabels[value] || value;
 };
 
+/**
+ * Customer source values
+ */
+export const CUSTOMER_SOURCE = {
+  WEBSITE: "website",
+} as const;

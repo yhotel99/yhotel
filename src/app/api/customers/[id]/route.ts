@@ -10,6 +10,7 @@ export interface CustomerDetailResponse {
   email: string | null;
   phone: string | null;
   customer_type: 'regular' | 'vip' | 'corporate';
+  source: string | null;
   total_bookings: number;
   total_spent: number;
   last_booking_date: string | null;
@@ -88,6 +89,7 @@ export async function GET(
       email: customer.email,
       phone: customer.phone,
       customer_type: customer.customer_type,
+      source: customer.source || null,
       total_bookings: bookings.length,
       total_spent: totalSpent,
       last_booking_date: lastBooking ? lastBooking.created_at : null,
