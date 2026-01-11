@@ -1,73 +1,82 @@
-# Welcome to your Lovable project
+# Y HOTEL - Modern Hotel Booking & Management
 
-## Project info
+![Y HOTEL Logo](file:///d:/Project/yhotel/Y%20HOTEL_CIP.png)
 
-**URL**: https://lovable.dev/projects/a4d5d548-d28c-4c73-a446-a4fbc07bb0ac
+A high-performance, responsive hotel booking and management platform built with Next.js, Supabase, and Tailwind CSS. This system provides a seamless experience for both customers looking for rooms and administrators managing hotel operations.
 
-## How can I edit this code?
+## ✨ Core Features
 
-There are several ways of editing your application.
+### 🏨 Guest Experience
+- **Smart Room Discovery**: Browse and filter rooms by category, price, and availability.
+- **Seamless Booking Flow**: Intuitive step-by-step process from room selection to confirmation.
+- **Secure Payments**: Integrated with modern payment gateways (PAY2S, SEPAY).
+- **Booking Lookup**: Easily retrieve and manage existing reservations.
+- **Responsive Interface**: Fully optimized for mobile, tablet, and desktop viewing.
 
-**Use Lovable**
+### 🛠️ Administrative Suite
+- **Comprehensive Dashboard**: Real-time overview of bookings, revenue, and guest stats.
+- **Room Management**: Easy interface to update room details, pricing, and availability.
+- **User & Role Management**: Controlled access for administrators and staff.
+- **Automated Webhooks**: Real-time payment processing and booking updates.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/a4d5d548-d28c-4c73-a446-a4fbc07bb0ac) and start prompting.
+## 🚀 Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Framework**: [Next.js 15+](https://nextjs.org/) (App Router, Turbopack)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) & [shadcn/ui](https://ui.shadcn.com/)
+- **Backend/Database**: [Supabase](https://supabase.com/) (PostgreSQL + Realtime)
+- **State Management**: [TanStack Query (React Query)](https://tanstack.com/query/latest)
+- **Forms**: [React Hook Form](https://react-hook-form.com/) & [Zod](https://zod.dev/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Package Manager**: [Bun](https://bun.sh/) or [npm](https://www.npmjs.com/)
 
-**Use your preferred IDE**
+## 🛠️ Getting Started
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerequisites
+- Node.js (v18+) or Bun
+- A Supabase project
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Installation
+1.  **Clone the repository**:
+    ```sh
+    git clone <YOUR_GIT_URL>
+    cd yhotel
+    ```
 
-Follow these steps:
+2.  **Install dependencies**:
+    ```sh
+    npm install
+    # or if using Bun
+    bun install
+    ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+3.  **Setup Environment Variables**:
+    Create a `.env.local` file based on `.env.example`:
+    ```env
+    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+    ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+4.  **Run Development Server**:
+    ```sh
+    npm run dev
+    # or
+    bun dev
+    ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 📂 Project Structure
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+- `src/app`: Next.js pages, API routes, and layouts.
+- `src/components`: Reusable UI components (Shared, UI, Booking, Admin).
+- `src/hooks`: Custom React hooks for data fetching and business logic.
+- `src/lib`: Utility functions, Supabase client, and shared constants.
+- `src/services`: API service layers.
+- `supabase/`: Database migrations and configuration.
 
-**Edit a file directly in GitHub**
+## 📖 Setup Guides
+- [PAY2S Webhook Integration](file:///d:/Project/yhotel/PAY2S_WEBHOOK_SETUP.md)
+- [SEPAY Webhook Integration](file:///d:/Project/yhotel/SEPAY_WEBHOOK_SETUP.md)
+- [Realtime Features Setup](file:///d:/Project/yhotel/REALTIME_SETUP.md)
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/a4d5d548-d28c-4c73-a446-a4fbc07bb0ac) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+---
+*Built with ❤️ for Y HOTEL.*

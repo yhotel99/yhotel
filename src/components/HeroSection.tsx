@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 

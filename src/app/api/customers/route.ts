@@ -96,6 +96,7 @@ export async function GET(request: Request) {
       email: string | null;
       phone: string | null;
       customer_type: string;
+      source: string | null;
       created_at: string;
       updated_at: string;
       bookings: Array<{

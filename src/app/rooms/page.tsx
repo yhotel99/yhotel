@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Bed, Wifi, Car, Coffee, Bath, Users, Search, X, ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
