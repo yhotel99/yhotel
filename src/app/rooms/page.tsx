@@ -114,27 +114,21 @@ const RoomsPageContent = () => {
 
   // Filter and search rooms
   const filteredRooms = useMemo(() => {
-    console.log('Filtering rooms - Total:', roomsToDisplay.length, 'Category:', selectedCategory, 'Search:', searchQuery); // Debug log
-    
     let result = roomsToDisplay;
 
     // Filter by category
     if (selectedCategory !== "all") {
-      const beforeCategory = result.length;
       result = result.filter((room) => room.category === selectedCategory);
-      console.log('After category filter:', result.length, 'from', beforeCategory); // Debug log
     }
 
     // Filter by search query
     if (searchQuery) {
-      const beforeSearch = result.length;
       const query = searchQuery.toLowerCase();
       result = result.filter(
         (room) =>
           room.name.toLowerCase().includes(query) ||
           (room.features && room.features.some((feature) => feature.toLowerCase().includes(query)))
       );
-      console.log('After search filter:', result.length, 'from', beforeSearch); // Debug log
     }
 
     // Sort rooms
@@ -160,7 +154,6 @@ const RoomsPageContent = () => {
       result = [...result].sort((a, b) => (b.popular ? 1 : 0) - (a.popular ? 1 : 0));
     }
 
-    console.log('Final filtered rooms:', result.length); // Debug log
     return result;
   }, [roomsToDisplay, searchQuery, selectedCategory, sortBy]);
 

@@ -65,8 +65,6 @@ function transformRoomToResponse(room: RoomWithImages): RoomResponse {
  */
 export async function GET(request: Request) {
   try {
-    console.log('API /rooms/available called'); // Debug log
-    
     // Check Supabase connection
     if (!supabase) {
       console.error('Supabase client is not initialized');
@@ -106,8 +104,6 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log('Query params - check_in:', checkIn, 'check_out:', checkOut); // Debug log
-
     // Call RPC function to get available rooms
     // This function should exist in your Supabase database
     const { data, error } = await supabase.rpc('get_available_rooms', {
@@ -128,10 +124,7 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log('Raw data from RPC:', data?.length || 0, 'rooms'); // Debug log
-    
     if (!data || data.length === 0) {
-      console.log('No available rooms found for the selected date range');
       return NextResponse.json([]);
     }
 
@@ -229,26 +222,14 @@ export async function GET(request: Request) {
       };
     });
 
-    console.log('Transformed rooms:', rooms.length); // Debug log
-
     // Filter out test/placeholder rooms
     const productionRooms = rooms.filter(room => !isTestOrPlaceholderRoom(room));
-    const filteredCount = rooms.length - productionRooms.length;
-    if (filteredCount > 0) {
-      console.log(`Filtered out ${filteredCount} test/placeholder rooms`);
-    }
 
     // Deduplicate rooms with same name
     const deduplicatedRooms = deduplicateRooms(productionRooms);
-    const duplicateCount = productionRooms.length - deduplicatedRooms.length;
-    if (duplicateCount > 0) {
-      console.log(`Removed ${duplicateCount} duplicate rooms`);
-    }
 
     // Convert to API response format
     const response: RoomResponse[] = deduplicatedRooms.map(transformRoomToResponse);
-
-    console.log('Final response:', response.length, 'rooms'); // Debug log
 
     return NextResponse.json(response, {
       headers: {

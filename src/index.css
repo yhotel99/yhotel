@@ -10,15 +10,15 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
   :root {
     /* Base Colors */
     --background: 60 4% 98%;
-    --foreground: 111 54% 18%;
+    --foreground: 120 100% 5%;
 
     /* Card System - Increased contrast with white background */
     --card: 0 0% 100%;
-    --card-foreground: 111 54% 18%;
+    --card-foreground: 120 100% 5%;
 
     /* Popover System */
     --popover: 0 0% 100%;
-    --popover-foreground: 111 54% 18%;
+    --popover-foreground: 120 100% 5%;
 
     /* Primary - Elegant Green Color System (#9bc78e) */
     --primary: 106 34% 67%;
@@ -29,11 +29,11 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
 
     /* Secondary - Elegant Support Colors - Increased contrast */
     --secondary: 104 33% 94%;
-    --secondary-foreground: 111 54% 18%;
+    --secondary-foreground: 120 100% 5%;
 
     /* Muted - Subtle Tones - Increased contrast */
     --muted: 104 33% 92%;
-    --muted-foreground: 111 54% 28%;
+    --muted-foreground: 120 100% 8%;
 
     /* Accent - Highlight Colors */
     --accent: 106 34% 67%;
@@ -41,7 +41,7 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
 
     /* Luxury Gold Accent */
     --gold: 43 96% 56%;
-    --gold-foreground: 111 54% 18%;
+    --gold-foreground: 120 100% 5%;
 
     /* Status Colors */
     --destructive: 0 84% 60%;
@@ -102,7 +102,7 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
 
     --sidebar-background: 60 4% 98%;
 
-    --sidebar-foreground: 111 54% 18%;
+    --sidebar-foreground: 120 100% 5%;
 
     --sidebar-primary: 104 33% 85%;
 
@@ -110,7 +110,7 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
 
     --sidebar-accent: 104 33% 96%;
 
-    --sidebar-accent-foreground: 111 54% 18%;
+    --sidebar-accent-foreground: 120 100% 5%;
 
     --sidebar-border: 104 33% 91%;
 
@@ -120,13 +120,13 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
   .dark {
     /* Dark Mode - Sophisticated Night Theme */
     --background: 104 33% 85%;
-    --foreground: 106 14% 96%;
+    --foreground: 120 100% 5%;
 
     --card: 104 33% 87%;
-    --card-foreground: 106 14% 96%;
+    --card-foreground: 120 100% 5%;
 
     --popover: 104 33% 87%;
-    --popover-foreground: 106 14% 96%;
+    --popover-foreground: 120 100% 5%;
 
     --primary: 106 34% 67%;
     --primary-foreground: 0 0% 100%;
@@ -134,16 +134,16 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
     --primary-dark: 106 34% 55%;
 
     --secondary: 104 33% 88%;
-    --secondary-foreground: 106 14% 96%;
+    --secondary-foreground: 120 100% 5%;
 
     --muted: 104 33% 88%;
-    --muted-foreground: 111 54% 28%;
+    --muted-foreground: 120 100% 8%;
 
     --accent: 106 34% 67%;
     --accent-foreground: 0 0% 100%;
 
     --gold: 43 96% 56%;
-    --gold-foreground: 104 33% 85%;
+    --gold-foreground: 120 100% 5%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
@@ -240,7 +240,7 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
     @apply hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-300;
   }
 
-  /* Animation Classes */
+  /* Animation Classes - Optimized for Performance */
   .fade-in {
     @apply opacity-0 translate-y-4 ease-out;
     transition: all 400ms ease-out;
@@ -250,6 +250,140 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
     @apply opacity-100 translate-y-0;
   }
 
+  /* Optimized fade-in animations using CSS - Better performance than JS animations */
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in-down {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes fade-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fade-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.4s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-down {
+    animation: fade-in-down 0.4s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-left {
+    animation: fade-in-left 0.4s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-fade-in-right {
+    animation: fade-in-right 0.4s ease-out forwards;
+    opacity: 0;
+  }
+
+  /* Mobile menu animations */
+  @keyframes slide-down {
+    from {
+      opacity: 0;
+      max-height: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      max-height: 1000px;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-up {
+    from {
+      opacity: 1;
+      max-height: 1000px;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      max-height: 0;
+      transform: translateY(-10px);
+    }
+  }
+
+  @keyframes slide-in-left {
+    from {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .mobile-menu-enter {
+    animation: slide-down 0.3s ease-in-out forwards;
+  }
+
+  .mobile-menu-exit {
+    animation: slide-up 0.3s ease-in-out forwards;
+  }
+
+  .nav-item-enter {
+    animation: slide-in-left 0.3s ease-out forwards;
+  }
+
+  .nav-separator-enter {
+    animation: fade-in 0.3s ease-out forwards;
+  }
+
+  .nav-cta-enter {
+    animation: scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
   .parallax-element {
     will-change: transform;
     transform: translateZ(0);
@@ -257,13 +391,22 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
     perspective: 1000px;
   }
 
-  /* Hover Effects */
+  /* Hover Effects - Optimized with will-change */
   .hover-lift {
     @apply transition-transform duration-200 hover:-translate-y-1 hover:shadow-hover;
+    will-change: transform;
   }
 
   .hover-glow {
     @apply transition-all duration-200 hover:shadow-luxury;
+    will-change: box-shadow;
+  }
+
+  /* Performance optimizations */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
   }
 
   /* Layout Utilities */

@@ -1,17 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, memo } from "react";
 import { Menu, X, Phone, Mail, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { useScrollThreshold } from "@/hooks/use-scroll";
+import { cn } from "@/lib/utils";
 
-const Navigation = () => {
+const Navigation = memo(() => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const isScrolled = useScrollThreshold(20);
+
+  // Handle menu animation state
+  useEffect(() => {
+    if (isOpen) {
+      setIsAnimating(true);
+    } else {
+      const timer = setTimeout(() => setIsAnimating(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const navItems = [
     { name: "Trang Chủ", href: "/" },
@@ -80,55 +91,56 @@ const Navigation = () => {
           </Button>
         </div>
 
-        {/* Mobile Navigation */}
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              transition={{ duration: 0.3, ease: "easeInOut" }}
-              className="lg:hidden overflow-hidden"
-            >
-              <div className="bg-gradient-to-b from-foreground/98 via-foreground/95 to-foreground/98 backdrop-blur-xl border-t border-background/20 shadow-2xl">
-                <div className="px-6 py-8 space-y-1">
-                  {/* Navigation Items */}
-                  {navItems.map((item, index) => (
-                    <motion.div
-                      key={item.name}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.1, duration: 0.3 }}
+        {/* Mobile Navigation - Optimized with CSS animations */}
+        {(isOpen || isAnimating) && (
+          <div
+            className={cn(
+              "lg:hidden overflow-hidden",
+              isOpen ? "mobile-menu-enter" : "mobile-menu-exit"
+            )}
+          >
+            <div className="bg-gradient-to-b from-foreground/98 via-foreground/95 to-foreground/98 backdrop-blur-xl border-t border-background/20 shadow-2xl">
+              <div className="px-6 py-8 space-y-1">
+                {/* Navigation Items */}
+                {navItems.map((item, index) => (
+                  <div
+                    key={item.name}
+                    className={cn(
+                      isOpen && "nav-item-enter"
+                    )}
+                    style={isOpen ? { animationDelay: `${index * 0.1}s` } : {}}
+                  >
+                    <Link
+                      href={item.href}
+                      className="group flex items-center justify-between w-full px-4 py-3.5 rounded-lg text-background hover:text-primary hover:bg-primary/10 transition-all duration-300 font-medium text-base relative overflow-hidden"
+                      onClick={() => setIsOpen(false)}
                     >
-                      <Link
-                        href={item.href}
-                        className="group flex items-center justify-between w-full px-4 py-3.5 rounded-lg text-background hover:text-primary hover:bg-primary/10 transition-all duration-300 font-medium text-base relative overflow-hidden"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <span className="relative z-10">{item.name}</span>
-                        <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300 relative z-10" />
-                        <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      </Link>
-                    </motion.div>
-                  ))}
+                      <span className="relative z-10">{item.name}</span>
+                      <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300 relative z-10" />
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    </Link>
+                  </div>
+                ))}
 
-                  {/* Separator */}
-                  <motion.div
-                    initial={{ opacity: 0, scaleX: 0 }}
-                    animate={{ opacity: 1, scaleX: 1 }}
-                    transition={{ delay: navItems.length * 0.1, duration: 0.3 }}
-                    className="pt-4 pb-2"
-                  >
-                    <div className="h-px bg-gradient-to-r from-transparent via-background/20 to-transparent" />
-                  </motion.div>
+                {/* Separator */}
+                <div
+                  className={cn(
+                    "pt-4 pb-2",
+                    isOpen && "nav-separator-enter"
+                  )}
+                  style={isOpen ? { animationDelay: `${navItems.length * 0.1}s` } : {}}
+                >
+                  <div className="h-px bg-gradient-to-r from-transparent via-background/20 to-transparent" />
+                </div>
 
-                  {/* Contact Info Section */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: (navItems.length * 0.1) + 0.1, duration: 0.3 }}
-                    className="space-y-3 pt-2"
-                  >
+                {/* Contact Info Section */}
+                <div
+                  className={cn(
+                    "space-y-3 pt-2",
+                    isOpen && "animate-fade-in-up"
+                  )}
+                  style={isOpen ? { animationDelay: `${(navItems.length * 0.1) + 0.1}s` } : {}}
+                >
                     {/* Phone */}
                     <a
                       href="tel:+84123456789"
@@ -160,14 +172,15 @@ const Navigation = () => {
                         </p>
                       </div>
                     </a>
-                  </motion.div>
+                  </div>
 
                   {/* CTA Button */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    transition={{ delay: (navItems.length * 0.1) + 0.2, duration: 0.4, type: "spring", stiffness: 200 }}
-                    className="pt-6"
+                  <div
+                    className={cn(
+                      "pt-6",
+                      isOpen && "nav-cta-enter"
+                    )}
+                    style={isOpen ? { animationDelay: `${(navItems.length * 0.1) + 0.2}s` } : {}}
                   >
                     <Link href="/rooms" onClick={() => setIsOpen(false)} className="block">
                       <ShimmerButton
@@ -182,15 +195,16 @@ const Navigation = () => {
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                       </ShimmerButton>
                     </Link>
-                  </motion.div>
+                  </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
       </div>
     </nav>
   );
-};
+});
+
+Navigation.displayName = "Navigation";
 
 export default Navigation;

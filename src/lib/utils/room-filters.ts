@@ -92,8 +92,8 @@ export function deduplicateRooms(rooms: RoomWithImages[]): RoomWithImages[] {
       
       deduplicated.push(bestRoom);
       
-      // Log duplicates for admin review
-      if (roomGroup.length > 1) {
+      // Log duplicates for admin review (only in development)
+      if (roomGroup.length > 1 && process.env.NODE_ENV === 'development') {
         console.warn(`Found ${roomGroup.length} duplicate rooms with name "${roomGroup[0].name}":`, 
           roomGroup.map(r => ({ id: r.id, price: r.price_per_night })));
       }

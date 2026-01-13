@@ -15,7 +15,8 @@ import {
   ArrowLeft,
   Mail,
   Phone,
-  Home
+  Home,
+  XCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +32,7 @@ const SuccessContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const bookingId = searchParams.get("booking_id");
+  const isTimeout = searchParams.get("timeout") === "true";
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
@@ -128,15 +130,31 @@ const SuccessContent = () => {
             <div className="max-w-4xl mx-auto">
               {/* Success Header */}
               <div className="text-center mb-12">
-                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 dark:bg-green-900 mb-6">
-                  <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
-                </div>
-                <h1 className="text-3xl md:text-4xl font-display font-bold text-black mb-4">
-                  Đặt Phòng Thành Công!
-                </h1>
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                  Cảm ơn bạn đã đặt phòng tại Y Hotel. Chúng tôi đã nhận được yêu cầu đặt phòng của bạn và sẽ xác nhận trong thời gian sớm nhất.
-                </p>
+                {isTimeout || booking.status === 'cancelled' ? (
+                  <>
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-red-100 dark:bg-red-900 mb-6">
+                      <XCircle className="h-12 w-12 text-red-600 dark:text-red-400" />
+                    </div>
+                    <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
+                      Đặt Phòng Đã Bị Hủy
+                    </h1>
+                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                      Đặt phòng của bạn đã bị hủy do quá thời gian chờ thanh toán (15 phút). Vui lòng đặt lại phòng nếu bạn vẫn muốn tiếp tục.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 dark:bg-green-900 mb-6">
+                      <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
+                    </div>
+                    <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
+                      Đặt Phòng Thành Công!
+                    </h1>
+                    <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                      Cảm ơn bạn đã đặt phòng tại Y Hotel. Chúng tôi đã nhận được yêu cầu đặt phòng của bạn và sẽ xác nhận trong thời gian sớm nhất.
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -286,34 +304,43 @@ const SuccessContent = () => {
                         </CardHeader>
                         <CardContent className="p-6 md:p-8 pt-4 md:pt-0 space-y-4">
                           <div className="space-y-4">
-                            <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                              <p className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                                📧 Email xác nhận
-                              </p>
-                              <p className="text-sm text-blue-700 dark:text-blue-300">
-                                Chúng tôi sẽ gửi email xác nhận đặt phòng đến địa chỉ email của bạn trong vài phút.
-                              </p>
-                            </div>
+                            {isTimeout || booking.status === 'cancelled' ? (
+                              <div className="p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
+                                <p className="font-semibold text-red-900 dark:text-red-100 mb-2">
+                                  ⚠️ Đặt phòng đã bị hủy
+                                </p>
+                                <p className="text-sm text-red-700 dark:text-red-300 mb-3">
+                                  Đặt phòng của bạn đã bị hủy do quá thời gian chờ thanh toán. Bạn có thể đặt lại phòng bằng cách nhấn nút bên dưới.
+                                </p>
+                                <ul className="text-sm text-red-700 dark:text-red-300 space-y-1 list-disc list-inside">
+                                  <li>Thời gian chờ thanh toán: 15 phút</li>
+                                  <li>Vui lòng thanh toán trong thời gian quy định</li>
+                                  <li>Nếu đã thanh toán, vui lòng liên hệ hỗ trợ</li>
+                                </ul>
+                              </div>
+                            ) : (
+                              <>
+                                <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                  <p className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                                    📧 Email xác nhận
+                                  </p>
+                                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                                    Chúng tôi sẽ gửi email xác nhận đặt phòng đến địa chỉ email của bạn trong vài phút.
+                                  </p>
+                                </div>
 
-                            <div className="p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
-                              <p className="font-semibold text-amber-900 dark:text-amber-100 mb-2">
-                                ⏰ Thời gian xác nhận
-                              </p>
-                              <p className="text-sm text-amber-700 dark:text-amber-300">
-                                Đơn đặt phòng của bạn đang ở trạng thái &quot;Chờ xác nhận&quot;. Chúng tôi sẽ xác nhận trong vòng 24 giờ.
-                              </p>
-                            </div>
-
-                            <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
-                              <p className="font-semibold text-green-900 dark:text-green-100 mb-2">
-                                ✅ Lưu ý quan trọng
-                              </p>
-                              <ul className="text-sm text-green-700 dark:text-green-300 space-y-1 list-disc list-inside">
-                                <li>Vui lòng kiểm tra email thường xuyên</li>
-                                <li>Mang theo CMND/CCCD khi check-in</li>
-                                <li>Đến đúng giờ nhận phòng</li>
-                              </ul>
-                            </div>
+                                <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
+                                  <p className="font-semibold text-green-900 dark:text-green-100 mb-2">
+                                    ✅ Lưu ý quan trọng
+                                  </p>
+                                  <ul className="text-sm text-green-700 dark:text-green-300 space-y-1 list-disc list-inside">
+                                    <li>Vui lòng kiểm tra email thường xuyên</li>
+                                    <li>Mang theo CMND/CCCD khi check-in</li>
+                                    <li>Đến đúng giờ nhận phòng</li>
+                                  </ul>
+                                </div>
+                              </>
+                            )}
                           </div>
 
                           <Separator className="my-4" />

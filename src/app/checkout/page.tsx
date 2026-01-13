@@ -18,7 +18,10 @@ import {
   Lock,
   Banknote,
   Store,
-  ArrowRight
+  ArrowRight,
+  Phone,
+  FileText,
+  Tag
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -80,8 +83,30 @@ const CheckoutContent = () => {
     if (!bookingId || !booking) return;
 
     try {
-      // Không cập nhật status, giữ nguyên trạng thái "chờ xác nhận"
+      // Xác nhận booking ngay khi chọn "Thanh toán tại khách sạn"
+      // Theo tiêu chuẩn booking khách sạn: booking được xác nhận ngay, payment vẫn pending
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: BOOKING_STATUS.CONFIRMED,
+          payment_method: 'pay_at_hotel',
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Không thể xác nhận đặt phòng');
+      }
+
       setShowPayAtHotelDialog(false);
+      
+      toast({
+        title: "Đặt phòng thành công!",
+        description: "Đặt phòng của bạn đã được xác nhận. Vui lòng thanh toán tại khách sạn khi check-in.",
+      });
       
       // Chuyển đến trang thành công
       router.push(`/checkout/success?booking_id=${bookingId}`);
@@ -173,7 +198,7 @@ const CheckoutContent = () => {
             {/* Header */}
             <div className="mb-12">
               <div className="text-center mb-8">
-                <h1 className="text-3xl md:text-4xl font-display font-bold text-black mb-4">
+                <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
                   Thanh Toán Đặt Phòng
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -400,6 +425,12 @@ const CheckoutContent = () => {
                                 <div className="flex-1">
                                   <p className="text-xs text-muted-foreground mb-0.5">Phòng</p>
                                   <p className="font-semibold text-foreground">{booking.room.name}</p>
+                                  {booking.room.room_type && (
+                                    <div className="flex items-center gap-1.5 mt-1">
+                                      <Tag className="h-3 w-3 text-muted-foreground" />
+                                      <p className="text-xs text-muted-foreground">{booking.room.room_type}</p>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -416,6 +447,39 @@ const CheckoutContent = () => {
                                   {booking.customer.email && (
                                     <p className="text-xs text-muted-foreground mt-0.5">{booking.customer.email}</p>
                                   )}
+                                  {booking.customer.phone && (
+                                    <div className="flex items-center gap-1.5 mt-1">
+                                      <Phone className="h-3 w-3 text-muted-foreground" />
+                                      <p className="text-xs text-muted-foreground">{booking.customer.phone}</p>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {booking.created_at && (
+                            <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                  <Clock className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-xs text-muted-foreground mb-0.5">Ngày đặt phòng</p>
+                                  <p className="font-semibold text-foreground">{formatDate(booking.created_at)}</p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">{formatTime(booking.created_at)}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          {booking.notes && (
+                            <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
+                              <div className="flex items-start gap-3">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                  <FileText className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-xs text-muted-foreground mb-1">Ghi chú</p>
+                                  <p className="text-sm text-foreground whitespace-pre-wrap">{booking.notes}</p>
                                 </div>
                               </div>
                             </div>
@@ -428,13 +492,42 @@ const CheckoutContent = () => {
                         <div>
                           <h3 className="text-lg font-display font-semibold mb-3">Tổng Thanh Toán</h3>
                           <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Giá phòng</span>
-                              <span className="font-medium">{formatPrice(booking.total_amount)}đ</span>
-                            </div>
-                            <div className="flex justify-between items-center text-xs text-muted-foreground">
-                              <span>{booking.number_of_nights} đêm × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
-                            </div>
+                            {booking.room?.price_per_night ? (
+                              <>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-muted-foreground">Giá phòng/đêm</span>
+                                  <span className="font-medium">{formatPrice(booking.room.price_per_night)}đ</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs text-muted-foreground pl-2">
+                                  <span>{booking.number_of_nights} đêm × {formatPrice(booking.room.price_per_night)}đ</span>
+                                  <span className="font-medium">{formatPrice(booking.room.price_per_night * booking.number_of_nights)}đ</span>
+                                </div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-muted-foreground">Giá phòng</span>
+                                  <span className="font-medium">{formatPrice(booking.total_amount)}đ</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs text-muted-foreground pl-2">
+                                  <span>{booking.number_of_nights} đêm × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
+                                  <span className="font-medium">{formatPrice(booking.total_amount)}đ</span>
+                                </div>
+                              </>
+                            )}
+                            {booking.advance_payment > 0 && (
+                              <>
+                                <Separator className="my-2" />
+                                <div className="flex justify-between items-center">
+                                  <span className="text-muted-foreground">Đã cọc</span>
+                                  <span className="font-medium text-green-600 dark:text-green-400">{formatPrice(booking.advance_payment)}đ</span>
+                                </div>
+                                <div className="flex justify-between items-center text-xs text-muted-foreground pl-2">
+                                  <span>Còn lại</span>
+                                  <span className="font-medium">{formatPrice(booking.total_amount - booking.advance_payment)}đ</span>
+                                </div>
+                              </>
+                            )}
                             <Separator />
                             <div className="flex justify-between items-center pt-2">
                               <span className="font-semibold text-lg">Tổng cộng</span>

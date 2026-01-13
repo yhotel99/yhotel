@@ -1,10 +1,11 @@
 "use client";
 
+import { memo } from "react";
 import { Wifi, Car, Coffee, Dumbbell, Utensils, Waves } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Marquee } from "@/registry/magicui/marquee";
 
-const ServicesSection = () => {
+const ServicesSection = memo(() => {
   const services = [
     {
       icon: Wifi,
@@ -74,7 +75,7 @@ const ServicesSection = () => {
     <section id="services" className="py-12 md:py-16 bg-gradient-subtle">
       <div className="container-luxury">
         <div className="text-center mb-8 md:mb-12">
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-black mb-6">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
             Dịch Vụ Tiện Ích
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
@@ -94,6 +95,8 @@ const ServicesSection = () => {
       </div>
     </section>
   );
-};
+});
+
+ServicesSection.displayName = "ServicesSection";
 
 export default ServicesSection;

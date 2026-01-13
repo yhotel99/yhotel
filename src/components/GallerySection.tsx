@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 import heroImage from "@/assets/hero-hotel.jpg";
 import luxuryRoomImage from "@/assets/luxury-room.jpg";
 import lobbyImage from "@/assets/lobby.jpg";
@@ -188,7 +189,7 @@ const GallerySection = () => {
     <section id="gallery" className="py-12 md:py-16 bg-gradient-section">
       <div className="container-luxury">
         <div className="text-center mb-8 md:mb-12">
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-black mb-6">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
             Thư Viện Hình Ảnh
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
@@ -207,11 +208,14 @@ const GallerySection = () => {
                 className={`group relative overflow-hidden rounded-xl cursor-pointer ${image.span || 'col-span-1 row-span-1'}`}
                 onClick={() => openLightbox(index)}
               >
-                <img
+                <Image
                   src={image.src}
                   alt={image.alt}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                  loading="lazy"
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  className="object-cover transition-transform duration-300 group-hover:scale-110"
+                  loading={index < 4 ? "eager" : "lazy"}
+                  quality={85}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <div className="absolute bottom-4 left-4 right-4">
@@ -228,10 +232,13 @@ const GallerySection = () => {
         {selectedImage !== null && (
           <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4">
             <div className="relative max-w-4xl max-h-full">
-              <img
+              <Image
                 src={displayedImages[selectedImage]?.src || ''}
                 alt={displayedImages[selectedImage]?.alt || ''}
+                width={1200}
+                height={800}
                 className="max-w-full max-h-full object-contain"
+                priority
               />
               
               {/* Close Button */}
@@ -276,4 +283,4 @@ const GallerySection = () => {
   );
 };
 
-export default GallerySection;
+export default memo(GallerySection);

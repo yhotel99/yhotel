@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect, memo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -9,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Search, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 // Banner images from Supabase
 const bannerImages = [
@@ -30,11 +30,11 @@ const HeroSection = () => {
   const [isGuestsOpen, setIsGuestsOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Auto-scroll images every 5 seconds
+  // Auto-scroll images every 6 seconds (reduced frequency for better performance)
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) => (prevIndex + 1) % bannerImages.length);
-    }, 5000);
+    }, 6000);
 
     return () => clearInterval(interval);
   }, []);
@@ -73,44 +73,42 @@ const HeroSection = () => {
 
   return (
     <section id="home" className="relative min-h-[70vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden">
-      {/* Background Images with Horizontal Slide */}
-      <motion.div
-        className="absolute inset-0 flex"
-        animate={{ x: `-${currentImageIndex * 100}%` }}
-        transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+      {/* Background Images with Horizontal Slide - Optimized with CSS transforms */}
+      <div
+        className="absolute inset-0 flex will-change-transform"
+        style={{
+          transform: `translateX(-${currentImageIndex * 100}%)`,
+          transition: 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)',
+        }}
       >
         {bannerImages.map((imageUrl, index) => (
-          <motion.div
+          <div
             key={index}
-            className="flex-shrink-0 w-full h-full bg-cover bg-center bg-no-repeat"
-            style={{
-              backgroundImage: `url(${imageUrl})`,
-            }}
+            className="flex-shrink-0 w-full h-full relative"
             role="img"
             aria-label={`Y Hotel - Khách sạn sang trọng với kiến trúc hiện đại và cảnh quan tuyệt đẹp - Ảnh ${index + 1}`}
-          />
+          >
+            <Image
+              src={imageUrl}
+              alt={`Y Hotel banner ${index + 1}`}
+              fill
+              priority={index === 0}
+              className="object-cover"
+              sizes="100vw"
+            />
+          </div>
         ))}
-      </motion.div>
+      </div>
       
-      {/* Gradient Overlay */}
+      {/* Gradient Overlay - Optimized with CSS */}
       <div className="absolute inset-0 bg-gradient-overlay" />
-      <motion.div 
-        className="absolute inset-0 bg-gradient-aurora animate-aurora"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.6 }}
-        transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-      />
+      <div className="absolute inset-0 bg-gradient-aurora animate-aurora opacity-60" />
 
       {/* Content */}
       <div className="relative z-10 container-luxury text-center text-white">
         <div className="max-w-4xl mx-auto">
-          {/* Booking Widget */}
-          <motion.div 
-            className="flex justify-center mb-12 px-4 md:px-0"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
-          >
+          {/* Booking Widget - Optimized with CSS animation */}
+          <div className="flex justify-center mb-12 px-4 md:px-0 animate-fade-in-up">
             <div className="w-full max-w-5xl bg-white rounded-xl md:rounded-2xl shadow-2xl p-2 md:p-2 mx-auto">
               <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-3">
                 {/* Check-in */}
@@ -121,7 +119,7 @@ const HeroSection = () => {
                         <div className="text-red-600 text-xs md:text-sm font-medium">
                           Check-in
                         </div>
-                        <div className="text-gray-900 text-sm md:text-base font-medium">
+                        <div className="text-foreground text-sm md:text-base font-medium">
                           <span className="hidden md:inline">{formatDateShort(checkIn)}</span>
                           <span className="md:hidden">{formatDateShortMobile(checkIn)}</span>
                         </div>
@@ -159,7 +157,7 @@ const HeroSection = () => {
                         <div className="text-red-600 text-xs md:text-sm font-medium">
                           Check-out
                         </div>
-                        <div className="text-gray-900 text-sm md:text-base font-medium">
+                        <div className="text-foreground text-sm md:text-base font-medium">
                           <span className="hidden md:inline">{formatDateShort(checkOut)}</span>
                           <span className="md:hidden">{formatDateShortMobile(checkOut)}</span>
                         </div>
@@ -197,15 +195,15 @@ const HeroSection = () => {
                         <div className="text-red-600 text-xs md:text-sm font-medium">
                           Guests
                         </div>
-                        <div className="text-gray-900 text-sm md:text-base font-medium flex items-center gap-1">
+                        <div className="text-foreground text-sm md:text-base font-medium flex items-center gap-1">
                           <span>{guests} {guests === 1 ? 'Guest' : 'Guests'}</span>
-                          <ChevronDown className="h-4 w-4 text-gray-400" />
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
                         </div>
                       </button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-2" align="start">
                       <div className="space-y-2">
-                        <div className="px-3 py-2 text-sm font-medium text-gray-700">
+                        <div className="px-3 py-2 text-sm font-medium text-foreground">
                           Số khách
                         </div>
                         {[1, 2, 3, 4, 5, 6].map((num) => (
@@ -219,7 +217,7 @@ const HeroSection = () => {
                               "w-full text-left px-3 py-2 rounded-md text-sm transition-colors",
                               guests === num
                                 ? "bg-orange-100 text-orange-700 font-medium"
-                                : "hover:bg-gray-100 text-gray-700"
+                                : "hover:bg-gray-100 text-foreground"
                             )}
                           >
                             {num} {num === 1 ? 'Guest' : 'Guests'}
@@ -248,11 +246,11 @@ const HeroSection = () => {
                 </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>
   );
 };
 
-export default HeroSection;
+export default memo(HeroSection);

@@ -1,15 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { Calendar, User, ArrowRight, Clock } from "lucide-react";
-import { motion } from "framer-motion";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { GradientBorder } from "@/components/ui/gradient-border";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useBlogs } from "@/hooks/use-blogs";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -72,76 +73,134 @@ const BlogSection = () => {
   return (
     <section id="blog" className="py-12 md:py-20 bg-gradient-subtle">
       <div className="container-luxury">
-        {/* Header */}
-        <motion.div 
-          className="text-center mb-8 md:mb-12"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-          viewport={{ once: true }}
-        >
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-black mb-3 md:mb-6">
+        {/* Header - Optimized with CSS */}
+        <div className="text-center mb-8 md:mb-12 animate-fade-in-up">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground mb-3 md:mb-6">
             Blog & Tin Tức
           </h2>
           <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             Khám phá những câu chuyện thú vị, kinh nghiệm du lịch và cập nhật mới nhất từ Y Hotel
           </p>
-        </motion.div>
+        </div>
 
         {/* Loading State */}
         {isLoading ? (
           <div className="space-y-8">
             {/* Featured Post Skeleton */}
             <GradientBorder containerClassName="relative">
-              <div className="bg-background rounded-xl overflow-hidden">
+              <FloatingCard className="bg-card rounded-xl border border-border shadow-card overflow-hidden">
                 <div className="grid md:grid-cols-2 gap-0">
-                  <div className="h-64 md:h-auto bg-muted animate-pulse" />
-                  <div className="p-6 md:p-8 space-y-4">
-                    <div className="h-4 bg-muted rounded w-20 animate-pulse" />
-                    <div className="h-6 bg-muted rounded w-3/4 animate-pulse" />
-                    <div className="h-4 bg-muted rounded w-full animate-pulse" />
-                    <div className="h-4 bg-muted rounded w-2/3 animate-pulse" />
+                  {/* Image Column */}
+                  <div className="relative overflow-hidden h-64 md:h-auto">
+                    <Skeleton className="w-full h-full" />
+                    {/* Featured Badge Skeleton */}
+                    <Skeleton className="absolute top-4 left-4 z-10 h-6 w-32 rounded-full" />
+                  </div>
+                  
+                  {/* Content Column */}
+                  <div className="p-6 md:p-8 flex flex-col justify-between">
+                    <div>
+                      {/* Category Badge Skeleton */}
+                      <Skeleton className="h-6 w-20 rounded-full mb-4" />
+                      
+                      {/* Date & Author Skeleton */}
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="flex items-center gap-1">
+                          <Skeleton className="h-4 w-4 rounded" />
+                          <Skeleton className="h-4 w-24" />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Skeleton className="h-4 w-4 rounded" />
+                          <Skeleton className="h-4 w-20" />
+                        </div>
+                      </div>
+                      
+                      {/* Title Skeleton */}
+                      <Skeleton className="h-8 md:h-10 w-3/4 mb-4" />
+                      
+                      {/* Excerpt Skeleton */}
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-full mb-2" />
+                      <Skeleton className="h-4 w-2/3 mb-6" />
+                    </div>
+                    
+                    {/* Footer with Read Time & Button */}
+                    <div className="flex items-center justify-between pt-4 border-t border-border">
+                      <div className="flex items-center gap-1">
+                        <Skeleton className="h-4 w-4 rounded" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                      <Skeleton className="h-9 w-28 rounded-md" />
+                    </div>
                   </div>
                 </div>
-              </div>
+              </FloatingCard>
             </GradientBorder>
             
             {/* Other Posts Skeleton */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 items-stretch">
               {[1, 2, 3, 4].map((i) => (
                 <GradientBorder key={i} containerClassName="relative h-full">
-                  <div className="bg-background rounded-xl overflow-hidden h-full">
-                    <div className="h-32 md:h-44 bg-muted animate-pulse" />
-                    <div className="p-2.5 md:p-4 space-y-2">
-                      <div className="h-4 bg-muted rounded w-3/4 animate-pulse" />
-                      <div className="h-3 bg-muted rounded w-full animate-pulse" />
+                  <FloatingCard className="group overflow-hidden h-full bg-card rounded-xl border border-border shadow-card flex flex-col">
+                    {/* Image */}
+                    <div className="relative overflow-hidden h-32 md:h-44">
+                      <Skeleton className="w-full h-full" />
+                      {/* Category Badge Skeleton */}
+                      <Skeleton className="absolute top-2 left-2 md:top-3 md:left-3 h-5 w-16 rounded-full" />
                     </div>
-                  </div>
+                    
+                    {/* Content */}
+                    <CardContent className="p-2.5 md:p-4 flex flex-col flex-1">
+                      {/* Date & Author Skeleton */}
+                      <div className="flex items-center gap-1.5 md:gap-3 mb-1.5 md:mb-2">
+                        <div className="flex items-center gap-0.5 md:gap-1">
+                          <Skeleton className="h-2.5 w-2.5 md:h-3 md:w-3 rounded" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                        <div className="flex items-center gap-0.5 md:gap-1">
+                          <Skeleton className="h-2.5 w-2.5 md:h-3 md:w-3 rounded" />
+                          <Skeleton className="h-3 w-12" />
+                        </div>
+                      </div>
+                      
+                      {/* Title Skeleton */}
+                      <Skeleton className="h-4 md:h-5 w-full mb-1 md:mb-1.5" />
+                      
+                      {/* Excerpt Skeleton */}
+                      <Skeleton className="h-3 md:h-4 w-full mb-2 md:mb-2.5 flex-1" />
+                      
+                      {/* Footer with Read Time & Button */}
+                      <div className="flex items-center justify-between pt-1.5 md:pt-2 border-t border-border mt-auto">
+                        <div className="flex items-center gap-0.5 md:gap-1">
+                          <Skeleton className="h-2.5 w-2.5 md:h-3 md:w-3 rounded" />
+                          <Skeleton className="h-3 w-16" />
+                        </div>
+                        <Skeleton className="h-6 md:h-7 w-20 md:w-24 rounded-md" />
+                      </div>
+                    </CardContent>
+                  </FloatingCard>
                 </GradientBorder>
               ))}
             </div>
           </div>
         ) : (
           <>
-            {/* Featured Article Section */}
+            {/* Featured Article Section - Optimized */}
             {filteredFeatured && featuredPost && (
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-                viewport={{ once: true }}
-                className="mb-8 md:mb-12"
-              >
+              <div className="mb-8 md:mb-12 animate-fade-in-up">
                 <Link href={`/blog/${featuredPost.slug}`}>
               <GradientBorder containerClassName="relative">
                 <FloatingCard className="bg-card rounded-xl border border-border shadow-card overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
                   <div className="grid md:grid-cols-2 gap-0">
-                    {/* Image Column */}
+                    {/* Image Column - Optimized with Next Image */}
                     <div className="relative overflow-hidden h-64 md:h-auto">
-                      <img
+                      <Image
                         src={featuredPost.image}
                         alt={featuredPost.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                        className="object-cover"
+                        priority
                       />
                       {/* Featured Badge - Top Left */}
                       <Badge className="absolute top-4 left-4 z-10 bg-primary text-primary-foreground px-4 py-1.5 text-sm font-semibold">
@@ -190,29 +249,29 @@ const BlogSection = () => {
                 </FloatingCard>
                 </GradientBorder>
               </Link>
-            </motion.div>
+            </div>
             )}
 
-            {/* Other Articles Grid */}
+            {/* Other Articles Grid - Optimized */}
             {filteredPosts.length > 0 && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6 items-stretch">
                 {filteredPosts.map((post, index) => (
                   <Link key={post.id} href={`/blog/${post.slug}`} className="h-full">
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-                  viewport={{ once: true }}
-                  className="h-full"
+                <div
+                  className="h-full animate-fade-in-up"
+                  style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <GradientBorder containerClassName="relative h-full">
                     <FloatingCard className="group overflow-hidden h-full bg-card rounded-xl border border-border shadow-card hover:shadow-lg transition-shadow cursor-pointer flex flex-col">
-                      {/* Image */}
-                      <div className="relative overflow-hidden">
-                        <img
+                      {/* Image - Optimized with Next Image */}
+                      <div className="relative overflow-hidden h-32 md:h-44">
+                        <Image
                           src={post.image}
                           alt={post.title}
-                          className="w-full h-32 md:h-44 object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                          fill
+                          sizes="(max-width: 768px) 50vw, 25vw"
+                          className="object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                          loading={index < 2 ? "eager" : "lazy"}
                         />
                         <Badge className="absolute top-2 left-2 md:top-3 md:left-3 bg-primary text-primary-foreground text-[10px] md:text-xs px-1.5 md:px-2 py-0.5">
                           {post.category}
@@ -232,13 +291,19 @@ const BlogSection = () => {
                           </div>
                         </div>
                         
-                        <h3 className="text-xs md:text-base font-display font-semibold text-foreground mb-1 md:mb-1.5 line-clamp-2">
-                          {post.title}
-                        </h3>
+                        <div className="relative mb-1 md:mb-1.5">
+                          <h3 className="text-xs md:text-base font-display font-semibold text-foreground overflow-hidden whitespace-nowrap">
+                            {post.title}
+                          </h3>
+                          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-card to-transparent pointer-events-none"></div>
+                        </div>
                         
-                        <p className="text-[10px] md:text-sm text-muted-foreground mb-2 md:mb-2.5 line-clamp-2 flex-1">
-                          {post.excerpt}
-                        </p>
+                        <div className="relative mb-2 md:mb-2.5 flex-1">
+                          <p className="text-[10px] md:text-sm text-muted-foreground overflow-hidden whitespace-nowrap">
+                            {post.excerpt}
+                          </p>
+                          <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-card to-transparent pointer-events-none"></div>
+                        </div>
                         
                         <div className="flex items-center justify-between pt-1.5 md:pt-2 border-t border-border mt-auto">
                           <div className="flex items-center gap-0.5 md:gap-1 text-[10px] md:text-xs text-muted-foreground">
@@ -252,7 +317,7 @@ const BlogSection = () => {
                       </CardContent>
                     </FloatingCard>
                   </GradientBorder>
-                </motion.div>
+                </div>
                   </Link>
                 ))}
               </div>
@@ -260,23 +325,17 @@ const BlogSection = () => {
           </>
         )}
 
-        {/* View All Link */}
-        <motion.div 
-          className="flex justify-center mt-8 md:mt-12"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-          viewport={{ once: true }}
-        >
+        {/* View All Link - Optimized with CSS */}
+        <div className="flex justify-center mt-8 md:mt-12 animate-fade-in-up">
           <Link href="/blog">
             <Button variant="outline" className="border-primary/30 hover:border-primary/50">
               Xem tất cả bài viết
             </Button>
           </Link>
-        </motion.div>
+        </div>
       </div>
     </section>
   );
 };
 
-export default BlogSection;
+export default memo(BlogSection);

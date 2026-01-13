@@ -11,6 +11,7 @@ const cabin = Cabin({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-cabin",
+  display: "swap", // Prevent FOIT (Flash of Invisible Text)
 });
 
 export const metadata: Metadata = {
@@ -171,6 +172,7 @@ export default function RootLayout({
   return (
     <html lang="vi" className={`${cabin.variable}`}>
       <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <link rel="canonical" href="https://yhotel.lovable.app" />
         <meta name="geo.region" content="VN-CT" />
         <meta name="geo.placename" content="Can Tho City" />

@@ -244,7 +244,7 @@ const BookingSectionContent = () => {
     <section className="py-20 bg-gradient-section">
       <div className="container-luxury">
         <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-black mb-6">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
             Đặt Phòng Trực Tuyến
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">

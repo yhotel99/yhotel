@@ -2,6 +2,7 @@
 
 import { use, useState, useRef, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import {
   Bed,
   Wifi,
@@ -449,11 +450,14 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                         className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] rounded-xl overflow-hidden cursor-pointer group"
                         onClick={() => openLightbox(index)}
                       >
-                        <img
+                        <Image
                           src={image}
                           alt={`${room.name} - Hình ${index + 1}`}
-                          className="w-full h-full object-cover select-none transition-transform duration-500 ease-out group-hover:scale-105"
-                          draggable={false}
+                          fill
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 1200px"
+                          className="object-cover select-none transition-transform duration-500 ease-out group-hover:scale-105"
+                          priority={index === 0}
+                          loading={index < 2 ? "eager" : "lazy"}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
@@ -770,7 +774,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                 value={formData.fullName}
                                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                                 placeholder="Nguyễn Văn A"
-                                className="h-9 md:h-10 text-xs md:text-sm"
+                                className="h-9 md:h-10 text-xs md:text-sm placeholder:opacity-60"
                                 maxLength={100}
                                 required
                               />
@@ -782,7 +786,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                 value={formData.email}
                                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                                 placeholder="email@example.com"
-                                className="h-9 md:h-10 text-xs md:text-sm"
+                                className="h-9 md:h-10 text-xs md:text-sm placeholder:opacity-60"
                                 maxLength={255}
                                 required
                               />
@@ -793,7 +797,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                 value={formData.phone}
                                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                                 placeholder="+84 123 456 789"
-                                className="h-9 md:h-10 text-xs md:text-sm"
+                                className="h-9 md:h-10 text-xs md:text-sm placeholder:opacity-60"
                                 maxLength={20}
                                 required
                               />
@@ -805,7 +809,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                 onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
                                 placeholder="Ví dụ: Giường đôi, tầng cao..."
                                 rows={2}
-                                className="text-xs md:text-sm resize-none"
+                                className="text-xs md:text-sm resize-none placeholder:opacity-60"
                                 maxLength={500}
                               />
                             </div>

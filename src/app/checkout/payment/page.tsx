@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -15,7 +15,10 @@ import {
   Banknote,
   CheckCircle,
   Copy,
-  Loader2
+  Loader2,
+  Phone,
+  Mail,
+  FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -431,7 +434,65 @@ const PaymentContent = () => {
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [countdown, setCountdown] = useState(600); // 10 minutes = 600 seconds
+  const [countdown, setCountdown] = useState(15 * 60); // 15 minutes
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  // Handle timeout - cancel booking if not paid
+  const handleTimeoutCancel = useCallback(async () => {
+    if (!bookingId || isCancelling) return;
+    
+    // Check if booking is still pending
+    if (booking?.status !== BOOKING_STATUS.PENDING) {
+      // Booking already confirmed or cancelled, redirect to success
+      router.push(`/checkout/success?booking_id=${bookingId}`);
+      return;
+    }
+
+    setIsCancelling(true);
+    
+    try {
+      // Cancel the booking using RPC function
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: BOOKING_STATUS.CANCELLED,
+        }),
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Hết thời gian thanh toán",
+          description: "Đặt phòng đã bị hủy do quá thời gian chờ thanh toán. Vui lòng đặt lại phòng.",
+          variant: "destructive",
+          duration: 5000,
+        });
+        
+        // Redirect to success page with cancelled status
+        setTimeout(() => {
+          router.push(`/checkout/success?booking_id=${bookingId}&timeout=true`);
+        }, 2000);
+      } else {
+        console.error('Failed to cancel booking:', await response.text());
+        toast({
+          title: "Lỗi hệ thống",
+          description: "Không thể hủy đặt phòng. Vui lòng liên hệ hỗ trợ.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+      toast({
+        title: "Lỗi hệ thống",
+        description: "Đã xảy ra lỗi khi hủy đặt phòng.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCancelling(false);
+    }
+  }, [bookingId, isCancelling, booking?.status, router, toast]);
 
   // Countdown timer effect
   useEffect(() => {
@@ -439,8 +500,8 @@ const PaymentContent = () => {
       const timer = setInterval(() => {
         setCountdown((prev) => {
           if (prev <= 1) {
-            // Countdown finished, auto redirect to success page
-            router.push(`/checkout/success?booking_id=${bookingId}`);
+            // Countdown finished, cancel booking if not paid
+            handleTimeoutCancel();
             return 0;
           }
           return prev - 1;
@@ -449,7 +510,7 @@ const PaymentContent = () => {
 
       return () => clearInterval(timer);
     }
-  }, [canProceedPayment, countdown, bookingId, router]);
+  }, [canProceedPayment, countdown, handleTimeoutCancel]);
 
   const bankAccount = {
     number: "22102003",
@@ -614,7 +675,7 @@ const PaymentContent = () => {
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
                   <Banknote className="h-8 w-8 text-primary" />
                 </div>
-                <h1 className="text-3xl md:text-4xl font-display font-bold text-black mb-4">
+                <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
                   Chuyển Khoản Ngân Hàng
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -698,7 +759,7 @@ const PaymentContent = () => {
                                   <Copy className="h-4 w-4" />
                                 </Button>
                               </div>
-                              <p className="text-xs text-muted-foreground mt-2">
+                              <p className="text-sm font-semibold text-foreground mt-3 inline-block px-2 py-1 bg-yellow-200 dark:bg-yellow-900/30 rounded">
                                 ⚠️ Quan trọng: Vui lòng ghi đúng nội dung để chúng tôi xác nhận thanh toán nhanh nhất
                               </p>
                             </div>
@@ -732,7 +793,7 @@ const PaymentContent = () => {
                           <li>Chọn tính năng quét mã QR và quét mã VietQR bên trên</li>
                           <li>Kiểm tra thông tin: số tiền {formatPrice(booking.total_amount)}đ, nội dung chuyển khoản {paymentContent}</li>
                           <li>Xác nhận và hoàn tất giao dịch</li>
-                          <li>Chờ hệ thống tự động xác nhận thanh toán (tối đa 10 phút)</li>
+                          <li>Chờ hệ thống tự động xác nhận thanh toán (trong vòng 15 phút)</li>
                           <li>Chúng tôi sẽ gửi email xác nhận thanh toán thành công trong vài phút</li>
                         </ol>
                         <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
@@ -809,37 +870,95 @@ const PaymentContent = () => {
                           </div>
                         </div>
 
-                        {/* Room & Customer Info */}
-                        <div className="space-y-2">
-                          {booking.room && (
-                            <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                  <Building2 className="h-4 w-4 text-primary" />
-                                </div>
-                                <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-0.5">Phòng</p>
-                                  <p className="font-semibold text-foreground">{booking.room.name}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          {booking.customer && (
-                            <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
-                              <div className="flex items-center gap-3">
+                        <Separator className="my-4" />
+
+                        {/* Customer Information Section */}
+                        {booking.customer && (
+                          <div>
+                            <h3 className="text-lg font-display font-semibold mb-3 flex items-center gap-2">
+                              <User className="h-5 w-5 text-primary" />
+                              Thông Tin Khách Hàng
+                            </h3>
+                            <div className="p-4 bg-muted/30 rounded-lg border border-border/50 space-y-3">
+                              <div className="flex items-start gap-3">
                                 <div className="p-2 bg-primary/10 rounded-lg">
                                   <User className="h-4 w-4 text-primary" />
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-0.5">Khách hàng</p>
+                                  <p className="text-xs text-muted-foreground mb-1">Họ và tên</p>
                                   <p className="font-semibold text-foreground">{booking.customer.full_name}</p>
-                                  {booking.customer.email && (
-                                    <p className="text-xs text-muted-foreground mt-0.5">{booking.customer.email}</p>
-                                  )}
                                 </div>
                               </div>
+                              
+                              {booking.customer.email && (
+                                <div className="flex items-start gap-3">
+                                  <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Mail className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-xs text-muted-foreground mb-1">Email</p>
+                                    <p className="font-medium text-foreground">{booking.customer.email}</p>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {booking.customer.phone && (
+                                <div className="flex items-start gap-3">
+                                  <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Phone className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-xs text-muted-foreground mb-1">Số điện thoại</p>
+                                    <p className="font-medium text-foreground">{booking.customer.phone}</p>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
+                        )}
+
+                        <Separator className="my-4" />
+
+                        {/* Booking Details Section */}
+                        <div>
+                          <h3 className="text-lg font-display font-semibold mb-3 flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-primary" />
+                            Chi Tiết Đặt Phòng
+                          </h3>
+                          <div className="space-y-2">
+                            {booking.room && (
+                              <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
+                                <div className="flex items-center gap-3">
+                                  <div className="p-2 bg-primary/10 rounded-lg">
+                                    <Building2 className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-xs text-muted-foreground mb-0.5">Phòng đã đặt</p>
+                                    <p className="font-semibold text-foreground">{booking.room.name}</p>
+                                    {booking.room.room_type && (
+                                      <p className="text-xs text-muted-foreground mt-0.5">
+                                        Loại phòng: {booking.room.room_type}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {booking.notes && (
+                              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800/50">
+                                <div className="flex items-start gap-3">
+                                  <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
+                                    <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  </div>
+                                  <div className="flex-1">
+                                    <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">Ghi chú đặc biệt</p>
+                                    <p className="text-sm text-blue-900 dark:text-blue-100">{booking.notes}</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         <Separator className="my-4" />

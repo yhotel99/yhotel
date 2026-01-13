@@ -1,9 +1,9 @@
 "use client";
 
 import { Bed, Wifi, Car, Coffee, Bath, Users } from "lucide-react";
-import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { memo, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
@@ -45,20 +45,14 @@ const RoomsSection = () => {
   const { data: rooms = [], isLoading: loading } = useRooms();
   const prefetchRoom = usePrefetchRoom();
 
-  // Show only first 4 rooms on homepage
-  const displayRooms = rooms.slice(0, 4);
+  // Show only first 4 rooms on homepage - memoized
+  const displayRooms = useMemo(() => rooms.slice(0, 4), [rooms]);
 
   return (
     <section id="rooms" className="py-12 md:py-16 bg-gradient-subtle">
       <div className="container-luxury">
-        {/* Header */}
-        <motion.div 
-          className="text-center mb-8 md:mb-12"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-          viewport={{ once: true, margin: "-100px" }}
-        >
+        {/* Header - Optimized with CSS */}
+        <div className="text-center mb-8 md:mb-12 animate-fade-in-up">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground mb-6 whitespace-nowrap">
             Phòng & Suites
           </h2>
@@ -67,7 +61,7 @@ const RoomsSection = () => {
             tiện nghi cao cấp. Mỗi phòng được trang bị nội thất sang trọng, công nghệ thông minh để 
             mang đến sự thoải mái tối đa cho kỳ nghỉ của bạn.
           </p>
-        </motion.div>
+        </div>
 
         {/* Room Cards */}
         {loading ? (
@@ -79,12 +73,10 @@ const RoomsSection = () => {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
             {displayRooms.map((room, index) => (
-            <motion.div
+            <div
               key={room.id}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-              viewport={{ once: true, margin: "-100px" }}
+              className="animate-fade-in-up"
+              style={{ animationDelay: `${index * 0.1}s` }}
             >
               <Link 
                 href={`/rooms/${encodeURIComponent(room.id)}`} 
@@ -98,14 +90,15 @@ const RoomsSection = () => {
                     className="group overflow-hidden h-full bg-card rounded-xl border border-border shadow-card hover:shadow-hover transition-shadow cursor-pointer"
                     delay={0}
                   >
-                  {/* Image */}
-                  <div className="relative overflow-hidden rounded-t-xl">
-                    <motion.img
+                  {/* Image - Optimized with Next Image */}
+                  <div className="relative overflow-hidden rounded-t-xl h-32 md:h-48 lg:h-52">
+                    <Image
                       src={room.image}
                       alt={`Phòng ${room.name} tại Y Hotel - ${room.size} với view đẹp và tiện nghi cao cấp`}
-                      className="w-full h-32 md:h-48 lg:h-52 object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
-                      whileHover={{ scale: 1.02 }}
-                      transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                      fill
+                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
+                      className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
+                      loading={index < 2 ? "eager" : "lazy"}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
                     
@@ -183,29 +176,23 @@ const RoomsSection = () => {
                 </FloatingCard>
               </GradientBorder>
               </Link>
-            </motion.div>
+            </div>
             ))}
           </div>
         )}
 
-        {/* View All Button */}
-        <motion.div 
-          className="text-center mt-12"
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-          viewport={{ once: true, margin: "-100px" }}
-        >
+        {/* View All Button - Optimized with CSS */}
+        <div className="text-center mt-12 animate-fade-in-up">
           <Link href="/rooms">
             <ShimmerButton variant="luxury" size="lg" className="px-8">
               Xem Tất Cả Phòng
             </ShimmerButton>
           </Link>
-        </motion.div>
+        </div>
 
       </div>
     </section>
   );
 };
 
-export default RoomsSection;
+export default memo(RoomsSection);

@@ -17,7 +17,7 @@ export function useRooms(type?: string, status?: string) {
   return useQuery({
     queryKey: roomKeys.list({ type, status }),
     queryFn: () => getRooms(type, status),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 10, // 10 minutes (rooms don't change frequently)
   });
 }
 
@@ -27,7 +27,7 @@ export function useRoom(id: string) {
     queryKey: roomKeys.detail(id),
     queryFn: () => getRoomById(id),
     enabled: !!id, // Only fetch if id exists
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 10, // 10 minutes (room details don't change frequently)
   });
 }
 
@@ -39,7 +39,7 @@ export function usePrefetchRoom() {
     queryClient.prefetchQuery({
       queryKey: roomKeys.detail(id),
       queryFn: () => getRoomById(id),
-      staleTime: 1000 * 60 * 5,
+      staleTime: 1000 * 60 * 10, // 10 minutes
     });
   };
 }

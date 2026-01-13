@@ -174,26 +174,14 @@ export async function GET(request: Request) {
       };
     });
 
-    console.log('Transformed rooms:', rooms.length); // Debug log
-
     // Filter out test/placeholder rooms
     const productionRooms = rooms.filter(room => !isTestOrPlaceholderRoom(room));
-    const filteredCount = rooms.length - productionRooms.length;
-    if (filteredCount > 0) {
-      console.log(`Filtered out ${filteredCount} test/placeholder rooms`);
-    }
 
     // Deduplicate rooms with same name
     const deduplicatedRooms = deduplicateRooms(productionRooms);
-    const duplicateCount = productionRooms.length - deduplicatedRooms.length;
-    if (duplicateCount > 0) {
-      console.log(`Removed ${duplicateCount} duplicate rooms`);
-    }
 
     // Convert to API response format
     const response: RoomResponse[] = deduplicatedRooms.map(transformRoomToResponse);
-
-    console.log('Final response:', response.length, 'rooms'); // Debug log
 
     // Set cache headers
     return NextResponse.json(response, {

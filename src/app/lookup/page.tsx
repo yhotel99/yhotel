@@ -181,7 +181,7 @@ export default function LookupPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        className="bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 h-11"
+                        className="bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 h-11 placeholder:opacity-40"
                       />
                     </div>
 
@@ -197,7 +197,7 @@ export default function LookupPage() {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         onKeyPress={handleKeyPress}
-                        className="bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 h-11"
+                        className="bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 h-11 placeholder:opacity-40"
                       />
                     </div>
 
