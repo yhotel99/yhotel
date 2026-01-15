@@ -213,7 +213,7 @@ const BlogListingPage = () => {
               <div className="space-y-6">
                 {/* Side Featured Articles */}
                 {sideFeaturedPosts.length > 0 && (
-                  <div>
+                  <div className="mt-10">
                     {sideFeaturedPosts.map((post, index) => (
                       <Link 
                         key={post.id} 

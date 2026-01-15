@@ -202,19 +202,77 @@ const BookingSectionContent = () => {
 
       const result = await response.json();
 
+      // Always log the full response for debugging
+      console.log('[Booking] Full API Response:', JSON.stringify(result, null, 2));
+
       if (!response.ok) {
         throw new Error(result.error || 'Không thể tạo booking');
       }
 
       // Success - redirect to checkout page
-      const bookingId = result.booking?.id || result.booking_id;
-      if (bookingId) {
-        router.push(`/checkout?booking_id=${bookingId}`);
+      // Extract booking ID from response - try multiple possible locations
+      let bookingId: string | null = null;
+      
+      // Try booking_id first (most reliable)
+      if (result.booking_id !== undefined && result.booking_id !== null) {
+        const id = String(result.booking_id).trim();
+        if (id && id !== 'undefined' && id !== 'null' && id !== '[object Object]') {
+          bookingId = id;
+        }
+      }
+      
+      // Try booking.id if booking_id didn't work
+      if (!bookingId && result.booking) {
+        if (result.booking.id !== undefined && result.booking.id !== null) {
+          const id = String(result.booking.id).trim();
+          if (id && id !== 'undefined' && id !== 'null' && id !== '[object Object]') {
+            bookingId = id;
+          }
+        }
+      }
+      
+      // Try result.id directly
+      if (!bookingId && result.id !== undefined && result.id !== null) {
+        const id = String(result.id).trim();
+        if (id && id !== 'undefined' && id !== 'null' && id !== '[object Object]') {
+          bookingId = id;
+        }
+      }
+      
+      // Debug logging
+      console.log('[Booking] Extracted booking ID:', {
+        bookingId,
+        booking_id: result.booking_id,
+        booking_id_type: typeof result.booking_id,
+        booking: result.booking,
+        booking_id_from_booking: result.booking?.id,
+        result_id: result.id,
+      });
+      
+      // Validate booking ID
+      if (bookingId && bookingId.length > 0 && bookingId !== 'undefined' && bookingId !== 'null' && bookingId !== '[object Object]') {
+        router.push(`/checkout?booking_id=${encodeURIComponent(bookingId)}`);
       } else {
+        console.error('[Booking] Invalid booking ID - Full response:', {
+          bookingId,
+          full_result: result,
+          response_status: response.status,
+          response_ok: response.ok,
+          booking_id_raw: result.booking_id,
+          booking_id_type: typeof result.booking_id,
+          booking_raw: result.booking,
+          booking_type: typeof result.booking,
+          result_keys: Object.keys(result || {}),
+        });
         toast({
           title: "Đặt phòng thành công!",
-          description: result.message || "Chúng tôi đã nhận được yêu cầu đặt phòng của bạn.",
+          description: result.message || "Chúng tôi đã nhận được yêu cầu đặt phòng của bạn. Vui lòng sử dụng email và số điện thoại để tra cứu đặt phòng.",
+          variant: "default",
         });
+        // Redirect to lookup page as fallback
+        setTimeout(() => {
+          router.push('/lookup');
+        }, 2000);
         // Reset form
         setFormData({
           checkIn: undefined,

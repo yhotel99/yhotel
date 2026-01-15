@@ -177,6 +177,37 @@ function generateBookingCode(): string {
 }
 
 /**
+ * Normalize any booking ID-like value to a trimmed string.
+ * This is a small refactor to deduplicate conversion logic while
+ * preserving the original behavior and safety checks.
+ */
+function normalizeBookingId(value: unknown): string | null {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+
+  if (typeof value === 'number') {
+    return String(value).trim();
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    // Try to extract from common shapes first (consistent with previous logic)
+    if ('id' in (value as any)) {
+      return String((value as any).id).trim();
+    }
+
+    console.error('[API] Cannot extract booking ID from object:', value);
+    return String(value).trim();
+  }
+
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  return String(value).trim();
+}
+
+/**
  * Create booking using direct database insert (fallback when RPC is not available)
  */
 async function createBookingFallback(
@@ -222,7 +253,10 @@ async function createBookingFallback(
     throw new Error('Không thể tạo booking');
   }
 
-  return booking.id;
+  // Ensure we return a string
+  const bookingIdString = String(booking.id).trim();
+  console.log('[API] Fallback created booking ID:', bookingIdString);
+  return bookingIdString;
 }
 
 /**
@@ -461,10 +495,49 @@ export async function POST(request: Request) {
 
       // If RPC function exists and succeeds, use it
       if (!rpcError && rpcBookingId) {
-        bookingId = rpcBookingId;
+        // Log what we received from RPC
+        console.log('[API] RPC response:', {
+          rpcBookingId,
+          rpcBookingId_type: typeof rpcBookingId,
+          rpcBookingId_stringified: JSON.stringify(rpcBookingId),
+        });
+        
+        // Extract UUID - handle different response formats
+        let extractedId: string | null = null;
+        
+        if (typeof rpcBookingId === 'string') {
+          extractedId = rpcBookingId.trim();
+        } else if (typeof rpcBookingId === 'object' && rpcBookingId !== null) {
+          // If it's an object, try to find the ID
+          if ('id' in rpcBookingId) {
+            extractedId = String((rpcBookingId as any).id).trim();
+          } else if ('booking_id' in rpcBookingId) {
+            extractedId = String((rpcBookingId as any).booking_id).trim();
+          } else {
+            // Try to get first property that looks like a UUID
+            const keys = Object.keys(rpcBookingId);
+            for (const key of keys) {
+              const value = (rpcBookingId as any)[key];
+              if (typeof value === 'string' && value.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+                extractedId = value.trim();
+                break;
+              }
+            }
+          }
+        } else if (typeof rpcBookingId === 'number') {
+          extractedId = String(rpcBookingId).trim();
+        }
+        
+        if (extractedId && extractedId.length > 0 && extractedId !== '[object Object]') {
+          bookingId = extractedId;
+          console.log('[API] Extracted booking ID from RPC:', bookingId);
+        } else {
+          console.error('[API] Failed to extract booking ID from RPC response:', rpcBookingId);
+          throw new Error('Không thể lấy booking ID từ RPC function');
+        }
       } else {
         // If RPC function doesn't exist or errors, use fallback
-        console.log('RPC function not available, using fallback logic');
+        console.log('[API] RPC function not available or error, using fallback logic. RPC error:', rpcError);
         bookingId = await createBookingFallback(
           supabase,
           customerId,
@@ -479,7 +552,7 @@ export async function POST(request: Request) {
       }
     } catch (rpcError) {
       // If RPC fails for any reason, fallback to direct query
-      console.warn('RPC function error, using fallback:', rpcError);
+      console.warn('[API] RPC function exception, using fallback:', rpcError);
       bookingId = await createBookingFallback(
         supabase,
         customerId,
@@ -493,12 +566,69 @@ export async function POST(request: Request) {
       );
     }
 
+    // Ensure bookingId is always a valid string UUID
+    console.log('[API] Final bookingId before validation:', {
+      bookingId,
+      type: typeof bookingId,
+      isString: typeof bookingId === 'string',
+      length: typeof bookingId === 'string' ? bookingId.length : 'N/A',
+    });
+    
     if (!bookingId) {
+      console.error('[API] bookingId is null/undefined');
       return NextResponse.json(
-        { error: 'Không thể tạo booking' },
+        { error: 'Không thể tạo booking - ID không hợp lệ' },
         { status: 500 }
       );
     }
+    
+    // Convert to string if needed, but check if it's already an object
+    if (typeof bookingId === 'object' && bookingId !== null) {
+      console.error('[API] bookingId is an object:', bookingId);
+      // Try to extract ID from object
+      if ('id' in (bookingId as Record<string, unknown>)) {
+        bookingId = String((bookingId as Record<string, unknown>).id).trim();
+      } else {
+        return NextResponse.json(
+          { error: 'Không thể tạo booking - ID không hợp lệ (object)' },
+          { status: 500 }
+        );
+      }
+    } else if (typeof bookingId !== 'string' && typeof bookingId !== 'number') {
+      console.error('[API] bookingId has invalid type:', typeof bookingId);
+      return NextResponse.json(
+        { error: 'Không thể tạo booking - ID không hợp lệ' },
+        { status: 500 }
+      );
+    } else {
+      bookingId = String(bookingId).trim();
+    }
+    
+    // Validate it's not "[object Object]"
+    if (bookingId === '[object Object]' || bookingId === 'undefined' || bookingId === 'null') {
+      console.error('[API] bookingId is invalid string:', bookingId);
+      return NextResponse.json(
+        { error: 'Không thể tạo booking - ID không hợp lệ' },
+        { status: 500 }
+      );
+    }
+    
+    // Validate UUID format (basic check)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(bookingId)) {
+      console.warn('[API] bookingId does not match UUID format:', bookingId);
+      // Still allow it, but log warning
+    }
+    
+    if (bookingId.length === 0) {
+      console.error('[API] bookingId is empty after conversion');
+      return NextResponse.json(
+        { error: 'Không thể tạo booking - ID rỗng' },
+        { status: 500 }
+      );
+    }
+    
+    console.log('[API] Validated bookingId:', bookingId);
 
     // Fetch booking details to return (same structure as dashboard)
     const { data: booking, error: fetchError } = await supabase
@@ -521,37 +651,80 @@ export async function POST(request: Request) {
 
     if (fetchError || !booking) {
       // Still return success if booking was created, even if fetch failed
-      return NextResponse.json(
-        {
-          success: true,
-          booking_id: bookingId,
-          message: 'Đặt phòng thành công!',
-        },
-        { status: 201 }
-      );
+      // Ensure bookingId is a valid string UUID
+      const bookingIdString = normalizeBookingId(bookingId) ?? '';
+      
+      // Final validation
+      if (!bookingIdString || bookingIdString === '[object Object]' || bookingIdString === 'undefined' || bookingIdString === 'null' || bookingIdString.length === 0) {
+        console.error('[API] Invalid bookingIdString after processing:', bookingIdString);
+        return NextResponse.json(
+          { error: 'Không thể tạo booking - ID không hợp lệ' },
+          { status: 500 }
+        );
+      }
+      
+      const responseData = {
+        success: true,
+        booking_id: bookingIdString,
+        message: 'Đặt phòng thành công!',
+      };
+      
+      console.log('[API] Booking created but fetch failed. Sending response:', {
+        booking_id: responseData.booking_id,
+        booking_id_type: typeof responseData.booking_id,
+        booking_id_length: responseData.booking_id?.length,
+        is_uuid_format: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(responseData.booking_id),
+        fetchError: fetchError?.message,
+      });
+      
+      return NextResponse.json(responseData, { status: 201 });
     }
 
     // Payments are automatically created by create_booking_secure RPC function
     // No need to create them manually
 
-    return NextResponse.json(
-      {
-        success: true,
-        booking: {
-          id: booking.id,
-          status: booking.status,
-          check_in: booking.check_in,
-          check_out: booking.check_out,
-          number_of_nights: booking.number_of_nights,
-          total_amount: booking.total_amount,
-          total_guests: booking.total_guests,
-          customer: booking.customers,
-          room: booking.rooms,
-        },
-        message: 'Đặt phòng thành công! Vui lòng kiểm tra email để xác nhận.',
+    // Ensure booking.id is a valid string UUID
+    // Prefer booking.id from fetched data, fallback to bookingId variable
+    const sourceId = booking.id || bookingId;
+    const bookingIdString = normalizeBookingId(sourceId) ?? '';
+    
+    // Final validation
+    if (!bookingIdString || bookingIdString === '[object Object]' || bookingIdString === 'undefined' || bookingIdString === 'null' || bookingIdString.length === 0) {
+      console.error('[API] Invalid bookingIdString after processing:', bookingIdString);
+      return NextResponse.json(
+        { error: 'Không thể tạo booking - ID không hợp lệ' },
+        { status: 500 }
+      );
+    }
+    
+    // Log the response we're about to send
+    const responseData = {
+      success: true,
+      booking_id: bookingIdString, // Always include booking_id as string
+      booking: {
+        id: bookingIdString,
+        status: booking.status,
+        check_in: booking.check_in,
+        check_out: booking.check_out,
+        number_of_nights: booking.number_of_nights,
+        total_amount: booking.total_amount,
+        total_guests: booking.total_guests,
+        customer: booking.customers,
+        room: booking.rooms,
       },
-      { status: 201 }
-    );
+      message: 'Đặt phòng thành công! Vui lòng kiểm tra email để xác nhận.',
+    };
+    
+    console.log('[API] Sending booking response:', {
+      booking_id: responseData.booking_id,
+      booking_id_type: typeof responseData.booking_id,
+      booking_id_length: responseData.booking_id?.length,
+      is_uuid_format: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(responseData.booking_id),
+      has_booking: !!responseData.booking,
+      booking_id_in_booking: responseData.booking?.id,
+    });
+    
+    return NextResponse.json(responseData, { status: 201 });
   } catch (error) {
     console.error('Unexpected error creating booking:', error);
     return NextResponse.json(

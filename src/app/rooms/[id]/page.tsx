@@ -58,6 +58,38 @@ interface RoomDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+// Component để render HTML content từ Tiptap (giống bên blog)
+const HTMLContent = ({ content }: { content: string }) => {
+  if (!content || !content.trim()) {
+    return (
+      <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
+        Nội dung đang được cập nhật...
+      </p>
+    );
+  }
+
+  return (
+    <div
+      className="w-full text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed
+        [&_h1]:text-xl [&_h1]:sm:text-2xl [&_h1]:md:text-3xl [&_h1]:lg:text-4xl [&_h1]:font-display [&_h1]:font-bold [&_h1]:text-foreground [&_h1]:mt-6 [&_h1]:mb-4
+        [&_h2]:text-lg [&_h2]:sm:text-xl [&_h2]:md:text-2xl [&_h2]:font-display [&_h2]:font-bold [&_h2]:text-foreground [&_h2]:mt-6 [&_h2]:mb-3
+        [&_h3]:text-base [&_h3]:sm:text-lg [&_h3]:md:text-xl [&_h3]:font-display [&_h3]:font-semibold [&_h3]:text-foreground [&_h3]:mt-5 [&_h3]:mb-3
+        [&_p]:mb-4 [&_p]:text-inherit [&_p]:leading-relaxed [&_p]:break-words
+        [&_strong]:font-semibold [&_strong]:text-foreground
+        [&_em]:italic
+        [&_ul]:list-disc [&_ul]:ml-4 [&_ul]:mb-4 [&_ul]:pl-4
+        [&_ol]:list-decimal [&_ol]:ml-4 [&_ol]:mb-4 [&_ol]:pl-4
+        [&_li]:mb-2 [&_li]:text-inherit [&_li]:leading-relaxed [&_li]:break-words
+        [&_blockquote]:border-l-4 [&_blockquote]:border-primary [&_blockquote]:pl-4 [&_blockquote]:italic [&_blockquote]:my-4
+        [&_code]:bg-muted [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_code]:text-xs [&_code]:sm:text-sm
+        [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-md [&_pre]:overflow-x-auto [&_pre]:my-4 [&_pre]:text-xs [&_pre]:sm:text-sm
+        [&_a]:text-blue-600 [&_a]:underline hover:[&_a]:text-blue-800
+        [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-md [&_img]:my-4"
+      dangerouslySetInnerHTML={{ __html: content }}
+    />
+  );
+};
+
 // Mapping amenities to their display names
 const getAmenityName = (IconComponent: React.ComponentType): string => {
   const iconNames: Record<string, string> = {
@@ -323,19 +355,77 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
 
       const result = await response.json();
 
+      // Always log the full response for debugging
+      console.log('[Booking] Full API Response:', JSON.stringify(result, null, 2));
+
       if (!response.ok) {
         throw new Error(result.error || 'Không thể tạo booking');
       }
 
       // Success - redirect to checkout page
-      const bookingId = result.booking?.id || result.booking_id;
-      if (bookingId) {
-        router.push(`/checkout?booking_id=${bookingId}`);
+      // Extract booking ID from response - try multiple possible locations
+      let bookingId: string | null = null;
+      
+      // Try booking_id first (most reliable)
+      if (result.booking_id !== undefined && result.booking_id !== null) {
+        const id = String(result.booking_id).trim();
+        if (id && id !== 'undefined' && id !== 'null' && id !== '[object Object]') {
+          bookingId = id;
+        }
+      }
+      
+      // Try booking.id if booking_id didn't work
+      if (!bookingId && result.booking) {
+        if (result.booking.id !== undefined && result.booking.id !== null) {
+          const id = String(result.booking.id).trim();
+          if (id && id !== 'undefined' && id !== 'null' && id !== '[object Object]') {
+            bookingId = id;
+          }
+        }
+      }
+      
+      // Try result.id directly
+      if (!bookingId && result.id !== undefined && result.id !== null) {
+        const id = String(result.id).trim();
+        if (id && id !== 'undefined' && id !== 'null' && id !== '[object Object]') {
+          bookingId = id;
+        }
+      }
+      
+      // Debug logging
+      console.log('[Booking] Extracted booking ID:', {
+        bookingId,
+        booking_id: result.booking_id,
+        booking_id_type: typeof result.booking_id,
+        booking: result.booking,
+        booking_id_from_booking: result.booking?.id,
+        result_id: result.id,
+      });
+      
+      // Validate booking ID
+      if (bookingId && bookingId.length > 0 && bookingId !== 'undefined' && bookingId !== 'null' && bookingId !== '[object Object]') {
+        router.push(`/checkout?booking_id=${encodeURIComponent(bookingId)}`);
       } else {
+        console.error('[Booking] Invalid booking ID - Full response:', {
+          bookingId,
+          full_result: result,
+          response_status: response.status,
+          response_ok: response.ok,
+          booking_id_raw: result.booking_id,
+          booking_id_type: typeof result.booking_id,
+          booking_raw: result.booking,
+          booking_type: typeof result.booking,
+          result_keys: Object.keys(result || {}),
+        });
         toast({
           title: "Đặt phòng thành công!",
-          description: result.message || "Chúng tôi đã nhận được yêu cầu đặt phòng của bạn.",
+          description: result.message || "Chúng tôi đã nhận được yêu cầu đặt phòng của bạn. Vui lòng sử dụng email và số điện thoại để tra cứu đặt phòng.",
+          variant: "default",
         });
+        // Redirect to lookup page as fallback
+        setTimeout(() => {
+          router.push('/lookup');
+        }, 2000);
         // Reset form
         setFormData({
           checkIn: undefined,
@@ -598,9 +688,13 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                             <h3 className="text-xl md:text-2xl font-display font-bold mb-3 text-foreground">
                               Mô tả phòng
                             </h3>
-                            <p className="text-muted-foreground leading-relaxed text-base md:text-lg">
-                              {room.description || `${room.name} là một không gian nghỉ ngơi đẳng cấp với thiết kế hiện đại và tiện nghi cao cấp. Phòng được trang bị đầy đủ các tiện ích cần thiết để mang đến cho bạn một trải nghiệm nghỉ dưỡng tuyệt vời nhất.`}
-                            </p>
+                            {room.description ? (
+                              <HTMLContent content={room.description.trim()} />
+                            ) : (
+                              <p className="text-muted-foreground leading-relaxed text-base md:text-lg">
+                                {`${room.name} là một không gian nghỉ ngơi đẳng cấp với thiết kế hiện đại và tiện nghi cao cấp. Phòng được trang bị đầy đủ các tiện ích cần thiết để mang đến cho bạn một trải nghiệm nghỉ dưỡng tuyệt vời nhất.`}
+                              </p>
+                            )}
                           </div>
 
                           {/* Tiện ích */}

@@ -31,7 +31,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { CheckoutSkeleton } from "@/components/CheckoutSkeleton";
 import { BookingStatusBadge } from "@/components/BookingStatusBadge";
-import { BOOKING_STATUS } from "@/lib/constants";
+import { BOOKING_STATUS, PAYMENT_METHOD } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
@@ -70,7 +70,23 @@ const CheckoutContent = () => {
     if (!bookingId || !booking) return;
 
     if (paymentMethod === "bank_transfer") {
-      // Không cập nhật status, giữ nguyên trạng thái "chờ xác nhận"
+      // Cập nhật phương thức thanh toán vào CSDL, giữ nguyên trạng thái hiện tại
+      try {
+        await fetch(`/api/bookings/${bookingId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: booking.status,
+            payment_method: PAYMENT_METHOD.BANK_TRANSFER,
+          }),
+        });
+      } catch (error) {
+        console.error("Failed to update payment method (bank_transfer):", error);
+        // Có thể hiển thị toast cảnh báo, nhưng vẫn cho phép tiếp tục
+      }
+
       // Chuyển đến trang thanh toán chuyển khoản với QR code
       router.push(`/checkout/payment?booking_id=${bookingId}`);
     } else if (paymentMethod === "pay_at_hotel") {
@@ -92,7 +108,7 @@ const CheckoutContent = () => {
         },
         body: JSON.stringify({
           status: BOOKING_STATUS.CONFIRMED,
-          payment_method: 'pay_at_hotel',
+          payment_method: PAYMENT_METHOD.PAY_AT_HOTEL,
         }),
       });
 
