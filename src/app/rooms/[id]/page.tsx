@@ -53,6 +53,7 @@ import { useRoom, usePrefetchRoom, useRooms } from "@/hooks/use-rooms";
 import { RoomDetailSkeleton } from "@/components/RoomDetailSkeleton";
 import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
 import { getAmenityLabel } from "@/lib/constants";
+import Script from "next/script";
 
 interface RoomDetailPageProps {
   params: Promise<{ id: string }>;
@@ -243,7 +244,33 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                 </Link>
               </div>
             </div>
-          </section>
+        </section>
+
+        {/* Call-to-action: đặt phòng và xem thêm phòng khác */}
+        <section className="py-6 md:py-10 bg-gradient-subtle border-t border-border/60">
+          <div className="container-luxury">
+            <div className="max-w-3xl mx-auto text-center space-y-4">
+              <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
+                Chưa chắc chắn? Khám phá thêm các hạng phòng khác
+              </h2>
+              <p className="text-sm md:text-base text-muted-foreground">
+                Y Hotel Cần Thơ có nhiều lựa chọn phòng và suites phù hợp cho cặp đôi, gia đình và chuyến công tác.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Link href="/rooms">
+                  <Button variant="outline">
+                    Xem danh sách phòng
+                  </Button>
+                </Link>
+                <Link href={`/book?roomId=${encodeURIComponent(room.id)}`}>
+                  <Button>
+                    Đặt phòng này
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
         </main>
         <Footer />
       </div>
@@ -480,10 +507,52 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     return categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
   };
 
+  // Structured data for this room (HotelRoom/Product)
+  const baseUrl =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "https://yhotel.lovable.app";
+
+  const mainImage = images && images.length > 0 ? images[0] : room.image;
+
+  const roomStructuredData = {
+    "@context": "https://schema.org",
+    "@type": "HotelRoom",
+    name: room.name,
+    description:
+      room.description ||
+      `Phòng ${room.name} tại Y Hotel Cần Thơ với thiết kế hiện đại và tiện nghi đầy đủ.`,
+    image: mainImage?.startsWith("http") ? mainImage : `${baseUrl}${mainImage}`,
+    url: `${baseUrl}/rooms/${room.id}`,
+    bedType: getAmenityLabel("bed") || "Giường đôi/giường đơn",
+    occupancy: {
+      "@type": "QuantitativeValue",
+      value: room.guests,
+      unitCode: "C62", // persons
+    },
+    offers: {
+      "@type": "Offer",
+      price: room.price?.toString().replace(/[^\d]/g, "") || undefined,
+      priceCurrency: "VND",
+      availability: "https://schema.org/InStock",
+    },
+    amenityFeature: (room.amenities || []).map((amenity) => ({
+      "@type": "LocationFeatureSpecification",
+      name: getAmenityLabel(amenity),
+    })),
+  };
+
   return (
     <div className="min-h-screen bg-luxury-gradient">
       <Navigation />
       <main className="pt-14 lg:pt-16">
+        <Script
+          id="room-structured-data"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(roomStructuredData),
+          }}
+        />
         {/* Sticky Back Button - Shows when scrolling */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

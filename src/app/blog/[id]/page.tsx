@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import { useBlog, useBlogs } from "@/hooks/use-blogs";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
+import Script from "next/script";
 
 interface BlogDetailPageProps {
   params: Promise<{ id: string }>;
@@ -151,10 +152,47 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
     }
   };
 
+  const baseUrl =
+    typeof window !== "undefined"
+      ? window.location.origin
+      : "https://yhotel.lovable.app";
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    headline: blog.title,
+    description: blog.excerpt || "",
+    image:
+      blog.image && blog.image.startsWith("http")
+        ? blog.image
+        : `${baseUrl}${blog.image || "/logo.png"}`,
+    author: blog.author
+      ? {
+          "@type": "Person",
+          name: blog.author.full_name,
+          email: blog.author.email,
+        }
+      : {
+          "@type": "Organization",
+          name: "Y Hotel Cần Thơ",
+        },
+    datePublished: blog.date,
+    dateModified: blog.date,
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${baseUrl}/blog/${blog.slug || id}`,
+    },
+  };
+
   return (
     <div className="min-h-screen bg-luxury-gradient">
       <Navigation />
       <main className="pt-14 lg:pt-16">
+        <Script
+          id="blog-structured-data"
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        />
         {/* Hero Image */}
         <section className="relative bg-gradient-subtle py-4 md:py-6 overflow-hidden">
           <div className="container-luxury">
@@ -334,6 +372,32 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Call-to-action: đặt phòng */}
+        <section className="py-6 md:py-10 bg-gradient-subtle border-t border-border/60">
+          <div className="container-luxury">
+            <div className="max-w-3xl mx-auto text-center space-y-4">
+              <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
+                Sẵn sàng trải nghiệm Y Hotel Cần Thơ?
+              </h2>
+              <p className="text-sm md:text-base text-muted-foreground">
+                Đặt phòng trực tuyến để nhận ưu đãi tốt nhất và đảm bảo còn phòng trong thời gian bạn mong muốn.
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Link href="/rooms">
+                  <Button variant="outline">
+                    Xem tất cả hạng phòng
+                  </Button>
+                </Link>
+                <Link href="/book">
+                  <Button>
+                    Đặt phòng ngay
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
