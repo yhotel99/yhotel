@@ -52,6 +52,7 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://yhotel.lovable.app",
   },
+  metadataBase: new URL("https://yhotel.lovable.app"),
 };
 
 export default function RootLayout({

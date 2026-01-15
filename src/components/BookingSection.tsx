@@ -205,7 +205,19 @@ const BookingSectionContent = () => {
       // Always log the full response for debugging
       console.log('[Booking] Full API Response:', JSON.stringify(result, null, 2));
 
+      // Handle business error: room not available (from RPC)
       if (!response.ok) {
+        const errorCode = result?.code;
+
+        if (response.status === 400 && errorCode === 'ROOM_NOT_AVAILABLE') {
+          toast({
+            title: "Phòng đã được đặt",
+            description: result.error || "Phòng đã được đặt trong khoảng thời gian này. Vui lòng chọn phòng hoặc thời gian khác.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         throw new Error(result.error || 'Không thể tạo booking');
       }
 

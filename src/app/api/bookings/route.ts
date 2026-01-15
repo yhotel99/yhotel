@@ -471,9 +471,9 @@ export async function POST(request: Request) {
 
     // Calculate total amount (same as dashboard)
     const total_amount = room.price_per_night * number_of_nights;
-
+    
     let bookingId: string;
-
+    
     // Try to use RPC function first (if available)
     // The RPC function will automatically create payments (advance_payment and room_charge)
     try {
@@ -492,7 +492,7 @@ export async function POST(request: Request) {
           p_advance_payment: 0, // Đặt cọc luôn là 0 như dashboard
         }
       );
-
+    
       // If RPC function exists and succeeds, use it
       if (!rpcError && rpcBookingId) {
         // Log what we received from RPC
@@ -502,38 +502,80 @@ export async function POST(request: Request) {
           rpcBookingId_stringified: JSON.stringify(rpcBookingId),
         });
         
-        // Extract UUID - handle different response formats
-        let extractedId: string | null = null;
-        
-        if (typeof rpcBookingId === 'string') {
-          extractedId = rpcBookingId.trim();
-        } else if (typeof rpcBookingId === 'object' && rpcBookingId !== null) {
-          // If it's an object, try to find the ID
-          if ('id' in rpcBookingId) {
-            extractedId = String((rpcBookingId as any).id).trim();
-          } else if ('booking_id' in rpcBookingId) {
-            extractedId = String((rpcBookingId as any).booking_id).trim();
+        // New: handle standard { ok, booking_id, error_code } shape from RPC
+        if (typeof rpcBookingId === 'object' && rpcBookingId !== null && 'ok' in rpcBookingId) {
+          const rpcResult = rpcBookingId as { ok: boolean; booking_id?: string; error_code?: string };
+          
+          if (!rpcResult.ok) {
+            // Business error from RPC – do NOT fallback to direct insert
+            console.warn('[API] RPC reported business error:', rpcResult.error_code);
+            
+            // Specific handling: room not available (avoid DB overlap error)
+            if (rpcResult.error_code === 'ROOM_NOT_AVAILABLE') {
+              return NextResponse.json(
+                {
+                  error: 'Phòng đã được đặt trong khoảng thời gian này. Vui lòng chọn phòng hoặc thời gian khác.',
+                  code: 'ROOM_NOT_AVAILABLE',
+                },
+                { status: 400 }
+              );
+            }
+            
+            // Other business errors from RPC
+            return NextResponse.json(
+              {
+                error: 'Không thể tạo booking. Vui lòng thử lại hoặc chọn thông tin khác.',
+                code: rpcResult.error_code ?? 'RPC_BUSINESS_ERROR',
+              },
+              { status: 400 }
+            );
+          }
+          
+          // ok === true -> extract booking_id from RPC payload
+          if (rpcResult.booking_id && typeof rpcResult.booking_id === 'string') {
+            bookingId = rpcResult.booking_id.trim();
+          } else if ('id' in rpcResult && typeof (rpcResult as any).id === 'string') {
+            bookingId = (rpcResult as any).id.trim();
           } else {
-            // Try to get first property that looks like a UUID
-            const keys = Object.keys(rpcBookingId);
-            for (const key of keys) {
-              const value = (rpcBookingId as any)[key];
-              if (typeof value === 'string' && value.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-                extractedId = value.trim();
-                break;
+            console.error('[API] RPC ok=true but booking_id missing/invalid:', rpcResult);
+            throw new Error('Không thể lấy booking ID từ RPC function');
+          }
+          
+          console.log('[API] Extracted booking ID from RPC (ok=true):', bookingId);
+        } else {
+          // Legacy behavior: Extract UUID - handle different response formats
+          let extractedId: string | null = null;
+          
+          if (typeof rpcBookingId === 'string') {
+            extractedId = rpcBookingId.trim();
+          } else if (typeof rpcBookingId === 'object' && rpcBookingId !== null) {
+            // If it's an object, try to find the ID
+            if ('id' in rpcBookingId) {
+              extractedId = String((rpcBookingId as any).id).trim();
+            } else if ('booking_id' in rpcBookingId) {
+              extractedId = String((rpcBookingId as any).booking_id).trim();
+            } else {
+              // Try to get first property that looks like a UUID
+              const keys = Object.keys(rpcBookingId);
+              for (const key of keys) {
+                const value = (rpcBookingId as any)[key];
+                if (typeof value === 'string' && value.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+                  extractedId = value.trim();
+                  break;
+                }
               }
             }
+          } else if (typeof rpcBookingId === 'number') {
+            extractedId = String(rpcBookingId).trim();
           }
-        } else if (typeof rpcBookingId === 'number') {
-          extractedId = String(rpcBookingId).trim();
-        }
-        
-        if (extractedId && extractedId.length > 0 && extractedId !== '[object Object]') {
-          bookingId = extractedId;
-          console.log('[API] Extracted booking ID from RPC:', bookingId);
-        } else {
-          console.error('[API] Failed to extract booking ID from RPC response:', rpcBookingId);
-          throw new Error('Không thể lấy booking ID từ RPC function');
+          
+          if (extractedId && extractedId.length > 0 && extractedId !== '[object Object]') {
+            bookingId = extractedId;
+            console.log('[API] Extracted booking ID from RPC:', bookingId);
+          } else {
+            console.error('[API] Failed to extract booking ID from RPC response:', rpcBookingId);
+            throw new Error('Không thể lấy booking ID từ RPC function');
+          }
         }
       } else {
         // If RPC function doesn't exist or errors, use fallback
@@ -551,7 +593,7 @@ export async function POST(request: Request) {
         );
       }
     } catch (rpcError) {
-      // If RPC fails for any reason, fallback to direct query
+      // If RPC fails for any reason (network/unknown), fallback to direct query
       console.warn('[API] RPC function exception, using fallback:', rpcError);
       bookingId = await createBookingFallback(
         supabase,

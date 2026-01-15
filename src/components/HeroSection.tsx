@@ -10,14 +10,13 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
-// Banner images from Supabase
+// Banner images
+// Ưu tiên dùng ảnh local/Unsplash để tránh lỗi 400 từ Supabase storage
 const bannerImages = [
-  "https://rnuuftucapucuavqlgbx.supabase.co/storage/v1/object/public/yhotel/gallery/Artboard%205.png",
-  "https://rnuuftucapucuavqlgbx.supabase.co/storage/v1/object/public/yhotel/gallery/Artboard%204.png",
-  "https://rnuuftucapucuavqlgbx.supabase.co/storage/v1/object/public/yhotel/gallery/Artboard%203.png",
-  "https://rnuuftucapucuavqlgbx.supabase.co/storage/v1/object/public/yhotel/gallery/Artboard%203-1.png",
-  "https://rnuuftucapucuavqlgbx.supabase.co/storage/v1/object/public/yhotel/gallery/Artboard%201-1.png",
-  "https://rnuuftucapucuavqlgbx.supabase.co/storage/v1/object/public/yhotel/gallery/Artboard%201.png",
+  "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600",
+  "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1600",
+  "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1600",
+  "https://images.unsplash.com/photo-1618773928121-c32242e63f39?w=1600",
 ];
 
 const HeroSection = () => {
