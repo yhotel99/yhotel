@@ -47,14 +47,10 @@ const BlogListingPage = () => {
     }
   };
 
-  // Get featured post (first one)
-  const featuredPost = blogs[0] || null;
-  
-  // Get side featured posts (next 2)
-  const sideFeaturedPosts = blogs.slice(1, 3);
-  
-  // Get regular posts (rest)
-  const regularPosts = blogs.slice(3);
+  // Get featured/side/regular posts only when there is data
+  const featuredPost = blogs.length > 0 ? blogs[0] : null;
+  const sideFeaturedPosts = blogs.length > 1 ? blogs.slice(1, 3) : [];
+  const regularPosts = blogs.length > 3 ? blogs.slice(3) : [];
 
   // Get most read posts (simulated - using first 5 posts)
   const mostReadPosts = blogs.slice(0, 5);
@@ -158,9 +154,15 @@ const BlogListingPage = () => {
                         </div>
                       ))}
                     </div>
-                  ) : regularPosts.length === 0 ? (
+                  ) : blogs.length === 0 ? (
                     <div className="text-center py-16">
                       <p className="text-muted-foreground">Chưa có bài viết nào.</p>
+                    </div>
+                  ) : regularPosts.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground text-sm">
+                        Không có thêm bài viết nào khác. Vui lòng xem các bài viết tiêu điểm và đọc nhiều nhất.
+                      </p>
                     </div>
                   ) : (
                     regularPosts.map((post) => (

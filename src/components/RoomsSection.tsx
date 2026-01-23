@@ -11,6 +11,7 @@ import { FloatingCard } from "@/components/ui/floating-card";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { useRooms, usePrefetchRoom } from "@/hooks/use-rooms";
 import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
+import { getAmenityLabel } from "@/lib/constants";
 
 const categoryLabels: Record<string, string> = {
   standard: "Standard",
@@ -22,6 +23,12 @@ const categoryLabels: Record<string, string> = {
 // Helper to get category label with fallback
 const getCategoryLabel = (category: string): string => {
   return categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
+};
+
+// Helper function to strip HTML tags from text
+const stripHtmlTags = (text: string): string => {
+  if (!text) return '';
+  return text.replace(/<[^>]*>/g, '').trim();
 };
 
 // Mapping amenities to their display names
@@ -152,11 +159,20 @@ const RoomsSection = () => {
                       </div>
                     </div>
 
-                    {/* Features - Single line, compact */}
-                    <div className="mb-1.5 hidden md:block">
-                      <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">
-                        {room.features.slice(0, 2).join(" • ")}
-                      </p>
+                    {/* Amenities - Chips */}
+                    <div className="mb-1.5 hidden md:block relative">
+                      <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+                        {(room.amenities || []).map((amenity, idx) => (
+                          <Badge
+                            key={idx}
+                            variant="outline"
+                            className="text-[9px] md:text-[10px] px-1.5 py-0.5 h-auto font-normal bg-muted/50 border-border/50 whitespace-nowrap flex-shrink-0"
+                          >
+                            {getAmenityLabel(amenity)}
+                          </Badge>
+                        ))}
+                      </div>
+                      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent pointer-events-none" />
                     </div>
 
                     {/* Action Button */}

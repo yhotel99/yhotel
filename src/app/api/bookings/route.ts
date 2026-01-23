@@ -1,6 +1,21 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { PAYMENT_METHOD } from '@/lib/constants';
+
+/**
+ * Normalize email for consistent storage and lookup
+ */
+function normalizeEmail(email: string): string {
+  return email.toLowerCase().trim();
+}
+
+/**
+ * Normalize phone number by keeping digits only
+ */
+function normalizePhone(phone: string): string {
+  return phone.replace(/\D/g, '');
+}
 
 /**
  * GET endpoint to fetch bookings list
@@ -8,6 +23,36 @@ import type { SupabaseClient } from '@supabase/supabase-js';
  */
 export async function GET(request: Request) {
   try {
+    // Simple API key based auth to protect sensitive booking data
+    const authHeader = request.headers.get('authorization');
+    const apiKeyHeader = request.headers.get('x-api-key');
+    const configuredApiKey = process.env.BOOKINGS_API_KEY;
+
+    // Extract bearer token if present
+    let token: string | null = null;
+    if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+      token = authHeader.slice(7).trim();
+    } else if (apiKeyHeader) {
+      token = apiKeyHeader.trim();
+    }
+
+    if (!configuredApiKey) {
+      console.error(
+        'BOOKINGS_API_KEY is not configured. /api/bookings GET endpoint is disabled for security reasons.'
+      );
+      return NextResponse.json(
+        { error: 'Endpoint tạm thời không khả dụng. Vui lòng liên hệ quản trị viên.' },
+        { status: 500 }
+      );
+    }
+
+    if (!token || token !== configuredApiKey) {
+      return NextResponse.json(
+        { error: 'Unauthorized: Thiếu hoặc sai khóa truy cập.' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
     const limit = parseInt(searchParams.get('limit') || '10', 10);
@@ -43,9 +88,11 @@ export async function GET(request: Request) {
     // Add search filter if provided
     if (search && search.trim() !== '') {
       const trimmedSearch = search.trim();
-      // Search by booking ID, customer name, or room name
+      // Search by booking ID, customer name, or room name (PostgREST OR syntax)
+      // Use * as wildcard which PostgREST translates to % in SQL
+      const pattern = `*${trimmedSearch}*`;
       query = query.or(
-        `id.ilike.%${trimmedSearch}%,customers.full_name.ilike.%${trimmedSearch}%,rooms.name.ilike.%${trimmedSearch}%`
+        `id.ilike.${pattern},customers.full_name.ilike.${pattern},rooms.name.ilike.${pattern}`
       );
     }
 
@@ -110,13 +157,17 @@ async function findOrCreateCustomer(
   email: string,
   phone: string
 ): Promise<string | null> {
+  // Normalize inputs for consistent storage and lookup
+  const normalizedEmail = email ? normalizeEmail(email) : '';
+  const normalizedPhone = phone ? normalizePhone(phone) : '';
+
   try {
     // First, try to find existing customer by email
-    if (email) {
+    if (normalizedEmail) {
       const { data: customerByEmail } = await supabase
         .from('customers')
         .select('id')
-        .eq('email', email)
+        .eq('email', normalizedEmail)
         .is('deleted_at', null)
         .single();
 
@@ -126,11 +177,11 @@ async function findOrCreateCustomer(
     }
 
     // Try to find by phone
-    if (phone) {
+    if (normalizedPhone) {
       const { data: customerByPhone } = await supabase
         .from('customers')
         .select('id')
-        .eq('phone', phone)
+        .eq('phone', normalizedPhone)
         .is('deleted_at', null)
         .single();
 
@@ -145,8 +196,8 @@ async function findOrCreateCustomer(
       .insert([
         {
           full_name: fullName,
-          email: email,
-          phone: phone || null,
+          email: normalizedEmail || null,
+          phone: normalizedPhone || null,
           customer_type: 'regular',
           source: 'website',
         },
@@ -435,10 +486,14 @@ export async function POST(request: Request) {
     }
 
     // Find or create customer
+    // Normalize customer contact info for consistent lookup with /api/bookings/lookup
+    const normalizedEmail = normalizeEmail(customer_email);
+    const normalizedPhone = normalizePhone(customer_phone);
+
     const customerId = await findOrCreateCustomer(
       customer_name,
-      customer_email,
-      customer_phone
+      normalizedEmail,
+      normalizedPhone
     );
 
     if (!customerId) {
@@ -486,7 +541,7 @@ export async function POST(request: Request) {
           p_check_out: check_out, // TIMESTAMPTZ
           p_number_of_nights: number_of_nights,
           p_total_amount: total_amount,
-          p_payment_method: 'pay_at_hotel', // Payment method for created payments
+          p_payment_method: PAYMENT_METHOD.PAY_AT_HOTEL, // Payment method for created payments
           p_total_guests: total_guests ?? 1,
           p_notes: notes || null,
           p_advance_payment: 0, // Đặt cọc luôn là 0 như dashboard

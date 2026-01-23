@@ -118,15 +118,23 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
       <div className="min-h-screen bg-luxury-gradient">
         <Navigation />
         <main className="pt-14 lg:pt-16">
-          <div className="container-luxury py-12">
-            <div className="text-center space-y-4">
-              <h1 className="text-2xl font-bold">Không tìm thấy bài viết</h1>
-              <p className="text-muted-foreground">
-                {error?.message || "Bài viết không tồn tại hoặc đã bị xóa."}
+          <div className="container-luxury py-16">
+            <div className="max-w-xl mx-auto text-center space-y-4">
+              <h1 className="text-2xl md:text-3xl font-display font-bold">
+                Không tìm thấy bài đăng blog
+              </h1>
+              <p className="text-muted-foreground text-sm md:text-base">
+                Bài viết bạn đang tìm không tồn tại, đã bị xóa hoặc đường dẫn không
+                chính xác. Vui lòng kiểm tra lại hoặc quay về danh sách bài viết.
               </p>
-              <Link href="/blog">
-                <Button>Quay lại danh sách blog</Button>
-              </Link>
+              <div className="flex justify-center">
+                <Link href="/blog">
+                  <Button variant="outline" className="gap-2">
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Quay lại danh sách bài đăng</span>
+                  </Button>
+                </Link>
+              </div>
             </div>
           </div>
         </main>

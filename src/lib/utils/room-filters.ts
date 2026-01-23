@@ -1,6 +1,23 @@
 import { Room, RoomWithImages } from '@/types/database';
 
 /**
+ * Strip HTML tags from a string and return plain text
+ */
+export function stripHtmlTags(html: string): string {
+  if (!html) return '';
+  // Remove HTML tags
+  return html
+    .replace(/<[^>]*>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .trim();
+}
+
+/**
  * Check if a room is test/placeholder data that should be excluded from production
  */
 export function isTestOrPlaceholderRoom(room: Room): boolean {

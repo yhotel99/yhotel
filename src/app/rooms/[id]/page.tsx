@@ -91,6 +91,12 @@ const HTMLContent = ({ content }: { content: string }) => {
   );
 };
 
+// Helper function to strip HTML tags from text
+const stripHtmlTags = (text: string): string => {
+  if (!text) return '';
+  return text.replace(/<[^>]*>/g, '').trim();
+};
+
 // Mapping amenities to their display names
 const getAmenityName = (IconComponent: React.ComponentType): string => {
   const iconNames: Record<string, string> = {
@@ -136,6 +142,12 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     specialRequests: "",
     agreedToTerms: false,
   });
+  const [formErrors, setFormErrors] = useState<{
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    specialRequests?: string;
+  }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Touch handlers for lightbox - moved before early return
@@ -146,6 +158,61 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   const { data: allRooms = [], isLoading: loadingSimilarRooms } = useRooms();
 
   const images = room ? (room.galleryImages || [room.image]) : [];
+
+  // Persist booking form state per room so users don't lose data when navigating
+  useEffect(() => {
+    if (!id) return;
+
+    try {
+      const raw = localStorage.getItem(`room_booking_form_state_${id}`);
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          checkIn?: string | null;
+          checkOut?: string | null;
+          guests?: string;
+          fullName?: string;
+          email?: string;
+          phone?: string;
+          specialRequests?: string;
+          agreedToTerms?: boolean;
+        };
+
+        setFormData((prev) => ({
+          ...prev,
+          checkIn: parsed.checkIn ? new Date(parsed.checkIn) : prev.checkIn,
+          checkOut: parsed.checkOut ? new Date(parsed.checkOut) : prev.checkOut,
+          guests: parsed.guests ?? prev.guests,
+          fullName: parsed.fullName ?? prev.fullName,
+          email: parsed.email ?? prev.email,
+          phone: parsed.phone ?? prev.phone,
+          specialRequests: parsed.specialRequests ?? prev.specialRequests,
+          agreedToTerms: parsed.agreedToTerms ?? prev.agreedToTerms,
+        }));
+      }
+    } catch (error) {
+      console.error("[RoomDetail] Failed to restore booking form state from localStorage:", error);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    try {
+      const payload = {
+        checkIn: formData.checkIn ? formData.checkIn.toISOString() : null,
+        checkOut: formData.checkOut ? formData.checkOut.toISOString() : null,
+        guests: formData.guests,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        specialRequests: formData.specialRequests,
+        agreedToTerms: formData.agreedToTerms,
+      };
+      localStorage.setItem(`room_booking_form_state_${id}`, JSON.stringify(payload));
+    } catch (error) {
+      console.error("[RoomDetail] Failed to persist booking form state to localStorage:", error);
+    }
+  }, [formData, id]);
 
   // Sync main carousel and thumbnail carousel
   useEffect(() => {
@@ -214,6 +281,65 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLightboxOpen, images.length, prevLightboxImage, nextLightboxImage, closeLightbox]);
 
+  const sanitizeInput = (value: string) => {
+    if (!value) return "";
+    // Loại bỏ thẻ HTML/script và ký tự điều khiển
+    return value
+      .replace(/<[^>]*>/g, "")
+      .replace(/[\u0000-\u001F\u007F]+/g, "")
+      .trim();
+  };
+
+  const validateFormFields = () => {
+    const errors: {
+      fullName?: string;
+      email?: string;
+      phone?: string;
+      specialRequests?: string;
+    } = {};
+
+    const fullName = formData.fullName.trim();
+    const email = formData.email.trim();
+    const phone = formData.phone.trim();
+    const specialRequests = formData.specialRequests.trim();
+
+    // Full name validation
+    if (!fullName) {
+      errors.fullName = "Vui lòng nhập họ và tên.";
+    } else if (fullName.length < 2 || fullName.length > 100) {
+      errors.fullName = "Họ và tên phải từ 2–100 ký tự.";
+    } else if (!/^[\p{L}\s'.-]+$/u.test(fullName)) {
+      errors.fullName = "Họ và tên chỉ được chứa chữ cái và khoảng trắng.";
+    }
+
+    // Email validation
+    if (!email) {
+      errors.email = "Vui lòng nhập email.";
+    } else if (email.length > 255) {
+      errors.email = "Email tối đa 255 ký tự.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = "Email không đúng định dạng.";
+    }
+
+    // Phone validation
+    const digitsOnly = phone.replace(/\D/g, "");
+    if (!phone) {
+      errors.phone = "Vui lòng nhập số điện thoại.";
+    } else if (digitsOnly.length < 8 || digitsOnly.length > 15) {
+      errors.phone = "Số điện thoại phải từ 8–15 chữ số.";
+    } else if (!/^(\+?\d[\d\s\-().]{7,})$/.test(phone)) {
+      errors.phone = "Số điện thoại không hợp lệ.";
+    }
+
+    // Special requests validation
+    if (specialRequests.length > 500) {
+      errors.specialRequests = "Yêu cầu đặc biệt tối đa 500 ký tự.";
+    } else if (/<[^>]+>/.test(specialRequests)) {
+      errors.specialRequests = "Vui lòng không nhập mã HTML hoặc script.";
+    }
+
+    return errors;
+  };
 
   if (loading) {
     return (
@@ -322,7 +448,18 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
+    const fieldErrors = validateFormFields();
+    if (Object.keys(fieldErrors).length > 0) {
+      setFormErrors(fieldErrors);
+      toast({
+        title: "Thông tin không hợp lệ",
+        description: "Vui lòng kiểm tra lại các trường được đánh dấu.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!formData.checkIn || !formData.checkOut || !formData.guests || !formData.fullName || !formData.email || !formData.phone) {
       toast({
         title: "Thông tin chưa đầy đủ",
@@ -935,46 +1072,80 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                               <Label className="text-xs md:text-sm mb-1.5 block">Họ và tên *</Label>
                               <Input
                                 value={formData.fullName}
-                                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                                onChange={(e) => {
+                                  setFormData({ ...formData, fullName: e.target.value });
+                                  if (formErrors.fullName) {
+                                    setFormErrors((prev) => ({ ...prev, fullName: undefined }));
+                                  }
+                                }}
                                 placeholder="Nguyễn Văn A"
                                 className="h-9 md:h-10 text-xs md:text-sm placeholder:opacity-60"
                                 maxLength={100}
                                 required
                               />
+                              {formErrors.fullName && (
+                                <p className="mt-1 text-xs text-destructive">{formErrors.fullName}</p>
+                              )}
                             </div>
                             <div>
                               <Label className="text-xs md:text-sm mb-1.5 block">Email *</Label>
                               <Input
                                 type="email"
                                 value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                onChange={(e) => {
+                                  setFormData({ ...formData, email: e.target.value });
+                                  if (formErrors.email) {
+                                    setFormErrors((prev) => ({ ...prev, email: undefined }));
+                                  }
+                                }}
                                 placeholder="email@example.com"
                                 className="h-9 md:h-10 text-xs md:text-sm placeholder:opacity-60"
                                 maxLength={255}
                                 required
                               />
+                              {formErrors.email && (
+                                <p className="mt-1 text-xs text-destructive">{formErrors.email}</p>
+                              )}
                             </div>
                             <div>
                               <Label className="text-xs md:text-sm mb-1.5 block">Số điện thoại *</Label>
                               <Input
                                 value={formData.phone}
-                                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                onChange={(e) => {
+                                  setFormData({ ...formData, phone: e.target.value });
+                                  if (formErrors.phone) {
+                                    setFormErrors((prev) => ({ ...prev, phone: undefined }));
+                                  }
+                                }}
                                 placeholder="+84 123 456 789"
                                 className="h-9 md:h-10 text-xs md:text-sm placeholder:opacity-60"
                                 maxLength={20}
                                 required
                               />
+                              {formErrors.phone && (
+                                <p className="mt-1 text-xs text-destructive">{formErrors.phone}</p>
+                              )}
                             </div>
                             <div>
                               <Label className="text-xs md:text-sm mb-1.5 block">Yêu cầu đặc biệt</Label>
                               <Textarea
                                 value={formData.specialRequests}
-                                onChange={(e) => setFormData({ ...formData, specialRequests: e.target.value })}
+                                onChange={(e) => {
+                                  setFormData({ ...formData, specialRequests: e.target.value });
+                                  if (formErrors.specialRequests) {
+                                    setFormErrors((prev) => ({ ...prev, specialRequests: undefined }));
+                                  }
+                                }}
                                 placeholder="Ví dụ: Giường đôi, tầng cao..."
                                 rows={2}
                                 className="text-xs md:text-sm resize-none placeholder:opacity-60"
                                 maxLength={500}
                               />
+                              {formErrors.specialRequests && (
+                                <p className="mt-1 text-xs text-destructive">
+                                  {formErrors.specialRequests}
+                                </p>
+                              )}
                             </div>
                           </div>
 
@@ -1297,11 +1468,20 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                   </div>
                                 </div>
 
-                                {/* Features - Single line, compact */}
-                                <div className="mb-1.5 hidden sm:block">
-                                  <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
-                                    {otherRoom.features.slice(0, 2).join(" • ")}
-                                  </p>
+                                {/* Amenities - Chips */}
+                                <div className="mb-1.5 hidden sm:block relative">
+                                  <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+                                    {(otherRoom.amenities || []).map((amenity, idx) => (
+                                      <Badge
+                                        key={idx}
+                                        variant="outline"
+                                        className="text-[9px] sm:text-[10px] px-1.5 py-0.5 h-auto font-normal bg-muted/50 border-border/50 whitespace-nowrap flex-shrink-0"
+                                      >
+                                        {getAmenityLabel(amenity)}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent pointer-events-none" />
                                 </div>
 
                                 {/* Action Button */}

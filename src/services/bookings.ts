@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase/server';
 import type { BookingInput, BookingRecord } from '@/lib/types';
+import { PAYMENT_METHOD } from '@/lib/constants';
 
 /**
  * Search bookings with pagination
@@ -38,8 +39,9 @@ export async function searchBookings(
     // Add search filter if provided
     if (searchTerm && searchTerm.trim() !== '') {
       const trimmedSearch = searchTerm.trim();
+      const pattern = `*${trimmedSearch}*`;
       query = query.or(
-        `id.ilike.%${trimmedSearch}%,customers.full_name.ilike.%${trimmedSearch}%,rooms.name.ilike.%${trimmedSearch}%`
+        `id.ilike.${pattern},customers.full_name.ilike.${pattern},rooms.name.ilike.${pattern}`
       );
     }
 
@@ -105,7 +107,7 @@ export async function createBookingSecure(input: BookingInput): Promise<string> 
         p_check_out: input.check_out,
         p_number_of_nights: input.number_of_nights || 0,
         p_total_amount: input.total_amount,
-        p_payment_method: 'pay_at_hotel', // Payment method for created payments
+        p_payment_method: PAYMENT_METHOD.PAY_AT_HOTEL, // Payment method for created payments
         p_total_guests: input.total_guests ?? 1,
         p_notes: input.notes || null,
         p_advance_payment: input.advance_payment ?? 0,

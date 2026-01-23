@@ -72,7 +72,7 @@ const CheckoutContent = () => {
     if (paymentMethod === "bank_transfer") {
       // Cập nhật phương thức thanh toán vào CSDL, giữ nguyên trạng thái hiện tại
       try {
-        await fetch(`/api/bookings/${bookingId}`, {
+        const response = await fetch(`/api/bookings/${bookingId}`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -82,9 +82,25 @@ const CheckoutContent = () => {
             payment_method: PAYMENT_METHOD.BANK_TRANSFER,
           }),
         });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => null);
+          const message =
+            errorBody?.error ||
+            "Không thể cập nhật phương thức thanh toán. Vui lòng thử lại sau.";
+          throw new Error(message);
+        }
       } catch (error) {
         console.error("Failed to update payment method (bank_transfer):", error);
-        // Có thể hiển thị toast cảnh báo, nhưng vẫn cho phép tiếp tục
+        toast({
+          title: "Không thể cập nhật phương thức thanh toán",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Đã xảy ra lỗi. Vui lòng thử lại sau hoặc chọn phương thức khác.",
+          variant: "destructive",
+        });
+        return;
       }
 
       // Chuyển đến trang thanh toán chuyển khoản với QR code

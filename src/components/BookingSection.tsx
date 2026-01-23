@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense, useMemo } from "react";
+import { useState, Suspense, useMemo, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useRooms } from "@/hooks/use-rooms";
@@ -39,10 +39,71 @@ const BookingSectionContent = () => {
     phone: "",
     specialRequests: ""
   });
+  const [formErrors, setFormErrors] = useState<{
+    fullName?: string;
+    email?: string;
+    phone?: string;
+    specialRequests?: string;
+  }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCheckAvailableOpen, setIsCheckAvailableOpen] = useState(false);
   const [isCheckingAvailable, setIsCheckingAvailable] = useState(false);
   const [availableRooms, setAvailableRooms] = useState<RoomResponse[]>([]);
+
+  // Persist form data to localStorage to avoid losing input on navigation
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("booking_form_state");
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          checkIn?: string | null;
+          checkOut?: string | null;
+          adults?: string;
+          children?: string;
+          roomType?: string;
+          fullName?: string;
+          email?: string;
+          phone?: string;
+          specialRequests?: string;
+        };
+
+        setFormData((prev) => ({
+          ...prev,
+          checkIn: parsed.checkIn ? new Date(parsed.checkIn) : prev.checkIn,
+          checkOut: parsed.checkOut ? new Date(parsed.checkOut) : prev.checkOut,
+          adults: parsed.adults ?? prev.adults,
+          children: parsed.children ?? prev.children,
+          roomType: parsed.roomType ?? prev.roomType,
+          fullName: parsed.fullName ?? prev.fullName,
+          email: parsed.email ?? prev.email,
+          phone: parsed.phone ?? prev.phone,
+          specialRequests: parsed.specialRequests ?? prev.specialRequests,
+        }));
+      }
+    } catch (error) {
+      console.error("[Booking] Failed to restore form state from localStorage:", error);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      const payload = {
+        checkIn: formData.checkIn ? formData.checkIn.toISOString() : null,
+        checkOut: formData.checkOut ? formData.checkOut.toISOString() : null,
+        adults: formData.adults,
+        children: formData.children,
+        roomType: formData.roomType,
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone,
+        specialRequests: formData.specialRequests,
+      };
+      localStorage.setItem("booking_form_state", JSON.stringify(payload));
+    } catch (error) {
+      console.error("[Booking] Failed to persist form state to localStorage:", error);
+    }
+  }, [formData]);
 
   // Get room types from database
   const { data: categories = [] } = useQuery({
@@ -93,6 +154,69 @@ const BookingSectionContent = () => {
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (field in formErrors) {
+      setFormErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const sanitizeInput = (value: string) => {
+    if (!value) return "";
+    // Loại bỏ thẻ HTML/script và ký tự điều khiển
+    return value
+      .replace(/<[^>]*>/g, "")
+      .replace(/[\u0000-\u001F\u007F]+/g, "")
+      .trim();
+  };
+
+  const validateFormFields = () => {
+    const errors: {
+      fullName?: string;
+      email?: string;
+      phone?: string;
+      specialRequests?: string;
+    } = {};
+
+    const fullName = formData.fullName.trim();
+    const email = formData.email.trim();
+    const phone = formData.phone.trim();
+    const specialRequests = formData.specialRequests.trim();
+
+    // Full name validation
+    if (!fullName) {
+      errors.fullName = "Vui lòng nhập họ và tên.";
+    } else if (fullName.length < 2 || fullName.length > 100) {
+      errors.fullName = "Họ và tên phải từ 2–100 ký tự.";
+    } else if (!/^[\p{L}\s'.-]+$/u.test(fullName)) {
+      errors.fullName = "Họ và tên chỉ được chứa chữ cái và khoảng trắng.";
+    }
+
+    // Email validation
+    if (!email) {
+      errors.email = "Vui lòng nhập email.";
+    } else if (email.length > 255) {
+      errors.email = "Email tối đa 255 ký tự.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = "Email không đúng định dạng.";
+    }
+
+    // Phone validation
+    const digitsOnly = phone.replace(/\D/g, "");
+    if (!phone) {
+      errors.phone = "Vui lòng nhập số điện thoại.";
+    } else if (digitsOnly.length < 8 || digitsOnly.length > 15) {
+      errors.phone = "Số điện thoại phải từ 8–15 chữ số.";
+    } else if (!/^(\+?\d[\d\s\-().]{7,})$/.test(phone)) {
+      errors.phone = "Số điện thoại không hợp lệ.";
+    }
+
+    // Special requests validation
+    if (specialRequests.length > 500) {
+      errors.specialRequests = "Yêu cầu đặc biệt tối đa 500 ký tự.";
+    } else if (/<[^>]+>/.test(specialRequests)) {
+      errors.specialRequests = "Vui lòng không nhập mã HTML hoặc script.";
+    }
+
+    return errors;
   };
 
   const handleCheckAvailable = async () => {
@@ -156,6 +280,17 @@ const BookingSectionContent = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    const fieldErrors = validateFormFields();
+    if (Object.keys(fieldErrors).length > 0) {
+      setFormErrors(fieldErrors);
+      toast({
+        title: "Thông tin không hợp lệ",
+        description: "Vui lòng kiểm tra lại các trường được đánh dấu.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Basic validation
     if (!formData.checkIn || !formData.checkOut || !formData.roomType || !formData.fullName || !formData.email || !formData.phone) {
       toast({
@@ -183,10 +318,10 @@ const BookingSectionContent = () => {
         check_in: checkInDate.toISOString(),
         check_out: checkOutDate.toISOString(),
         total_guests: totalGuests,
-        customer_name: formData.fullName,
-        customer_email: formData.email,
-        customer_phone: formData.phone,
-        ...(formData.specialRequests && { notes: formData.specialRequests }),
+        customer_name: sanitizeInput(formData.fullName),
+        customer_email: sanitizeInput(formData.email),
+        customer_phone: sanitizeInput(formData.phone),
+        ...(formData.specialRequests && { notes: sanitizeInput(formData.specialRequests) }),
         ...(formData.roomType && { roomType: formData.roomType }),
         ...(roomIdFromUrl && { room_id: roomIdFromUrl }),
       };
@@ -502,6 +637,9 @@ const BookingSectionContent = () => {
                         maxLength={100}
                         required
                       />
+                      {formErrors.fullName && (
+                        <p className="mt-1 text-sm text-destructive">{formErrors.fullName}</p>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="email" className="mb-2 block">Email *</Label>
@@ -514,6 +652,9 @@ const BookingSectionContent = () => {
                         maxLength={255}
                         required
                       />
+                      {formErrors.email && (
+                        <p className="mt-1 text-sm text-destructive">{formErrors.email}</p>
+                      )}
                     </div>
                   </div>
 
@@ -530,6 +671,9 @@ const BookingSectionContent = () => {
                       maxLength={20}
                       required
                     />
+                    {formErrors.phone && (
+                      <p className="mt-1 text-sm text-destructive">{formErrors.phone}</p>
+                    )}
                   </div>
 
                   <div>
@@ -542,6 +686,11 @@ const BookingSectionContent = () => {
                       rows={3}
                       maxLength={500}
                     />
+                    {formErrors.specialRequests && (
+                      <p className="mt-1 text-sm text-destructive">
+                        {formErrors.specialRequests}
+                      </p>
+                    )}
                   </div>
 
                   <Button 

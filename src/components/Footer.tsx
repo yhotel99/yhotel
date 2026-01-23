@@ -18,10 +18,11 @@ const TikTokIcon = ({ className }: { className?: string }) => (
 
 const Footer = memo(() => {
   const socialLinks = [
-    { icon: Facebook, href: "#", label: "Facebook" },
-    { icon: Instagram, href: "#", label: "Instagram" },
-    { icon: TikTokIcon, href: "#", label: "TikTok" },
-    { icon: Youtube, href: "#", label: "YouTube" }
+    // Cập nhật URL thật khi sẵn sàng; hiện tại ẩn link placeholder để tránh điều hướng tới "#"
+    // { icon: Facebook, href: "https://facebook.com/your-page", label: "Facebook" },
+    // { icon: Instagram, href: "https://instagram.com/your-page", label: "Instagram" },
+    // { icon: TikTokIcon, href: "https://www.tiktok.com/@your-page", label: "TikTok" },
+    // { icon: Youtube, href: "https://youtube.com/@your-channel", label: "YouTube" }
   ];
 
 
@@ -107,11 +108,13 @@ const Footer = memo(() => {
                       Chính sách bảo mật
                     </Link>
                   </li>
-                  <li>
-                    <Link href="#" className="text-sm text-background/70 hover:text-primary transition-colors">
+                  {/* Khi có trang khuyến mãi riêng, cập nhật lại Link bên dưới.
+                      Tạm thời ẩn để tránh dẫn tới '#' không có nội dung. */}
+                  {/* <li>
+                    <Link href="/promotions" className="text-sm text-background/70 hover:text-primary transition-colors">
                       Chương trình giá ưu đãi
                     </Link>
-                  </li>
+                  </li> */}
                   <li>
                     <Link href="/#contact" className="text-sm text-background/70 hover:text-primary transition-colors">
                       Liên hệ

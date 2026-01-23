@@ -26,9 +26,12 @@ function transformRoomToResponse(room: RoomWithImages): RoomResponse {
   // Extract features from description or amenities
   const features: string[] = [];
   if (room.description) {
-    // Simple feature extraction - you can enhance this
-    const descFeatures = room.description.split(/[.,;]/).filter(s => s.trim().length > 0);
-    features.push(...descFeatures.slice(0, 4).map(s => s.trim()));
+    // Strip HTML tags before extracting features
+    const plainText = room.description.replace(/<[^>]*>/g, '').trim();
+    if (plainText) {
+      const descFeatures = plainText.split(/[.,;]/).filter(s => s.trim().length > 0);
+      features.push(...descFeatures.slice(0, 4).map(s => s.trim()));
+    }
   }
   
   // Default features if none found
