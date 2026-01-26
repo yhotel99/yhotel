@@ -73,7 +73,10 @@ export async function GET(req: NextRequest) {
       )
       .eq('status', 'published')
       .is('deleted_at', null)
-      .order('published_at', { ascending: false, nullsFirst: false });
+      // Order by published_at first (newest first), then by created_at as fallback
+      // nullsFirst: false means nulls go to the end, but they'll be ordered by created_at
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false });
 
     // Add search filter if search term exists
     if (search && search.trim() !== '') {
@@ -92,6 +95,10 @@ export async function GET(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Debug logging
+    console.log(`[Blogs API] Fetched ${data?.length || 0} blogs out of ${count || 0} total`);
+    console.log(`[Blogs API] Page: ${page}, Limit: ${limit}, From: ${from}, To: ${to}`);
 
     // Transform the data
     type BlogWithAuthor = {
