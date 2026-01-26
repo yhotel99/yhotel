@@ -12,7 +12,7 @@ export interface CustomerResponse {
   full_name: string;
   email: string | null;
   phone: string | null;
-  customer_type: 'regular' | 'vip' | 'corporate';
+  customer_type: 'regular' | 'vip' | 'blacklist';
   source: string | null;
   total_bookings: number;
   total_spent: number;
@@ -119,7 +119,7 @@ export async function GET(request: Request) {
         full_name: customer.full_name,
         email: customer.email,
         phone: customer.phone,
-        customer_type: customer.customer_type as 'regular' | 'vip' | 'corporate',
+        customer_type: customer.customer_type as 'regular' | 'vip' | 'blacklist',
         source: customer.source || null,
         total_bookings: bookings.length,
         total_spent: totalSpent,

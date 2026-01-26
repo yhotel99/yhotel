@@ -12,7 +12,6 @@ import {
   Building2,
   Clock,
   User,
-  ArrowLeft,
   Mail,
   Phone,
   Home,
@@ -69,10 +68,6 @@ const SuccessContent = () => {
               <CardContent className="pt-6">
                 <div className="text-center py-12">
                   <p className="text-muted-foreground mb-4">Không tìm thấy thông tin đặt phòng</p>
-                  <Button onClick={() => router.push('/book')} variant="outline">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Quay lại đặt phòng
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -107,10 +102,6 @@ const SuccessContent = () => {
                   <p className="text-muted-foreground mb-4">
                     {error instanceof Error ? error.message : "Không tìm thấy thông tin đặt phòng"}
                   </p>
-                  <Button onClick={() => router.push('/book')} variant="outline">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Quay lại đặt phòng
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -356,7 +347,7 @@ const SuccessContent = () => {
                               Về trang chủ
                             </Button>
                             <Button
-                              onClick={() => router.push('/book')}
+                              onClick={() => router.push('/rooms')}
                               className="w-full"
                               variant="outline"
                             >

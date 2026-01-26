@@ -17,7 +17,6 @@ import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { motion } from "framer-motion";
 import type { BookingRecord } from "@/lib/types";
-import { formatBookingCode } from "@/lib/utils";
 
 export default function LookupPage() {
   const [email, setEmail] = useState("");
@@ -265,7 +264,7 @@ export default function LookupPage() {
                                 </div>
                                 <p className="text-xs text-muted-foreground mb-1">Mã đặt phòng</p>
                                 <p className="font-mono font-bold text-xl text-primary pr-24">
-                                  {formatBookingCode(booking.id)}
+                                  {booking.booking_code || booking.id.slice(0, 8).toUpperCase()}
                                 </p>
                               </div>
                             </div>

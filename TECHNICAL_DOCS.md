@@ -142,7 +142,7 @@ CREATE TABLE customers (
   email TEXT NOT NULL,
   phone TEXT,
   nationality TEXT,
-  customer_type customer_type_enum DEFAULT 'regular',
+  customer_type customer_type DEFAULT 'regular',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
   deleted_at TIMESTAMPTZ
@@ -229,16 +229,16 @@ CREATE TYPE room_type_enum AS ENUM ('standard', 'deluxe', 'superior', 'family');
 CREATE TYPE room_status_enum AS ENUM ('available', 'maintenance', 'occupied', 'not_clean', 'clean', 'blocked');
 
 -- Booking Status
-CREATE TYPE booking_status AS ENUM ('pending', 'awaiting_payment', 'confirmed', 'checked_in', 'checked_out', 'completed', 'cancelled');
+CREATE TYPE booking_status AS ENUM ('pending', 'awaiting_payment', 'confirmed', 'checked_in', 'checked_out', 'completed', 'cancelled', 'no_show', 'refunded');
 
 -- Payment Methods
-CREATE TYPE payment_method_enum AS ENUM ('bank_transfer', 'cash', 'card', 'pay_at_hotel');
+CREATE TYPE payment_method_enum AS ENUM ('bank_transfer', 'pay_at_hotel');
 
 -- Payment Status
 CREATE TYPE payment_status_enum AS ENUM ('pending', 'paid', 'failed', 'refunded', 'cancelled');
 
 -- Customer Types
-CREATE TYPE customer_type AS ENUM ('regular', 'vip', 'corporate');
+CREATE TYPE customer_type AS ENUM ('regular', 'vip', 'blacklist');
 
 -- User Roles
 CREATE TYPE user_role AS ENUM ('admin', 'manager', 'staff');

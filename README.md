@@ -318,7 +318,7 @@ Response:
 4. **Xóa đặt phòng**: Chỉ cho phép xóa đặt phòng ở trạng thái pending
 
 ### Quản lý Khách Hàng
-1. **Phân loại khách hàng**: regular, vip, corporate
+1. **Phân loại khách hàng**: regular, vip, blacklist
 2. **Thống kê**: Xem số lượng khách hàng theo loại
 3. **Tìm kiếm**: Theo tên, email, số điện thoại
 

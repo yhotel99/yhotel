@@ -401,7 +401,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                     Xem tất cả hạng phòng
                   </Button>
                 </Link>
-                <Link href="/book">
+                <Link href="/rooms">
                   <Button>
                     Đặt phòng ngay
                   </Button>

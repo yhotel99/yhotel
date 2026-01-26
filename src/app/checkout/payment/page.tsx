@@ -8,7 +8,6 @@ import { vi } from "date-fns/locale";
 import { 
   Calendar, 
   Users, 
-  ArrowLeft,
   Building2,
   Clock,
   User,
@@ -591,10 +590,6 @@ const PaymentContent = () => {
               <CardContent className="pt-6">
                 <div className="text-center py-12">
                   <p className="text-muted-foreground mb-4">Không tìm thấy thông tin đặt phòng</p>
-                  <Button onClick={() => router.push('/book')} variant="outline">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Quay lại đặt phòng
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -629,10 +624,6 @@ const PaymentContent = () => {
                   <p className="text-muted-foreground mb-4">
                     {error instanceof Error ? error.message : "Không tìm thấy thông tin đặt phòng"}
                   </p>
-                  <Button onClick={() => router.push('/book')} variant="outline">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Quay lại đặt phòng
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -663,14 +654,6 @@ const PaymentContent = () => {
           <div className="container-luxury">
             {/* Header */}
             <div className="mb-12">
-              <Button
-                variant="ghost"
-                onClick={() => router.back()}
-                className="mb-6 -ml-2"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Quay lại
-              </Button>
               <div className="text-center mb-8">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
                   <Banknote className="h-8 w-8 text-primary" />

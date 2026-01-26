@@ -641,7 +641,7 @@ Content-Type: application/json
 **Loại khách hàng:**
 - `regular`: Khách thường
 - `vip`: Khách VIP
-- `corporate`: Khách doanh nghiệp
+- `blacklist`: Khách hàng trong danh sách đen
 
 ### 2.6 Quản Lý Ảnh
 

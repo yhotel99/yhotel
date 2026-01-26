@@ -11,7 +11,6 @@ import {
   CreditCard, 
   Shield, 
   CheckCircle, 
-  ArrowLeft,
   Building2,
   Clock,
   User,
@@ -162,10 +161,6 @@ const CheckoutContent = () => {
               <CardContent className="pt-6">
                 <div className="text-center py-12">
                   <p className="text-muted-foreground mb-4">Không tìm thấy thông tin đặt phòng</p>
-                  <Button onClick={() => router.push('/book')} variant="outline">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Quay lại đặt phòng
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -192,10 +187,6 @@ const CheckoutContent = () => {
                   <p className="text-muted-foreground mb-4">
                     {error instanceof Error ? error.message : "Không tìm thấy thông tin đặt phòng"}
                   </p>
-                  <Button onClick={() => router.push('/book')} variant="outline">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Quay lại đặt phòng
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -690,7 +681,7 @@ const CheckoutContent = () => {
                   <ul className="list-disc list-inside text-amber-700 dark:text-amber-300 space-y-1">
                     <li>Vui lòng mang theo CMND/CCCD hoặc hộ chiếu khi check-in</li>
                     <li>Bạn sẽ thanh toán tại quầy lễ tân khi nhận phòng</li>
-                    <li>Mã đặt phòng: <span className="font-mono font-bold">{booking.id.slice(0, 8).toUpperCase()}</span></li>
+                    <li>Mã đặt phòng: <span className="font-mono font-bold">{booking.booking_code || booking.id.slice(0, 8).toUpperCase()}</span></li>
                   </ul>
                 </div>
               </div>

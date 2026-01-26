@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Bed, Wifi, Car, Coffee, Bath, Users, Search, X, ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
@@ -13,6 +13,8 @@ import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 import { useScrollThreshold } from "@/hooks/use-scroll";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
@@ -24,6 +26,7 @@ import { vi } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import type { RoomResponse } from "@/types/database";
 import { getAmenityLabel } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 const categoryLabels: Record<string, string> = {
   standard: "Standard",
@@ -61,6 +64,7 @@ const getAmenityName = (IconComponent: React.ComponentType): string => {
 };
 
 const RoomsPageContent = () => {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const checkInParam = searchParams.get('check_in');
   const checkOutParam = searchParams.get('check_out');
@@ -77,6 +81,17 @@ const RoomsPageContent = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("default");
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>(() => {
+    // Initialize from URL params if available
+    if (checkInParam && checkOutParam) {
+      return {
+        from: new Date(checkInParam),
+        to: new Date(checkOutParam),
+      };
+    }
+    return {};
+  });
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const isScrolled = useScrollThreshold(100);
   
   const error = queryError ? 'Đã xảy ra lỗi khi tải danh sách phòng. Vui lòng thử lại sau.' : null;
@@ -104,6 +119,44 @@ const RoomsPageContent = () => {
   // Use available rooms if we have date params, otherwise use all rooms
   const roomsToDisplay = checkInParam && checkOutParam ? availableRooms : rooms;
   const isLoading = checkInParam && checkOutParam ? loadingAvailable : loading;
+
+  // Handle date range selection
+  const handleDateRangeSelect = (range: { from?: Date; to?: Date } | undefined) => {
+    if (!range) {
+      setDateRange({});
+      // Remove date filters from URL
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete('check_in');
+      params.delete('check_out');
+      router.push(`/rooms?${params.toString()}`);
+      return;
+    }
+
+    setDateRange(range);
+
+    // If both dates are selected, update URL to filter available rooms
+    if (range.from && range.to) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('check_in', range.from.toISOString().split('T')[0]);
+      params.set('check_out', range.to.toISOString().split('T')[0]);
+      router.push(`/rooms?${params.toString()}`);
+      setIsDatePickerOpen(false);
+    }
+  };
+
+  // Sync dateRange with URL params when they change externally
+  useEffect(() => {
+    if (checkInParam && checkOutParam) {
+      const from = new Date(checkInParam);
+      const to = new Date(checkOutParam);
+      // Only update if dates are valid
+      if (!isNaN(from.getTime()) && !isNaN(to.getTime())) {
+        setDateRange({ from, to });
+      }
+    } else if (!checkInParam && !checkOutParam) {
+      setDateRange({});
+    }
+  }, [checkInParam, checkOutParam]);
 
   // Fetch categories from database
   useEffect(() => {
@@ -278,9 +331,67 @@ const RoomsPageContent = () => {
                   )}
                 </div>
 
+                {/* Date Range Filter - Check Available Rooms */}
+                <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full sm:w-[260px] h-11 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 hover:bg-accent hover:text-accent-foreground hover:border-primary/50 transition-colors justify-start text-left font-normal",
+                        !dateRange.from && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateRange.from ? (
+                        dateRange.to ? (
+                          <>
+                            {format(dateRange.from, "dd/MM/yyyy", { locale: vi })} - {format(dateRange.to, "dd/MM/yyyy", { locale: vi })}
+                          </>
+                        ) : (
+                          format(dateRange.from, "dd/MM/yyyy", { locale: vi })
+                        )
+                      ) : (
+                        <span>Chọn ngày kiểm tra phòng trống</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      initialFocus
+                      mode="range"
+                      defaultMonth={dateRange.from}
+                      selected={dateRange.from ? { from: dateRange.from, to: dateRange.to } : undefined}
+                      onSelect={handleDateRangeSelect}
+                      numberOfMonths={2}
+                      locale={vi}
+                      disabled={(date) => {
+                        // Disable past dates
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        return date < today;
+                      }}
+                    />
+                    {dateRange.from && dateRange.to && (
+                      <div className="p-3 border-t">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => {
+                            handleDateRangeSelect(undefined);
+                          }}
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Xóa bộ lọc ngày
+                        </Button>
+                      </div>
+                    )}
+                  </PopoverContent>
+                </Popover>
+
                 {/* Category Filter */}
                 <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-full sm:w-[180px] h-11 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 transition-colors">
+                  <SelectTrigger className="w-full sm:w-[180px] h-11 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 hover:bg-accent hover:text-accent-foreground hover:border-primary/50 transition-colors">
                     <SelectValue placeholder="Tất cả" />
                   </SelectTrigger>
                   <SelectContent>
@@ -294,7 +405,7 @@ const RoomsPageContent = () => {
 
                 {/* Sort */}
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-full sm:w-[160px] h-11 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 transition-colors">
+                  <SelectTrigger className="w-full sm:w-[160px] h-11 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 hover:bg-accent hover:text-accent-foreground hover:border-primary/50 transition-colors">
                     <SelectValue placeholder="Mặc định" />
                   </SelectTrigger>
                   <SelectContent>
@@ -327,8 +438,12 @@ const RoomsPageContent = () => {
                       setSearchQuery("");
                       setSelectedCategory("all");
                       setSortBy("default");
+                      setDateRange({});
                       if (checkInParam && checkOutParam) {
-                        window.location.href = '/rooms';
+                        const params = new URLSearchParams(searchParams.toString());
+                        params.delete('check_in');
+                        params.delete('check_out');
+                        router.push(`/rooms?${params.toString()}`);
                       }
                     }}
                     className="h-8 px-3 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50"
@@ -502,7 +617,7 @@ const RoomsPageContent = () => {
                       Xem tất cả phòng
                     </Button>
                   </Link>
-                  <Link href="/book">
+                  <Link href="/rooms">
                     <Button variant="luxury">
                       Đặt phòng khác
                     </Button>

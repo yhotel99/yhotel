@@ -24,6 +24,7 @@ export interface BookingRecord {
   total_guests: number;
   notes: string | null;
   status: 'pending' | 'awaiting_payment' | 'confirmed' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled' | 'no_show' | 'refunded';
+  booking_code: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

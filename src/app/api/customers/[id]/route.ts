@@ -9,7 +9,7 @@ export interface CustomerDetailResponse {
   full_name: string;
   email: string | null;
   phone: string | null;
-  customer_type: 'regular' | 'vip' | 'corporate';
+  customer_type: 'regular' | 'vip' | 'blacklist';
   source: string | null;
   total_bookings: number;
   total_spent: number;

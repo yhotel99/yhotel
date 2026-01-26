@@ -388,7 +388,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                     Xem danh sách phòng
                   </Button>
                 </Link>
-                <Link href={`/book?roomId=${encodeURIComponent(room.id)}`}>
+                <Link href="/rooms">
                   <Button>
                     Đặt phòng này
                   </Button>
