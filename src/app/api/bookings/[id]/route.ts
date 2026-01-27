@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
-import { PAYMENT_METHOD } from '@/lib/constants';
+import { PAYMENT_METHOD, BOOKING_STATUS } from '@/lib/constants';
+import type { BookingRecord } from '@/lib/types';
 
 export async function GET(
   request: Request,
@@ -105,6 +106,14 @@ export async function PATCH(
       }
     }
 
+    // Đảm bảo rằng khi payment_method là PAY_AT_HOTEL, status phải là 'pending'
+    if (payment_method === PAYMENT_METHOD.PAY_AT_HOTEL && status && status !== BOOKING_STATUS.PENDING) {
+      return NextResponse.json(
+        { error: 'Thanh toán tại khách sạn chỉ có thể ở trạng thái chờ xác nhận (pending)' },
+        { status: 400 }
+      );
+    }
+
     // Cập nhật payment_method trong bảng payments (nếu có)
     if (payment_method) {
       const { error: paymentError } = await supabase
@@ -132,7 +141,7 @@ export async function PATCH(
       updateData.status = status;
     }
 
-    let booking: any = null;
+    let booking: BookingRecord | null = null;
 
     if (Object.keys(updateData).length > 0) {
       const { data, error } = await supabase

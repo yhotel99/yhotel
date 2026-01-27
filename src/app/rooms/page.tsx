@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Bed, Wifi, Car, Coffee, Bath, Users, Search, X, ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
+import { Bed, Users, Search, X, ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
@@ -40,29 +40,6 @@ const getCategoryLabel = (category: string): string => {
   return categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
 };
 
-// Helper function to strip HTML tags from text
-const stripHtmlTags = (text: string): string => {
-  if (!text) return '';
-  return text.replace(/<[^>]*>/g, '').trim();
-};
-
-// Mapping amenities to their display names
-const getAmenityName = (IconComponent: React.ComponentType): string => {
-  const iconNames: Record<string, string> = {
-    Wifi: "WiFi miễn phí",
-    Car: "Bãi đỗ xe",
-    Coffee: "Minibar",
-    Bath: "Phòng tắm riêng",
-  };
-  
-  if (IconComponent === Wifi) return iconNames.Wifi;
-  if (IconComponent === Car) return iconNames.Car;
-  if (IconComponent === Coffee) return iconNames.Coffee;
-  if (IconComponent === Bath) return iconNames.Bath;
-  
-  return 'Tiện ích';
-};
-
 const RoomsPageContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -97,7 +74,7 @@ const RoomsPageContent = () => {
   const error = queryError ? 'Đã xảy ra lỗi khi tải danh sách phòng. Vui lòng thử lại sau.' : null;
 
   // Fetch available rooms if check_in and check_out params exist
-  const { data: availableRooms = [], isLoading: loadingAvailable } = useQuery<RoomResponse[]>({
+  const { data: availableRooms = [] } = useQuery<RoomResponse[]>({
     queryKey: ['available-rooms', checkInParam, checkOutParam],
     queryFn: async () => {
       if (!checkInParam || !checkOutParam) return [];
@@ -118,7 +95,6 @@ const RoomsPageContent = () => {
 
   // Use available rooms if we have date params, otherwise use all rooms
   const roomsToDisplay = checkInParam && checkOutParam ? availableRooms : rooms;
-  const isLoading = checkInParam && checkOutParam ? loadingAvailable : loading;
 
   // Handle date range selection
   const handleDateRangeSelect = (range: { from?: Date; to?: Date } | undefined) => {
@@ -475,7 +451,7 @@ const RoomsPageContent = () => {
               </div>
             ) : filteredRooms.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
-                {filteredRooms.map((room, index) => (
+                {filteredRooms.map((room) => (
                   <motion.div
                     key={room.id}
                     initial={{ opacity: 0, y: 50 }}

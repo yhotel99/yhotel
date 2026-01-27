@@ -12,7 +12,6 @@ import {
   Clock,
   User,
   Banknote,
-  CheckCircle,
   Copy,
   Loader2,
   Phone,
@@ -48,7 +47,7 @@ const PaymentContent = () => {
   const retryCountRef = useRef(0);
   const maxRetries = 3;
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [subscriptionKey, setSubscriptionKey] = useState(0); // Force re-subscription on retry
+  const [, setSubscriptionKey] = useState(0); // Force re-subscription on retry
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
@@ -154,7 +153,7 @@ const PaymentContent = () => {
       
       return () => clearTimeout(redirectTimer);
     }
-  }, [booking?.status, bookingId, router]);
+  }, [booking, bookingId, router]);
 
   // Setup realtime subscription for booking status changes
   // subscriptionKey is used to force re-subscription on retry
@@ -431,7 +430,6 @@ const PaymentContent = () => {
 
   const canProceedPayment = booking?.status === BOOKING_STATUS.PENDING;
 
-  const [isProcessing, setIsProcessing] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
   const [countdown, setCountdown] = useState(15 * 60); // 15 minutes
   const [isCancelling, setIsCancelling] = useState(false);

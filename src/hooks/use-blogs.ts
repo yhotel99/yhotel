@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export interface BlogPost {
   id: string;
@@ -44,7 +44,7 @@ export function useBlogs(options: UseBlogsOptions = {}): UseBlogsResult {
   const [error, setError] = useState<Error | null>(null);
   const [pagination, setPagination] = useState<PaginationMeta | null>(null);
 
-  const fetchBlogs = async () => {
+  const fetchBlogs = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -75,11 +75,11 @@ export function useBlogs(options: UseBlogsOptions = {}): UseBlogsResult {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, limit, search]);
 
   useEffect(() => {
     fetchBlogs();
-  }, [page, limit, search]);
+  }, [fetchBlogs]);
 
   const mutate = async () => {
     await fetchBlogs();

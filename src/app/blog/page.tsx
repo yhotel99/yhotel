@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Calendar, ArrowRight, Search, X, ArrowLeft, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useScrollThreshold } from "@/hooks/use-scroll";
 import Navigation from "@/components/Navigation";
@@ -17,18 +15,9 @@ import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import Image from "next/image";
 
-const categories = [
-  { id: "all", label: "Tất cả" },
-  { id: "news", label: "Tin Tức" },
-  { id: "experience", label: "Kinh Nghiệm" },
-  { id: "knowledge", label: "Kiến Thức" },
-  { id: "promotion", label: "Ưu Đãi & Khuyến Mãi" },
-  { id: "travel", label: "Du Lịch" },
-];
-
 const BlogListingPage = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [searchQuery] = useState("");
+  const [selectedCategory] = useState("all");
   const isScrolled = useScrollThreshold(100);
 
   const { blogs, isLoading } = useBlogs({

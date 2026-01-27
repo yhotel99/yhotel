@@ -1,6 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRooms, getRoomById } from "@/lib/api/rooms";
-import { RoomResponse } from "@/types/database";
 
 // Query keys
 export const roomKeys = {

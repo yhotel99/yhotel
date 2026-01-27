@@ -1,7 +1,5 @@
 import { RoomResponse } from '@/types/database';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
-
 export async function getRooms(type?: string, status?: string): Promise<RoomResponse[]> {
   try {
     const params = new URLSearchParams();

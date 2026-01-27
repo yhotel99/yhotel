@@ -1,10 +1,10 @@
 "use client";
 
-import { Bed, Wifi, Car, Coffee, Bath, Users } from "lucide-react";
+import { Bed, Users } from "lucide-react";
 import { memo, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { FloatingCard } from "@/components/ui/floating-card";
@@ -23,29 +23,6 @@ const categoryLabels: Record<string, string> = {
 // Helper to get category label with fallback
 const getCategoryLabel = (category: string): string => {
   return categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
-};
-
-// Helper function to strip HTML tags from text
-const stripHtmlTags = (text: string): string => {
-  if (!text) return '';
-  return text.replace(/<[^>]*>/g, '').trim();
-};
-
-// Mapping amenities to their display names
-const getAmenityName = (IconComponent: React.ComponentType): string => {
-  const iconNames: Record<string, string> = {
-    Wifi: "WiFi miễn phí",
-    Car: "Bãi đỗ xe",
-    Coffee: "Minibar",
-    Bath: "Phòng tắm riêng",
-  };
-  
-  if (IconComponent === Wifi) return iconNames.Wifi;
-  if (IconComponent === Car) return iconNames.Car;
-  if (IconComponent === Coffee) return iconNames.Coffee;
-  if (IconComponent === Bath) return iconNames.Bath;
-  
-  return 'Tiện ích';
 };
 
 const RoomsSection = () => {

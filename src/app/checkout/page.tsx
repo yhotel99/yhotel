@@ -8,9 +8,7 @@ import { vi } from "date-fns/locale";
 import { 
   Calendar, 
   Users, 
-  CreditCard, 
   Shield, 
-  CheckCircle, 
   Building2,
   Clock,
   User,
@@ -34,14 +32,6 @@ import { BOOKING_STATUS, PAYMENT_METHOD } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 const CheckoutContent = () => {
   const searchParams = useSearchParams();
@@ -63,7 +53,6 @@ const CheckoutContent = () => {
   });
 
   const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "pay_at_hotel">("bank_transfer");
-  const [showPayAtHotelDialog, setShowPayAtHotelDialog] = useState(false);
 
   const handleContinue = async () => {
     if (!bookingId || !booking) return;
@@ -105,49 +94,40 @@ const CheckoutContent = () => {
       // Chuyển đến trang thanh toán chuyển khoản với QR code
       router.push(`/checkout/payment?booking_id=${bookingId}`);
     } else if (paymentMethod === "pay_at_hotel") {
-      // Hiển thị popup nhắc nhở thời gian nhận phòng
-      setShowPayAtHotelDialog(true);
-    }
-  };
+      // Cập nhật phương thức thanh toán, đảm bảo trạng thái là pending (chờ xác nhận)
+      try {
+        const response = await fetch(`/api/bookings/${bookingId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: BOOKING_STATUS.PENDING, // Luôn giữ ở trạng thái chờ xác nhận
+            payment_method: PAYMENT_METHOD.PAY_AT_HOTEL,
+          }),
+        });
 
-  const handleConfirmPayAtHotel = async () => {
-    if (!bookingId || !booking) return;
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => null);
+          const message =
+            errorBody?.error ||
+            "Không thể cập nhật phương thức thanh toán. Vui lòng thử lại sau.";
+          throw new Error(message);
+        }
 
-    try {
-      // Xác nhận booking ngay khi chọn "Thanh toán tại khách sạn"
-      // Theo tiêu chuẩn booking khách sạn: booking được xác nhận ngay, payment vẫn pending
-      const response = await fetch(`/api/bookings/${bookingId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          status: BOOKING_STATUS.CONFIRMED,
-          payment_method: PAYMENT_METHOD.PAY_AT_HOTEL,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Không thể xác nhận đặt phòng');
+        // Chuyển đến trang xác nhận thanh toán tại khách sạn
+        router.push(`/checkout/pay-at-hotel?booking_id=${bookingId}`);
+      } catch (error) {
+        console.error("Failed to update payment method (pay_at_hotel):", error);
+        toast({
+          title: "Không thể cập nhật phương thức thanh toán",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Đã xảy ra lỗi. Vui lòng thử lại sau hoặc chọn phương thức khác.",
+          variant: "destructive",
+        });
       }
-
-      setShowPayAtHotelDialog(false);
-      
-      toast({
-        title: "Đặt phòng thành công!",
-        description: "Đặt phòng của bạn đã được xác nhận. Vui lòng thanh toán tại khách sạn khi check-in.",
-      });
-      
-      // Chuyển đến trang thành công
-      router.push(`/checkout/success?booking_id=${bookingId}`);
-    } catch (error) {
-      console.error('Booking error:', error);
-      toast({
-        title: "Xử lý thất bại",
-        description: error instanceof Error ? error.message : "Đã xảy ra lỗi. Vui lòng thử lại sau.",
-        variant: "destructive",
-      });
     }
   };
 
@@ -626,103 +606,6 @@ const CheckoutContent = () => {
         </section>
       </main>
       <Footer />
-
-      {/* Dialog for Pay at Hotel */}
-      <Dialog open={showPayAtHotelDialog} onOpenChange={setShowPayAtHotelDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-display flex items-center gap-2">
-              <Store className="h-6 w-6 text-primary" />
-              Thanh Toán Tại Khách Sạn
-            </DialogTitle>
-            <DialogDescription className="text-base pt-2">
-              Thông tin quan trọng về đặt phòng của bạn
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-              <div className="flex items-start gap-3">
-                <Calendar className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="font-semibold text-foreground mb-1">Thời gian nhận phòng</p>
-                  <p className="text-foreground text-lg font-bold mb-1">
-                    {formatDate(booking.check_in)} lúc {formatTime(booking.check_in)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Vui lòng đến khách sạn đúng thời gian để check-in
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-muted/30 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Clock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="font-semibold text-foreground mb-1">Thời gian trả phòng</p>
-                  <p className="text-foreground text-lg font-bold mb-1">
-                    {formatDate(booking.check_out)} lúc {formatTime(booking.check_out)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Bạn sẽ ở {booking.number_of_nights} đêm tại khách sạn
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Shield className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                <div className="text-sm">
-                  <p className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
-                    Lưu ý quan trọng
-                  </p>
-                  <ul className="list-disc list-inside text-amber-700 dark:text-amber-300 space-y-1">
-                    <li>Vui lòng mang theo CMND/CCCD hoặc hộ chiếu khi check-in</li>
-                    <li>Bạn sẽ thanh toán tại quầy lễ tân khi nhận phòng</li>
-                    <li>Mã đặt phòng: <span className="font-mono font-bold">{booking.booking_code || booking.id.slice(0, 8).toUpperCase()}</span></li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            {booking.room && (
-              <div className="p-4 bg-muted/30 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <Building2 className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground mb-1">Phòng đã đặt</p>
-                    <p className="text-foreground">{booking.room.name}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex justify-between items-center p-3 bg-background rounded-lg border">
-              <span className="font-semibold text-lg">Tổng tiền:</span>
-              <span className="font-bold text-xl text-primary">{formatPrice(booking.total_amount)}đ</span>
-            </div>
-          </div>
-
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowPayAtHotelDialog(false)}
-            >
-              Hủy
-            </Button>
-            <Button
-              onClick={handleConfirmPayAtHotel}
-              variant="luxury"
-              className="min-w-[140px]"
-            >
-              <CheckCircle className="mr-2 h-4 w-4" />
-              Xác nhận đặt phòng
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

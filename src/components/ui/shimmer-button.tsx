@@ -9,7 +9,6 @@ interface ShimmerButtonProps extends ButtonProps {
 export function ShimmerButton({
   children,
   className,
-  shimmerColor = "hsl(var(--primary))",
   ...props
 }: ShimmerButtonProps) {
   return (

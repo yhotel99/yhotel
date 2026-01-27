@@ -243,8 +243,9 @@ function normalizeBookingId(value: unknown): string | null {
 
   if (typeof value === 'object' && value !== null) {
     // Try to extract from common shapes first (consistent with previous logic)
-    if ('id' in (value as any)) {
-      return String((value as any).id).trim();
+    const valueRecord = value as Record<string, unknown>;
+    if ('id' in valueRecord) {
+      return String(valueRecord.id).trim();
     }
 
     console.error('[API] Cannot extract booking ID from object:', value);
@@ -589,8 +590,14 @@ export async function POST(request: Request) {
           // ok === true -> extract booking_id from RPC payload
           if (rpcResult.booking_id && typeof rpcResult.booking_id === 'string') {
             bookingId = rpcResult.booking_id.trim();
-          } else if ('id' in rpcResult && typeof (rpcResult as any).id === 'string') {
-            bookingId = (rpcResult as any).id.trim();
+          } else if ('id' in rpcResult) {
+            const rpcResultRecord = rpcResult as Record<string, unknown>;
+            if (typeof rpcResultRecord.id === 'string') {
+              bookingId = rpcResultRecord.id.trim();
+            } else {
+              console.error('[API] RPC ok=true but booking_id missing/invalid:', rpcResult);
+              throw new Error('Không thể lấy booking ID từ RPC function');
+            }
           } else {
             console.error('[API] RPC ok=true but booking_id missing/invalid:', rpcResult);
             throw new Error('Không thể lấy booking ID từ RPC function');
@@ -605,15 +612,16 @@ export async function POST(request: Request) {
             extractedId = rpcBookingId.trim();
           } else if (typeof rpcBookingId === 'object' && rpcBookingId !== null) {
             // If it's an object, try to find the ID
-            if ('id' in rpcBookingId) {
-              extractedId = String((rpcBookingId as any).id).trim();
-            } else if ('booking_id' in rpcBookingId) {
-              extractedId = String((rpcBookingId as any).booking_id).trim();
+            const rpcBookingIdRecord = rpcBookingId as Record<string, unknown>;
+            if ('id' in rpcBookingIdRecord) {
+              extractedId = String(rpcBookingIdRecord.id).trim();
+            } else if ('booking_id' in rpcBookingIdRecord) {
+              extractedId = String(rpcBookingIdRecord.booking_id).trim();
             } else {
               // Try to get first property that looks like a UUID
-              const keys = Object.keys(rpcBookingId);
+              const keys = Object.keys(rpcBookingIdRecord);
               for (const key of keys) {
-                const value = (rpcBookingId as any)[key];
+                const value = rpcBookingIdRecord[key];
                 if (typeof value === 'string' && value.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
                   extractedId = value.trim();
                   break;

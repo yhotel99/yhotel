@@ -1,5 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
 

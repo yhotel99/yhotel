@@ -10,13 +10,7 @@ interface TextShimmerProps {
 export function TextShimmer({
   children,
   className,
-  speed = "normal"
 }: TextShimmerProps) {
-  const speedClass = {
-    slow: "animate-text-glow",
-    normal: "animate-text-glow",
-    fast: "animate-text-glow"
-  }[speed];
 
   return (
     <span

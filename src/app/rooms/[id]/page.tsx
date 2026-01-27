@@ -5,16 +5,9 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import {
   Bed,
-  Wifi,
-  Car,
-  Coffee,
-  Bath,
   Users,
   ArrowLeft,
   Calendar as CalendarIcon,
-  MapPin,
-  Phone,
-  Mail,
   ArrowRight,
   ChevronLeft,
   ChevronRight,
@@ -30,7 +23,7 @@ import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { FloatingCard } from "@/components/ui/floating-card";
@@ -49,9 +42,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useScrollThreshold } from "@/hooks/use-scroll";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { useRoom, usePrefetchRoom, useRooms } from "@/hooks/use-rooms";
+import { useRoom, useRooms } from "@/hooks/use-rooms";
 import { RoomDetailSkeleton } from "@/components/RoomDetailSkeleton";
-import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
 import { getAmenityLabel } from "@/lib/constants";
 import Script from "next/script";
 
@@ -89,33 +81,6 @@ const HTMLContent = ({ content }: { content: string }) => {
       dangerouslySetInnerHTML={{ __html: content }}
     />
   );
-};
-
-// Helper function to strip HTML tags from text
-const stripHtmlTags = (text: string): string => {
-  if (!text) return '';
-  return text.replace(/<[^>]*>/g, '').trim();
-};
-
-// Mapping amenities to their display names
-const getAmenityName = (IconComponent: React.ComponentType): string => {
-  const iconNames: Record<string, string> = {
-    Wifi: "WiFi miễn phí",
-    Car: "Bãi đỗ xe",
-    Coffee: "Minibar",
-    Bath: "Phòng tắm riêng",
-  };
-  
-  // Try to get the component name
-  const componentName = IconComponent.displayName || IconComponent.name || '';
-  
-  // Match by checking if the component matches our imported icons
-  if (IconComponent === Wifi) return iconNames.Wifi;
-  if (IconComponent === Car) return iconNames.Car;
-  if (IconComponent === Coffee) return iconNames.Coffee;
-  if (IconComponent === Bath) return iconNames.Bath;
-  
-  return componentName || 'Tiện ích';
 };
 
 const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
@@ -280,15 +245,6 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLightboxOpen, images.length, prevLightboxImage, nextLightboxImage, closeLightbox]);
-
-  const sanitizeInput = (value: string) => {
-    if (!value) return "";
-    // Loại bỏ thẻ HTML/script và ký tự điều khiển
-    return value
-      .replace(/<[^>]*>/g, "")
-      .replace(/[\u0000-\u001F\u007F]+/g, "")
-      .trim();
-  };
 
   const validateFormFields = () => {
     const errors: {
@@ -1271,7 +1227,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                     className="w-full"
                   >
                     <CarouselContent className="ml-2 md:ml-4 pr-4 md:pr-8">
-                      {similarRooms.map((similarRoom, index) => (
+                      {similarRooms.map((similarRoom) => (
                       <CarouselItem
                         key={similarRoom.id}
                         className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4"
@@ -1395,8 +1351,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                     {allRooms
                       .filter((r) => r.id !== room.id && r.category !== room.category)
                       .slice(0, 4 - allRooms.filter((r) => r.id !== room.id && r.category === room.category).length)
-                      .map((otherRoom, index) => {
-                        const similarCount = allRooms.filter((r) => r.id !== room.id && r.category === room.category).length;
+                      .map((otherRoom) => {
                         return (
                           <CarouselItem
                             key={otherRoom.id}

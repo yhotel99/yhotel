@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo, memo } from "react";
-import { Calendar, User, ArrowRight, Clock } from "lucide-react";
+import { Calendar, User, Clock } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { FloatingCard } from "@/components/ui/floating-card";

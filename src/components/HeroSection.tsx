@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, memo, useCallback } from "react";
+import { useState, useEffect, memo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";

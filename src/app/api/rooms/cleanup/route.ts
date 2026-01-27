@@ -66,7 +66,7 @@ export async function GET(request: Request) {
     });
 
     const duplicates: Array<{ name: string; rooms: Room[] }> = [];
-    roomNameMap.forEach((rooms, normalizedName) => {
+    roomNameMap.forEach((rooms) => {
       if (rooms.length > 1) {
         duplicates.push({
           name: rooms[0].name, // Use original name

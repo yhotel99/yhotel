@@ -73,7 +73,7 @@ export function deduplicateRooms(rooms: RoomWithImages[]): RoomWithImages[] {
   // For each group, keep only the best room
   const deduplicated: RoomWithImages[] = [];
   
-  roomMap.forEach((roomGroup, normalizedName) => {
+  roomMap.forEach((roomGroup) => {
     if (roomGroup.length === 1) {
       // No duplicates, keep it
       deduplicated.push(roomGroup[0]);
