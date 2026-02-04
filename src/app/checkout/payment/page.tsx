@@ -510,10 +510,10 @@ const PaymentContent = () => {
   }, [canProceedPayment, countdown, handleTimeoutCancel]);
 
   const bankAccount = {
-    number: "221003221003",
-    bank: "MB Bank",
-    bankBin: BANK_BIN_CODES["MBBank"] || "970422", // MB Bank BIN code
-    owner: "TRAN QUANG KHAI"
+    number: "01801807326",
+    bank: "TP Bank",
+    bankBin: BANK_BIN_CODES["TPBank"] || "970423", // TP Bank BIN code
+    owner: "CÔNG TY CỔ PHẦN KHÁCH SẠN YQ"
   };
 
   // Use booking_code if available, otherwise fallback to booking ID
