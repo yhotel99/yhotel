@@ -12,10 +12,10 @@ export const roomKeys = {
 };
 
 // Hook to get all rooms
-export function useRooms(type?: string, status?: string) {
+export function useRooms(type?: string, status?: string, skipFilters?: boolean) {
   return useQuery({
     queryKey: roomKeys.list({ type, status }),
-    queryFn: () => getRooms(type, status),
+    queryFn: () => getRooms(type, status, skipFilters),
     staleTime: 1000 * 60 * 10, // 10 minutes (rooms don't change frequently)
   });
 }

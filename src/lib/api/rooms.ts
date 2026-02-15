@@ -1,6 +1,6 @@
 import { RoomResponse } from '@/types/database';
 
-export async function getRooms(type?: string, status?: string): Promise<RoomResponse[]> {
+export async function getRooms(type?: string, status?: string, skipFilters?: boolean): Promise<RoomResponse[]> {
   try {
     const params = new URLSearchParams();
     
@@ -10,6 +10,10 @@ export async function getRooms(type?: string, status?: string): Promise<RoomResp
     
     if (status && status !== 'all') {
       params.append('status', status);
+    }
+    
+    if (skipFilters) {
+      params.append('skipFilters', 'true');
     }
     
     const url = params.toString() 
@@ -52,8 +56,8 @@ export async function getRooms(type?: string, status?: string): Promise<RoomResp
 }
 
 // Helper function to get all rooms regardless of status
-export async function getAllRooms(type?: string): Promise<RoomResponse[]> {
-  return getRooms(type, 'all');
+export async function getAllRooms(type?: string, skipFilters?: boolean): Promise<RoomResponse[]> {
+  return getRooms(type, 'all', skipFilters);
 }
 
 export async function getRoomById(id: string): Promise<RoomResponse | null> {

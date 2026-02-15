@@ -46,7 +46,7 @@ const RoomsPageContent = () => {
   const checkInParam = searchParams.get('check_in');
   const checkOutParam = searchParams.get('check_out');
   
-  const { data: rooms = [], isLoading: loading, error: queryError } = useRooms();
+  const { data: rooms = [], isLoading: loading, error: queryError } = useRooms(undefined, undefined, true);
   const prefetchRoom = usePrefetchRoom();
   const [categories, setCategories] = useState<Category[]>([
     { value: "all", label: "Tất cả" },

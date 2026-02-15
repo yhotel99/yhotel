@@ -76,8 +76,9 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const roomType = searchParams.get('type');
     const status = searchParams.get('status'); // No default - get all if not specified
+    const skipFilters = searchParams.get('skipFilters') === 'true'; // Skip test/placeholder filters
 
-    console.log('Query params - type:', roomType, 'status:', status); // Debug log
+    console.log('Query params - type:', roomType, 'status:', status, 'skipFilters:', skipFilters); // Debug log
 
     // Build query - optimize by selecting only needed fields
     let query = supabase
@@ -177,14 +178,18 @@ export async function GET(request: Request) {
       };
     });
 
-    // Filter out test/placeholder rooms
-    const productionRooms = rooms.filter(room => !isTestOrPlaceholderRoom(room));
-
-    // Deduplicate rooms with same name
-    const deduplicatedRooms = deduplicateRooms(productionRooms);
+    // Apply filters only if skipFilters is not true
+    let finalRooms = rooms;
+    
+    if (!skipFilters) {
+      // Filter out test/placeholder rooms
+      const productionRooms = rooms.filter(room => !isTestOrPlaceholderRoom(room));
+      // Deduplicate rooms with same name
+      finalRooms = deduplicateRooms(productionRooms);
+    }
 
     // Convert to API response format
-    const response: RoomResponse[] = deduplicatedRooms.map(transformRoomToResponse);
+    const response: RoomResponse[] = finalRooms.map(transformRoomToResponse);
 
     // Set cache headers
     return NextResponse.json(response, {
