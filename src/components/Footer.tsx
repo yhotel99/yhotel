@@ -141,7 +141,22 @@ const Footer = memo(() => {
 
         {/* Bottom Bar */}
         <div className="border-t border-background/20 py-6">
-          <div className="text-center">
+          <div className="flex flex-col items-center justify-center gap-4">
+            <a
+              href="https://online.gov.vn"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block focus:outline-none focus:ring-2 focus:ring-primary/50 rounded"
+              aria-label="Đã thông báo Bộ Công Thương"
+            >
+              <Image
+                src="/logo-da-thong-bao-bo-cong-thuong-mau-xanh.png"
+                alt="Đã thông báo Bộ Công Thương"
+                width={120}
+                height={50}
+                className="h-10 w-auto object-contain"
+              />
+            </a>
             <p className="text-background/60 text-xs md:text-sm">
               © 2025 Y Hotel. Tất cả quyền được bảo lưu.
             </p>

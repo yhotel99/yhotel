@@ -18,7 +18,8 @@ import {
   ArrowRight,
   Phone,
   FileText,
-  Tag
+  Tag,
+  CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,7 +53,7 @@ const CheckoutContent = () => {
     enabled: !!bookingId,
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "pay_at_hotel">("bank_transfer");
+  const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "pay_at_hotel" | "onepay">("bank_transfer");
 
   const handleContinue = async () => {
     if (!bookingId || !booking) return;
@@ -93,6 +94,8 @@ const CheckoutContent = () => {
 
       // Chuyển đến trang thanh toán chuyển khoản với QR code
       router.push(`/checkout/payment?booking_id=${bookingId}`);
+    } else if (paymentMethod === "onepay") {
+      router.push(`/checkout/onepay/redirect?booking_id=${bookingId}`);
     } else if (paymentMethod === "pay_at_hotel") {
       // Cập nhật phương thức thanh toán, đảm bảo trạng thái là pending (chờ xác nhận)
       try {
@@ -344,6 +347,62 @@ const CheckoutContent = () => {
                               <p className="text-sm font-medium mb-2 text-foreground">Lưu ý:</p>
                               <p className="text-sm text-muted-foreground leading-relaxed">
                                 Bạn sẽ thanh toán trực tiếp tại quầy lễ tân khi check-in. Vui lòng mang theo CMND/CCCD hoặc hộ chiếu.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+
+                      <label className="block relative cursor-pointer group">
+                        <input
+                          type="radio"
+                          name="payment"
+                          value="onepay"
+                          checked={paymentMethod === "onepay"}
+                          onChange={(e) => setPaymentMethod(e.target.value as "onepay")}
+                          className="sr-only"
+                        />
+                        <div className={cn(
+                          "p-4 border-2 rounded-lg transition-all duration-300",
+                          paymentMethod === "onepay"
+                            ? "border-primary bg-primary/5 shadow-md"
+                            : "border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50"
+                        )}>
+                          <div className="flex items-start gap-4">
+                            <div className={cn(
+                              "p-2 rounded-lg transition-colors",
+                              paymentMethod === "onepay"
+                                ? "bg-primary/20"
+                                : "bg-primary/10"
+                            )}>
+                              <CreditCard className={cn(
+                                "h-5 w-5 transition-colors",
+                                paymentMethod === "onepay"
+                                  ? "text-primary"
+                                  : "text-primary/70"
+                              )} />
+                            </div>
+                            <div className="flex-1">
+                              <p className="font-semibold text-base mb-1">Thẻ/Ví (OnePay)</p>
+                              <p className="text-sm text-muted-foreground">
+                                Thanh toán bằng thẻ nội địa, Visa, Master, ví điện tử, QR Code
+                              </p>
+                            </div>
+                            <div className={cn(
+                              "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
+                              paymentMethod === "onepay"
+                                ? "border-primary bg-primary"
+                                : "border-border"
+                            )}>
+                              {paymentMethod === "onepay" && (
+                                <div className="h-2.5 w-2.5 rounded-full bg-white" />
+                              )}
+                            </div>
+                          </div>
+                          {paymentMethod === "onepay" && (
+                            <div className="mt-4 pt-4 border-t border-primary/20">
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                Bạn sẽ được chuyển đến cổng OnePay để thanh toán bằng thẻ, ví điện tử hoặc QR.
                               </p>
                             </div>
                           )}

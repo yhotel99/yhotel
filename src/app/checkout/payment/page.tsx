@@ -16,7 +16,8 @@ import {
   Loader2,
   Phone,
   Mail,
-  FileText
+  FileText,
+  CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -577,6 +578,11 @@ const PaymentContent = () => {
     });
   };
 
+  const handlePayWithOnePay = () => {
+    if (!bookingId) return;
+    router.push(`/checkout/onepay/redirect?booking_id=${bookingId}`);
+  };
+
 
   if (!bookingId) {
     return (
@@ -783,6 +789,27 @@ const PaymentContent = () => {
                             Nếu không quét được QR, bạn có thể chuyển khoản thủ công theo thông tin tài khoản bên trên.
                           </p>
                         </div>
+                      </div>
+
+                      <Separator />
+
+                      {/* OnePay - Thanh toán thẻ/ví */}
+                      <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                        <p className="font-semibold text-emerald-900 dark:text-emerald-100 mb-2 flex items-center gap-2">
+                          <CreditCard className="h-5 w-5" />
+                          Hoặc thanh toán bằng thẻ/ví qua OnePay
+                        </p>
+                        <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-4">
+                          Hỗ trợ thẻ nội địa, thẻ quốc tế (Visa, Master), ví điện tử, QR Code
+                        </p>
+                        <Button
+                          onClick={handlePayWithOnePay}
+                          disabled={!canProceedPayment}
+                          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                        >
+                          <CreditCard className="mr-2 h-4 w-4" />
+                          Thanh toán bằng thẻ/ví (OnePay)
+                        </Button>
                       </div>
                     </CardContent>
                   </FloatingCard>

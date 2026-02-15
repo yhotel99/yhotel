@@ -72,6 +72,7 @@ export const paymentTypeLabels: Record<
 export const PAYMENT_METHOD = {
   BANK_TRANSFER: "bank_transfer",
   PAY_AT_HOTEL: "pay_at_hotel",
+  ONEPAY: "onepay",
 } as const;
 
 /**
@@ -83,6 +84,7 @@ export const paymentMethodLabels: Record<
 > = {
   [PAYMENT_METHOD.BANK_TRANSFER]: "Chuyển khoản",
   [PAYMENT_METHOD.PAY_AT_HOTEL]: "Thanh toán tại khách sạn",
+  [PAYMENT_METHOD.ONEPAY]: "Thẻ/Ví (OnePay)",
 };
 
 /**

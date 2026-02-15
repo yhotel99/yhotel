@@ -54,7 +54,7 @@ export interface PaymentRecord {
   booking_id: string;
   amount: number;
   payment_type: 'room_charge' | 'advance_payment' | 'extra_service';
-  payment_method: 'bank_transfer' | 'pay_at_hotel';
+  payment_method: 'bank_transfer' | 'pay_at_hotel' | 'onepay';
   payment_status: 'pending' | 'paid' | 'failed' | 'refunded' | 'cancelled';
   paid_at?: string;
   created_at: string;

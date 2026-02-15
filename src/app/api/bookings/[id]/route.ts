@@ -97,6 +97,7 @@ export async function PATCH(
       const allowedPaymentMethods: readonly string[] = [
         PAYMENT_METHOD.BANK_TRANSFER,
         PAYMENT_METHOD.PAY_AT_HOTEL,
+        PAYMENT_METHOD.ONEPAY,
       ];
       if (!allowedPaymentMethods.includes(payment_method)) {
         return NextResponse.json(

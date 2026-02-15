@@ -1,0 +1,26 @@
+---
+description: OnePay payment gateway integration - vpc_SecureHash, HMAC-SHA256, Payment Request/Response flow
+globs: **/payment/**/*,**/checkout/**/*,**/onepay/**/*,**/api/**/payment/**
+alwaysApply: false
+---
+
+# OnePay Integration
+
+When implementing OnePay payment gateway:
+
+## vpc_SecureHash Creation
+1. Collect params with prefix `vpc_` and `user_` (exclude `vpc_SecureHash`, `vpc_SecureHashType`)
+2. Sort keys alphabetically (case-sensitive)
+3. Build string: `key1=value1&key2=value2&...` (skip empty values)
+4. Sign: `HMAC-SHA256(stringToSign, merchantHashCode).toHex().toUpperCase()`
+
+## Amount
+- Always multiply amount by 100 (e.g., 25,000 VND → 2500000)
+
+## Response Validation
+- Verify `vpc_SecureHash` before trusting response
+- Check `vpc_TxnResponseCode === "0"` for success (do NOT coerce to number - "F" could become 0)
+
+## Endpoints
+- Sandbox: `https://mtf.onepay.vn/paygate/vpcpay.op`
+- Production: `https://onepay.vn/paygate/vpcpay.op`
