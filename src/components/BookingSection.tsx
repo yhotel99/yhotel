@@ -116,7 +116,7 @@ const BookingSectionContent = () => {
     staleTime: 1000 * 60 * 10,
   });
   
-  const { data: allRooms = [] } = useRooms();
+  const { data: allRooms = [] } = useRooms(undefined, undefined, true);
   
   // Calculate average price per room type
   const roomTypes = useMemo(() => {
@@ -241,7 +241,7 @@ const BookingSectionContent = () => {
       checkOutDate.setHours(12, 0, 0, 0); // Default check-out time 12:00
 
       const response = await fetch(
-        `/api/rooms/available?check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}`
+        `/api/rooms/available?check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}&skipFilters=true`
       );
 
       if (!response.ok) {

@@ -119,8 +119,8 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   const lightboxTouchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [lightboxTouchEnd, setLightboxTouchEnd] = useState<{ x: number; y: number } | null>(null);
 
-  const { data: room, isLoading: loading } = useRoom(id);
-  const { data: allRooms = [], isLoading: loadingSimilarRooms } = useRooms();
+  const { data: room, isLoading: loading } = useRoom(id, true);
+  const { data: allRooms = [], isLoading: loadingSimilarRooms } = useRooms(undefined, undefined, true);
 
   const images = room ? (room.galleryImages || [room.image]) : [];
 

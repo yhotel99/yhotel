@@ -80,6 +80,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const checkIn = searchParams.get('check_in');
     const checkOut = searchParams.get('check_out');
+    const skipFilters = searchParams.get('skipFilters') === 'true';
 
     // Validate required parameters
     if (!checkIn || !checkOut) {
@@ -225,14 +226,18 @@ export async function GET(request: Request) {
       };
     });
 
-    // Filter out test/placeholder rooms
-    const productionRooms = rooms.filter(room => !isTestOrPlaceholderRoom(room));
-
-    // Deduplicate rooms with same name
-    const deduplicatedRooms = deduplicateRooms(productionRooms);
+    // Apply filters only if skipFilters is not true
+    let finalRooms = rooms;
+    
+    if (!skipFilters) {
+      // Filter out test/placeholder rooms
+      const productionRooms = rooms.filter(room => !isTestOrPlaceholderRoom(room));
+      // Deduplicate rooms with same name
+      finalRooms = deduplicateRooms(productionRooms);
+    }
 
     // Convert to API response format
-    const response: RoomResponse[] = deduplicatedRooms.map(transformRoomToResponse);
+    const response: RoomResponse[] = finalRooms.map(transformRoomToResponse);
 
     return NextResponse.json(response, {
       headers: {

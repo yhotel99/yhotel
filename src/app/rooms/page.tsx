@@ -80,7 +80,7 @@ const RoomsPageContent = () => {
       if (!checkInParam || !checkOutParam) return [];
       
       const response = await fetch(
-        `/api/rooms/available?check_in=${encodeURIComponent(checkInParam)}&check_out=${encodeURIComponent(checkOutParam)}`
+        `/api/rooms/available?check_in=${encodeURIComponent(checkInParam)}&check_out=${encodeURIComponent(checkOutParam)}&skipFilters=true`
       );
       
       if (!response.ok) {
@@ -461,7 +461,7 @@ const RoomsPageContent = () => {
                     <Link 
                       href={`/rooms/${encodeURIComponent(room.id)}`} 
                       className="block h-full"
-                      onMouseEnter={() => prefetchRoom(room.id)}
+                      onMouseEnter={() => prefetchRoom(room.id, true)}
                     >
                       <GradientBorder containerClassName="relative h-full">
                         <FloatingCard

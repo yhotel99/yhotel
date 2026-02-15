@@ -60,9 +60,19 @@ export async function getAllRooms(type?: string, skipFilters?: boolean): Promise
   return getRooms(type, 'all', skipFilters);
 }
 
-export async function getRoomById(id: string): Promise<RoomResponse | null> {
+export async function getRoomById(id: string, skipFilters?: boolean): Promise<RoomResponse | null> {
   try {
-    const response = await fetch(`/api/rooms/${id}`);
+    const params = new URLSearchParams();
+    
+    if (skipFilters) {
+      params.append('skipFilters', 'true');
+    }
+    
+    const url = params.toString() 
+      ? `/api/rooms/${id}?${params.toString()}`
+      : `/api/rooms/${id}`;
+    
+    const response = await fetch(url);
 
     if (!response.ok) {
       if (response.status === 404) {

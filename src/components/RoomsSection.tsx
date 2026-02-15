@@ -26,7 +26,7 @@ const getCategoryLabel = (category: string): string => {
 };
 
 const RoomsSection = () => {
-  const { data: rooms = [], isLoading: loading } = useRooms();
+  const { data: rooms = [], isLoading: loading } = useRooms(undefined, undefined, true);
   const prefetchRoom = usePrefetchRoom();
 
   // Show only first 4 rooms on homepage - memoized
@@ -65,7 +65,7 @@ const RoomsSection = () => {
               <Link 
                 href={`/rooms/${encodeURIComponent(room.id)}`} 
                 className="block h-full"
-                onMouseEnter={() => prefetchRoom(room.id)}
+                onMouseEnter={() => prefetchRoom(room.id, true)}
               >
                 <GradientBorder 
                   containerClassName="relative h-full"

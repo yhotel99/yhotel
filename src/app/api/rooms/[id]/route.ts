@@ -63,6 +63,10 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    
+    // Check if skipFilters is requested
+    const { searchParams } = new URL(request.url);
+    const skipFilters = searchParams.get('skipFilters') === 'true';
 
     const { data, error } = await supabase
       .from('rooms')
@@ -133,8 +137,8 @@ export async function GET(
         })),
     };
 
-    // Block access to test/placeholder rooms
-    if (isTestOrPlaceholderRoom(room)) {
+    // Block access to test/placeholder rooms only if skipFilters is not true
+    if (!skipFilters && isTestOrPlaceholderRoom(room)) {
       return NextResponse.json(
         { error: 'Room not found' },
         { status: 404 }
