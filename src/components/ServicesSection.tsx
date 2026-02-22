@@ -4,38 +4,41 @@ import { memo } from "react";
 import { Wifi, Car, Coffee, Dumbbell, Utensils, Waves } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Marquee } from "@/registry/magicui/marquee";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const ServicesSection = memo(() => {
+  const { t } = useLanguage();
+
   const services = [
     {
       icon: Wifi,
-      title: "WiFi Tốc Độ Cao",
-      description: "Kết nối internet siêu nhanh miễn phí toàn khách sạn"
+      title: t.services.wifiTitle,
+      description: t.services.wifiDesc
     },
     {
       icon: Car,
-      title: "Bãi Đỗ Xe",
-      description: "Bãi đỗ xe hiện đại, rộng rãi và an toàn 24/7"
+      title: t.services.parkingTitle,
+      description: t.services.parkingDesc
     },
     {
       icon: Coffee,
-      title: "Buffet Sáng",
-      description: "Thực đơn phong phú với hơn 50 món Á-Âu mỗi ngày"
+      title: t.services.breakfastTitle,
+      description: t.services.breakfastDesc
     },
     {
       icon: Dumbbell,
-      title: "Phòng Gym Hiện Đại",
-      description: "Trang thiết bị thể thao cao cấp, hoạt động 24/7"
+      title: t.services.gymTitle,
+      description: t.services.gymDesc
     },
     {
       icon: Utensils,
-      title: "Nhà Hàng Cao Cấp",
-      description: "Ẩm thực đẳng cấp với đầu bếp quốc tế"
+      title: t.services.restaurantTitle,
+      description: t.services.restaurantDesc
     },
     {
       icon: Waves,
-      title: "Hồ Bơi Trong Nhà",
-      description: "Không gian thư giãn sang trọng với view thành phố"
+      title: t.services.poolTitle,
+      description: t.services.poolDesc
     }
   ];
 
@@ -76,10 +79,10 @@ const ServicesSection = memo(() => {
       <div className="container-luxury">
         <div className="text-center mb-8 md:mb-12">
           <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
-            Dịch Vụ Tiện Ích
+            {t.services.title}
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Hệ thống tiện ích hiện đại và dịch vụ đẳng cấp 5 sao phục vụ mọi nhu cầu của bạn
+            {t.services.description}
           </p>
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -12,10 +12,12 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useBlogs } from "@/hooks/use-blogs";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS } from "date-fns/locale";
 import Image from "next/image";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const BlogListingPage = () => {
+  const { t, language } = useLanguage();
   const [searchQuery] = useState("");
   const [selectedCategory] = useState("all");
   const isScrolled = useScrollThreshold(100);
@@ -30,7 +32,8 @@ const BlogListingPage = () => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return format(date, "dd/MM/yyyy", { locale: vi });
+      const locale = language === "vi" ? vi : enUS;
+      return format(date, "dd/MM/yyyy", { locale });
     } catch {
       return dateString;
     }
@@ -43,6 +46,19 @@ const BlogListingPage = () => {
 
   // Get most read posts (simulated - using first 5 posts)
   const mostReadPosts = blogs.slice(0, 5);
+
+  // Generate stable view counts based on post ID to avoid hydration mismatch
+  const getViewCount = useMemo(() => {
+    return (postId: string) => {
+      // Use post ID to generate a stable "random" number
+      let hash = 0;
+      for (let i = 0; i < postId.length; i++) {
+        hash = ((hash << 5) - hash) + postId.charCodeAt(i);
+        hash = hash & hash;
+      }
+      return Math.abs(hash % 4000) + 1000;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#f5f5f5]">
@@ -65,7 +81,7 @@ const BlogListingPage = () => {
               className="gap-2 backdrop-blur-sm bg-background/90 shadow-lg"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="hidden md:inline">Về Trang Chủ</span>
+              <span className="hidden md:inline">{t.blog.backToHome}</span>
             </Button>
           </Link>
         </motion.div>
@@ -83,7 +99,7 @@ const BlogListingPage = () => {
                     <div className="flex items-center gap-3 mb-1">
                       <div className="w-1 h-8 bg-primary rounded-full"></div>
                       <h2 className="text-2xl md:text-3xl font-display font-bold text-[#1a1a1a]">
-                        Tiêu Điểm
+                        {t.blog.featured}
                       </h2>
                     </div>
 
@@ -102,7 +118,7 @@ const BlogListingPage = () => {
                           {/* Category Badge */}
                           <div className="absolute top-4 left-4 z-10">
                             <Badge className="bg-primary text-white px-4 py-1.5 rounded-full text-sm font-semibold">
-                              Ưu Đãi & Khuyến Mãi
+                              {t.blog.promotions}
                             </Badge>
                           </div>
 
@@ -146,12 +162,12 @@ const BlogListingPage = () => {
                     </div>
                   ) : blogs.length === 0 ? (
                     <div className="text-center py-16">
-                      <p className="text-muted-foreground">Chưa có bài viết nào.</p>
+                      <p className="text-muted-foreground">{t.blog.noPosts}</p>
                     </div>
                   ) : regularPosts.length === 0 ? (
                     <div className="text-center py-8">
                       <p className="text-muted-foreground text-sm">
-                        Không có thêm bài viết nào khác. Vui lòng xem các bài viết tiêu điểm và đọc nhiều nhất.
+                        {t.blog.noMorePosts}
                       </p>
                     </div>
                   ) : (
@@ -175,7 +191,7 @@ const BlogListingPage = () => {
                                 <span className={`text-xs font-medium ${
                                   selectedCategory === "promotion" ? "text-primary" : "text-[#666]"
                                 }`}>
-                                  {selectedCategory === "promotion" ? "ƯU ĐÃI & KHUYẾN MÃI" : "TIN TỨC"}
+                                  {selectedCategory === "promotion" ? t.blog.promotions.toUpperCase() : t.blog.news.toUpperCase()}
                                 </span>
                                 <span className="text-[#666] text-xs">•</span>
                                 <span className="text-[#666] text-xs">{formatDate(post.date)}</span>
@@ -190,7 +206,7 @@ const BlogListingPage = () => {
                               )}
                             </div>
                             <div className="flex items-center gap-1 text-sm text-[#666] group-hover:text-primary transition-colors mt-auto">
-                              <span>Đọc tiếp</span>
+                              <span>{t.blog.readMore}</span>
                               <ArrowRight className="w-4 h-4" />
                             </div>
                           </div>
@@ -225,7 +241,7 @@ const BlogListingPage = () => {
                             {/* Category Tag */}
                             <div className="absolute top-3 left-3 z-10">
                               <span className="text-xs text-white uppercase font-medium">
-                                TIN TỨC
+                                {t.blog.news.toUpperCase()}
                               </span>
                             </div>
 
@@ -244,44 +260,44 @@ const BlogListingPage = () => {
 
                 {/* Quick Search Section */}
                 <div className="bg-[#1a1a1a] rounded-xl p-6 text-white shadow-lg">
-                  <h3 className="text-lg font-display font-bold mb-5">Tìm Phòng Nhanh</h3>
+                  <h3 className="text-lg font-display font-bold mb-5">{t.blog.quickSearch}</h3>
                   <div className="space-y-4">
                     <Select>
                       <SelectTrigger className="w-full bg-[#2a2a2a] border-[#2a2a2a] text-white h-11">
-                        <SelectValue placeholder="Loại phòng: Tất cả" />
+                        <SelectValue placeholder={`${t.blog.roomType}: ${t.blog.allRoomTypes}`} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Tất cả</SelectItem>
-                        <SelectItem value="standard">Phòng Tiêu Chuẩn</SelectItem>
-                        <SelectItem value="deluxe">Phòng Deluxe</SelectItem>
-                        <SelectItem value="suite">Suite</SelectItem>
+                        <SelectItem value="all">{t.blog.allRoomTypes}</SelectItem>
+                        <SelectItem value="standard">{t.blog.standardRoom}</SelectItem>
+                        <SelectItem value="deluxe">{t.blog.deluxeRoom}</SelectItem>
+                        <SelectItem value="suite">{t.blog.suite}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select>
                       <SelectTrigger className="w-full bg-[#2a2a2a] border-[#2a2a2a] text-white h-11">
-                        <SelectValue placeholder="Số người: Tất cả" />
+                        <SelectValue placeholder={`${t.blog.numberOfPeople}: ${t.blog.allPeople}`} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Tất cả</SelectItem>
-                        <SelectItem value="1">1 người</SelectItem>
-                        <SelectItem value="2">2 người</SelectItem>
-                        <SelectItem value="3">3 người</SelectItem>
-                        <SelectItem value="4+">4+ người</SelectItem>
+                        <SelectItem value="all">{t.blog.allPeople}</SelectItem>
+                        <SelectItem value="1">{t.blog.onePerson}</SelectItem>
+                        <SelectItem value="2">{t.blog.twoPeople}</SelectItem>
+                        <SelectItem value="3">{t.blog.threePeople}</SelectItem>
+                        <SelectItem value="4+">{t.blog.fourPlusePeople}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Select>
                       <SelectTrigger className="w-full bg-[#2a2a2a] border-[#2a2a2a] text-white h-11">
-                        <SelectValue placeholder="Khoảng giá" />
+                        <SelectValue placeholder={t.blog.priceRange} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Tất cả</SelectItem>
-                        <SelectItem value="low">Dưới 1 triệu</SelectItem>
-                        <SelectItem value="mid">1-3 triệu</SelectItem>
-                        <SelectItem value="high">Trên 3 triệu</SelectItem>
+                        <SelectItem value="all">{t.blog.allPrices}</SelectItem>
+                        <SelectItem value="low">{t.blog.underOneMillion}</SelectItem>
+                        <SelectItem value="mid">{t.blog.oneToThreeMillion}</SelectItem>
+                        <SelectItem value="high">{t.blog.overThreeMillion}</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-6 rounded-lg mt-2">
-                      TÌM KIẾM
+                      {t.blog.search.toUpperCase()}
                     </Button>
                   </div>
                 </div>
@@ -291,7 +307,7 @@ const BlogListingPage = () => {
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-1 h-6 bg-primary rounded-full"></div>
                     <h3 className="text-lg font-display font-bold text-[#1a1a1a]">
-                      Đọc Nhiều Nhất
+                      {t.blog.mostRead}
                     </h3>
                   </div>
                   <div className="space-y-5">
@@ -306,7 +322,7 @@ const BlogListingPage = () => {
                               {post.title}
                             </h4>
                             <p className="text-xs text-[#666]">
-                              {Math.floor(Math.random() * 5000 + 1000)} xem
+                              {getViewCount(post.id)} {t.blog.views}
                             </p>
                           </div>
                         </div>

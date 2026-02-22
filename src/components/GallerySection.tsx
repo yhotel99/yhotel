@@ -4,11 +4,13 @@ import { useState, memo } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import heroImage from "@/assets/hero-hotel.jpg";
 import luxuryRoomImage from "@/assets/luxury-room.jpg";
 import lobbyImage from "@/assets/lobby.jpg";
 
 const GallerySection = () => {
+  const { t } = useLanguage();
   const [selectedImage, setSelectedImage] = useState<number | null>(null);
 
   const galleryImages = [
@@ -190,10 +192,10 @@ const GallerySection = () => {
       <div className="container-luxury">
         <div className="text-center mb-8 md:mb-12">
           <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
-            Thư Viện Hình Ảnh
+            {t.gallery.title}
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Khám phá không gian sang trọng và tiện nghi hiện đại của Y Hotel
+            {t.gallery.description}
           </p>
         </div>
 

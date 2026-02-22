@@ -10,17 +10,18 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useBlog, useBlogs } from "@/hooks/use-blogs";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS } from "date-fns/locale";
 import Script from "next/script";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface BlogDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
 // Component để render HTML content từ Tiptap
-const HTMLContent = ({ content }: { content: string }) => {
+const HTMLContent = ({ content, emptyMessage }: { content: string; emptyMessage: string }) => {
   if (!content || !content.trim()) {
-    return <p className="text-muted-foreground text-sm sm:text-base md:text-lg">Nội dung đang được cập nhật...</p>;
+    return <p className="text-muted-foreground text-sm sm:text-base md:text-lg">{emptyMessage}</p>;
   }
 
   return (
@@ -50,6 +51,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
   const unwrappedParams = use(params);
   const { id } = unwrappedParams;
   const { blog, isLoading, error } = useBlog(id);
+  const { t, language } = useLanguage();
   
   // Fetch related posts (exclude current blog)
   const { blogs: allBlogs } = useBlogs({ page: 1, limit: 20 });
@@ -57,11 +59,14 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
     .filter((b) => b.id !== blog?.id && b.slug !== id)
     .slice(0, 8);
 
+  // Date locale based on language
+  const dateLocale = language === "vi" ? vi : enUS;
+
   // Format date
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      return format(date, "dd MMM yyyy", { locale: vi });
+      return format(date, "dd MMM yyyy", { locale: dateLocale });
     } catch {
       return dateString;
     }
@@ -72,7 +77,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
     const wordsPerMinute = 200;
     const words = content.split(/\s+/).length;
     const minutes = Math.ceil(words / wordsPerMinute);
-    return `${minutes} phút đọc`;
+    return `${minutes} ${t.blogDetail.readTime}`;
   };
 
   // Handle loading state
@@ -120,17 +125,16 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
           <div className="container-luxury py-16">
             <div className="max-w-xl mx-auto text-center space-y-4">
               <h1 className="text-2xl md:text-3xl font-display font-bold">
-                Không tìm thấy bài đăng blog
+                {t.blogDetail.notFound}
               </h1>
               <p className="text-muted-foreground text-sm md:text-base">
-                Bài viết bạn đang tìm không tồn tại, đã bị xóa hoặc đường dẫn không
-                chính xác. Vui lòng kiểm tra lại hoặc quay về danh sách bài viết.
+                {t.blogDetail.notFoundDescription}
               </p>
               <div className="flex justify-center">
                 <Link href="/blog">
                   <Button variant="outline" className="gap-2">
                     <ArrowLeft className="w-4 h-4" />
-                    <span>Quay lại danh sách bài đăng</span>
+                    <span>{t.blogDetail.backToList}</span>
                   </Button>
                 </Link>
               </div>
@@ -155,7 +159,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
     } else {
       // Fallback: Copy to clipboard
       navigator.clipboard.writeText(window.location.href);
-      alert('Link đã được sao chép!');
+      alert(t.blogDetail.linkCopied);
     }
   };
 
@@ -208,7 +212,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
               <Link href="/blog">
                 <Button variant="secondary" size="sm" className="gap-2">
                   <ArrowLeft className="w-4 h-4" />
-                  <span className="hidden md:inline">Quay lại</span>
+                  <span className="hidden md:inline">{t.blogDetail.backButton}</span>
                 </Button>
               </Link>
             </div>
@@ -235,7 +239,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
           <div className="container-luxury">
             <div>
               <div className="flex items-center gap-3 mb-3 md:mb-4 flex-wrap">
-                <Badge className="bg-primary text-primary-foreground text-xs md:text-sm px-2 md:px-3 py-0.5 md:py-1">Tin tức</Badge>
+                <Badge className="bg-primary text-primary-foreground text-xs md:text-sm px-2 md:px-3 py-0.5 md:py-1">{t.blogDetail.news}</Badge>
               </div>
               <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold mb-3 md:mb-4 text-foreground">
                 {blog.title}
@@ -266,10 +270,10 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
               <div className="lg:col-span-2 space-y-4 md:space-y-6">
                 <div className="relative border border-border rounded-xl p-4 sm:p-5 md:p-6 lg:p-8 bg-background">
                   {blog.content && blog.content.trim() ? (
-                    <HTMLContent content={blog.content.trim()} />
+                    <HTMLContent content={blog.content.trim()} emptyMessage={t.roomDetail.contentUpdating} />
                   ) : (
                     <div className="space-y-4">
-                      <p className="text-muted-foreground text-sm sm:text-base md:text-lg">Nội dung đang được cập nhật...</p>
+                      <p className="text-muted-foreground text-sm sm:text-base md:text-lg">{t.roomDetail.contentUpdating}</p>
                     </div>
                   )}
                 </div>
@@ -277,7 +281,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                 {/* Related Posts */}
                 {relatedPosts.length > 0 && (
                   <div className="mt-8 md:mt-12">
-                    <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-display font-bold mb-4 md:mb-6">Bài viết liên quan</h2>
+                    <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-display font-bold mb-4 md:mb-6">{t.blogDetail.relatedPosts}</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-6">
                       {relatedPosts.slice(0, 4).map((relatedPost) => {
                         const relatedFormattedDate = formatDate(relatedPost.date);
@@ -329,39 +333,39 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                   {/* Author & Post Info Combined */}
                   {/* Author Section */}
                   <div className="mb-6 pb-6 border-b border-border">
-                    <h3 className="text-lg md:text-base font-display font-bold mb-4">Tác giả</h3>
+                    <h3 className="text-lg md:text-base font-display font-bold mb-4">{t.blogDetail.author}</h3>
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                         <User className="w-6 h-6 text-primary" />
                       </div>
                       <div className="min-w-0">
                         <p className="font-semibold text-foreground text-sm md:text-base truncate">{blog.author?.full_name || "Y Hotel"}</p>
-                        <p className="text-xs md:text-sm text-muted-foreground">Tin tức</p>
+                        <p className="text-xs md:text-sm text-muted-foreground">{t.blogDetail.news}</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Post Info Section */}
                   <div>
-                    <h3 className="text-lg md:text-base font-display font-bold mb-4">Thông tin bài viết</h3>
+                    <h3 className="text-lg md:text-base font-display font-bold mb-4">{t.blogDetail.postInfo}</h3>
                     <div className="space-y-3">
                       <div className="flex items-start gap-2 text-xs md:text-sm">
                         <Calendar className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                         <div className="min-w-0">
-                          <p className="text-muted-foreground">Ngày đăng:</p>
+                          <p className="text-muted-foreground">{t.blogDetail.publishDate}</p>
                           <p className="font-medium text-foreground text-xs md:text-sm">{formattedDate}</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-2 text-xs md:text-sm">
                         <Clock className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                         <div className="min-w-0">
-                          <p className="text-muted-foreground">Thời gian đọc:</p>
+                          <p className="text-muted-foreground">{t.blogDetail.readingTime}</p>
                           <p className="font-medium text-foreground text-xs md:text-sm">{readTime}</p>
                         </div>
                       </div>
                       <div className="flex items-start gap-2 text-xs md:text-sm">
                         <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs mt-0">
-                          Tin tức
+                          {t.blogDetail.news}
                         </Badge>
                       </div>
                       <div className="pt-3">
@@ -372,8 +376,8 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
                           className="gap-2 w-full text-xs md:text-sm h-9 md:h-10"
                         >
                           <Share2 className="w-3 h-3 md:w-4 md:h-4" />
-                          <span className="hidden sm:inline">Chia sẻ</span>
-                          <span className="inline sm:hidden">Chia</span>
+                          <span className="hidden sm:inline">{t.blogDetail.share}</span>
+                          <span className="inline sm:hidden">{t.blogDetail.share}</span>
                         </Button>
                       </div>
                     </div>
@@ -389,20 +393,20 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
           <div className="container-luxury">
             <div className="max-w-3xl mx-auto text-center space-y-4">
               <h2 className="text-xl md:text-2xl font-display font-bold text-foreground">
-                Sẵn sàng trải nghiệm Y Hotel Cần Thơ?
+                {t.blogDetail.readyToExperience}
               </h2>
               <p className="text-sm md:text-base text-muted-foreground">
-                Đặt phòng trực tuyến để nhận ưu đãi tốt nhất và đảm bảo còn phòng trong thời gian bạn mong muốn.
+                {t.blogDetail.bookingDescription}
               </p>
               <div className="flex flex-wrap items-center justify-center gap-3">
                 <Link href="/rooms">
                   <Button variant="outline">
-                    Xem tất cả hạng phòng
+                    {t.blogDetail.viewAllRooms}
                   </Button>
                 </Link>
                 <Link href="/rooms">
                   <Button>
-                    Đặt phòng ngay
+                    {t.blogDetail.bookNow}
                   </Button>
                 </Link>
               </div>

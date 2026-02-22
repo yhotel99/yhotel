@@ -7,36 +7,39 @@ import { CardContent } from "@/components/ui/card";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import lobbyImage from "@/assets/lobby.jpg";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const AboutSection = () => {
+  const { t } = useLanguage();
+
   const features = [
     {
       icon: Award,
-      title: "Thiết Bị Hiện Đại",
-      description: "Trang thiết bị hoàn toàn mới với công nghệ thông minh và tiện nghi cao cấp nhất."
+      title: t.about.modernEquipment,
+      description: t.about.modernEquipmentDesc
     },
     {
       icon: Users,
-      title: "Đội Ngũ Chuyên Nghiệp",
-      description: "Đội ngũ nhân viên được đào tạo bài bản quốc tế, tận tâm phục vụ 24/7."
+      title: t.about.professionalTeam,
+      description: t.about.professionalTeamDesc
     },
     {
       icon: Globe,
-      title: "Vị Trí Thuận Lợi",
-      description: "Tọa lạc tại trung tâm Cần Thơ, gần chợ nổi và các điểm du lịch nổi tiếng."
+      title: t.about.primeLocation,
+      description: t.about.primeLocationDesc
     },
     {
       icon: Heart,
-      title: "Trải Nghiệm Đáng Nhớ",
-      description: "Mỗi khoảnh khắc tại Y Hotel đều được thiết kế để tạo nên những kỷ niệm khó quên."
+      title: t.about.memorableExperience,
+      description: t.about.memorableExperienceDesc
     }
   ];
 
   const stats = [
-    { number: "20+", label: "Phòng Hiện Đại" },
-    { number: "50+", label: "Dịch Vụ Cao Cấp" },
-    { number: "100%", label: "Trang Thiết Bị Mới" },
-    { number: "5⭐", label: "Tiêu Chuẩn Quốc Tế" }
+    { number: "20+", label: t.about.modernRooms },
+    { number: "50+", label: t.about.premiumServices },
+    { number: "100%", label: t.about.newEquipment },
+    { number: "5⭐", label: t.about.internationalStandard }
   ];
 
   return (
@@ -50,13 +53,10 @@ const AboutSection = () => {
           <div className="space-y-8 animate-fade-in-up">
             <div className="space-y-4">
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground">
-                Về Y Hotel
+                {t.about.title}
               </h2>
               <p className="text-base text-muted-foreground leading-relaxed">
-                Y Hotel tự hào là khách sạn 5 sao với trang thiết bị hoàn toàn mới, kiến trúc hiện đại 
-                và không gian sang trọng. Mỗi phòng được trang bị nội thất cao cấp, công nghệ thông minh 
-                và tiện nghi đầy đủ. Chúng tôi cam kết mang đến trải nghiệm nghỉ dưỡng đẳng cấp quốc tế 
-                với dịch vụ tận tâm và chuyên nghiệp.
+                {t.about.description}
               </p>
             </div>
 
@@ -136,7 +136,7 @@ const AboutSection = () => {
                       5.0⭐
                     </div>
                     <div className="text-sm text-muted-foreground">
-                      Đánh Giá Hoàn Hảo
+                      {t.about.perfectRating}
                     </div>
                   </div>
                 </FloatingCard>

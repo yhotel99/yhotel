@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS } from "date-fns/locale";
 import { 
   CheckCircle, 
   Calendar, 
@@ -26,12 +26,17 @@ import { RoomDetailSkeleton } from "@/components/RoomDetailSkeleton";
 import { BookingStatusBadge } from "@/components/BookingStatusBadge";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const SuccessContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const bookingId = searchParams.get("booking_id");
   const isTimeout = searchParams.get("timeout") === "true";
+  const { t, language } = useLanguage();
+
+  // Date locale based on language
+  const dateLocale = language === "vi" ? vi : enUS;
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
@@ -39,7 +44,7 @@ const SuccessContent = () => {
       if (!bookingId) return null;
       const response = await fetch(`/api/bookings/${bookingId}`);
       if (!response.ok) {
-        throw new Error('Không tìm thấy thông tin đặt phòng');
+        throw new Error(t.success.notFound);
       }
       return response.json();
     },
@@ -51,11 +56,11 @@ const SuccessContent = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "dd/MM/yyyy", { locale: vi });
+    return format(new Date(dateString), "dd/MM/yyyy", { locale: dateLocale });
   };
 
   const formatTime = (dateString: string) => {
-    return format(new Date(dateString), "HH:mm", { locale: vi });
+    return format(new Date(dateString), "HH:mm", { locale: dateLocale });
   };
 
   if (!bookingId) {
@@ -67,7 +72,7 @@ const SuccessContent = () => {
             <Card className="border-0 bg-background/60 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">Không tìm thấy thông tin đặt phòng</p>
+                  <p className="text-muted-foreground mb-4">{t.success.notFound}</p>
                 </div>
               </CardContent>
             </Card>
@@ -100,7 +105,7 @@ const SuccessContent = () => {
               <CardContent className="pt-6">
                 <div className="text-center py-12">
                   <p className="text-muted-foreground mb-4">
-                    {error instanceof Error ? error.message : "Không tìm thấy thông tin đặt phòng"}
+                    {error instanceof Error ? error.message : t.success.notFound}
                   </p>
                 </div>
               </CardContent>
@@ -127,10 +132,10 @@ const SuccessContent = () => {
                       <XCircle className="h-12 w-12 text-red-600 dark:text-red-400" />
                     </div>
                     <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-                      Đặt Phòng Đã Bị Hủy
+                      {t.success.bookingCancelledTitle}
                     </h1>
                     <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                      Đặt phòng của bạn đã bị hủy do quá thời gian chờ thanh toán (15 phút). Vui lòng đặt lại phòng nếu bạn vẫn muốn tiếp tục.
+                      {t.success.bookingCancelledDescription}
                     </p>
                   </>
                 ) : (
@@ -139,10 +144,10 @@ const SuccessContent = () => {
                       <CheckCircle className="h-12 w-12 text-green-600 dark:text-green-400" />
                     </div>
                     <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-                      Đặt Phòng Thành Công!
+                      {t.success.bookingSuccessTitle}
                     </h1>
                     <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                      Cảm ơn bạn đã đặt phòng tại Y Hotel. Chúng tôi đã nhận được yêu cầu đặt phòng của bạn và sẽ xác nhận trong thời gian sớm nhất.
+                      {t.success.bookingSuccessDescription}
                     </p>
                   </>
                 )}
@@ -156,7 +161,7 @@ const SuccessContent = () => {
                       <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                         <div className="mb-4 md:mb-1">
                           <CardTitle className="text-xl md:text-2xl font-display">
-                            Thông Tin Đặt Phòng
+                            {t.success.bookingInfo}
                           </CardTitle>
                         </div>
                       </CardHeader>
@@ -166,10 +171,10 @@ const SuccessContent = () => {
                           <div className="absolute top-4 right-4">
                             <BookingStatusBadge status={booking.status} />
                           </div>
-                          <p className="text-xs text-muted-foreground mb-1">Mã đặt phòng</p>
+                          <p className="text-xs text-muted-foreground mb-1">{t.success.bookingCode}</p>
                           <p className="font-mono font-bold text-2xl text-primary pr-32">{booking.booking_code || booking.id.slice(0, 8).toUpperCase()}</p>
                           <p className="text-xs text-muted-foreground mt-2">
-                            Vui lòng lưu lại mã này để tra cứu đặt phòng
+                            {t.success.saveCodeNote}
                           </p>
                         </div>
 
@@ -179,7 +184,7 @@ const SuccessContent = () => {
                           <div className="p-4 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-2">
                               <Calendar className="h-5 w-5 text-primary" />
-                              <p className="text-sm font-semibold text-foreground">Nhận phòng</p>
+                              <p className="text-sm font-semibold text-foreground">{t.success.checkIn}</p>
                             </div>
                             <p className="font-bold text-lg text-foreground mb-1">{formatDate(booking.check_in)}</p>
                             <p className="text-sm text-muted-foreground">{formatTime(booking.check_in)}</p>
@@ -189,7 +194,7 @@ const SuccessContent = () => {
                           <div className="p-4 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-2">
                               <Calendar className="h-5 w-5 text-primary" />
-                              <p className="text-sm font-semibold text-foreground">Trả phòng</p>
+                              <p className="text-sm font-semibold text-foreground">{t.success.checkOut}</p>
                             </div>
                             <p className="font-bold text-lg text-foreground mb-1">{formatDate(booking.check_out)}</p>
                             <p className="text-sm text-muted-foreground">{formatTime(booking.check_out)}</p>
@@ -199,18 +204,18 @@ const SuccessContent = () => {
                           <div className="p-4 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-2">
                               <Users className="h-5 w-5 text-primary" />
-                              <p className="text-sm font-semibold text-foreground">Số khách</p>
+                              <p className="text-sm font-semibold text-foreground">{t.success.guests}</p>
                             </div>
-                            <p className="font-bold text-xl text-foreground">{booking.total_guests} người</p>
+                            <p className="font-bold text-xl text-foreground">{booking.total_guests} {t.success.guestsUnit}</p>
                           </div>
                           
                           {/* Nights */}
                           <div className="p-4 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-2">
                               <Clock className="h-5 w-5 text-primary" />
-                              <p className="text-sm font-semibold text-foreground">Số đêm</p>
+                              <p className="text-sm font-semibold text-foreground">{t.success.nights}</p>
                             </div>
-                            <p className="font-bold text-xl text-foreground">{booking.number_of_nights} đêm</p>
+                            <p className="font-bold text-xl text-foreground">{booking.number_of_nights} {t.success.nightsUnit}</p>
                           </div>
                         </div>
 
@@ -223,7 +228,7 @@ const SuccessContent = () => {
                                   <Building2 className="h-5 w-5 text-primary" />
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-sm text-muted-foreground mb-1">Phòng</p>
+                                  <p className="text-sm text-muted-foreground mb-1">{t.success.room}</p>
                                   <p className="font-semibold text-lg text-foreground">{booking.room.name}</p>
                                 </div>
                               </div>
@@ -236,7 +241,7 @@ const SuccessContent = () => {
                                   <User className="h-5 w-5 text-primary" />
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-sm text-muted-foreground mb-1">Khách hàng</p>
+                                  <p className="text-sm text-muted-foreground mb-1">{t.success.customer}</p>
                                   <p className="font-semibold text-lg text-foreground">{booking.customer.full_name}</p>
                                   {booking.customer.email && (
                                     <div className="flex items-center gap-2 mt-2">
@@ -260,18 +265,18 @@ const SuccessContent = () => {
 
                         {/* Payment Summary */}
                         <div>
-                          <h3 className="text-lg font-display font-semibold mb-3">Tổng Thanh Toán</h3>
+                          <h3 className="text-lg font-display font-semibold mb-3">{t.success.paymentSummary}</h3>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Giá phòng</span>
+                              <span className="text-muted-foreground">{t.success.roomPrice}</span>
                               <span className="font-medium">{formatPrice(booking.total_amount)}đ</span>
                             </div>
                             <div className="flex justify-between items-center text-xs text-muted-foreground">
-                              <span>{booking.number_of_nights} đêm × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
+                              <span>{booking.number_of_nights} {t.success.nightsUnit} × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
                             </div>
                             <Separator />
                             <div className="flex justify-between items-center pt-2">
-                              <span className="font-semibold text-lg">Tổng cộng</span>
+                              <span className="font-semibold text-lg">{t.success.total}</span>
                               <span className="font-bold text-xl text-primary">{formatPrice(booking.total_amount)}đ</span>
                             </div>
                           </div>
@@ -289,7 +294,7 @@ const SuccessContent = () => {
                         <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                           <div className="mb-4">
                             <CardTitle className="text-xl md:text-2xl font-display">
-                              Bước Tiếp Theo
+                              {t.success.nextSteps}
                             </CardTitle>
                           </div>
                         </CardHeader>
@@ -298,36 +303,36 @@ const SuccessContent = () => {
                             {isTimeout || booking.status === 'cancelled' ? (
                               <div className="p-4 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg">
                                 <p className="font-semibold text-red-900 dark:text-red-100 mb-2">
-                                  ⚠️ Đặt phòng đã bị hủy
+                                  {t.success.cancelledWarningTitle}
                                 </p>
                                 <p className="text-sm text-red-700 dark:text-red-300 mb-3">
-                                  Đặt phòng của bạn đã bị hủy do quá thời gian chờ thanh toán. Bạn có thể đặt lại phòng bằng cách nhấn nút bên dưới.
+                                  {t.success.cancelledWarningDescription}
                                 </p>
                                 <ul className="text-sm text-red-700 dark:text-red-300 space-y-1 list-disc list-inside">
-                                  <li>Thời gian chờ thanh toán: 15 phút</li>
-                                  <li>Vui lòng thanh toán trong thời gian quy định</li>
-                                  <li>Nếu đã thanh toán, vui lòng liên hệ hỗ trợ</li>
+                                  <li>{t.success.cancelledNote1}</li>
+                                  <li>{t.success.cancelledNote2}</li>
+                                  <li>{t.success.cancelledNote3}</li>
                                 </ul>
                               </div>
                             ) : (
                               <>
                                 <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
                                   <p className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                                    📧 Email xác nhận
+                                    {t.success.emailConfirmTitle}
                                   </p>
                                   <p className="text-sm text-blue-700 dark:text-blue-300">
-                                    Chúng tôi sẽ gửi email xác nhận đặt phòng đến địa chỉ email của bạn trong vài phút.
+                                    {t.success.emailConfirmDescription}
                                   </p>
                                 </div>
 
                                 <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
                                   <p className="font-semibold text-green-900 dark:text-green-100 mb-2">
-                                    ✅ Lưu ý quan trọng
+                                    {t.success.importantNotesTitle}
                                   </p>
                                   <ul className="text-sm text-green-700 dark:text-green-300 space-y-1 list-disc list-inside">
-                                    <li>Vui lòng kiểm tra email thường xuyên</li>
-                                    <li>Mang theo CMND/CCCD khi check-in</li>
-                                    <li>Đến đúng giờ nhận phòng</li>
+                                    <li>{t.success.importantNote1}</li>
+                                    <li>{t.success.importantNote2}</li>
+                                    <li>{t.success.importantNote3}</li>
                                   </ul>
                                 </div>
                               </>
@@ -344,14 +349,14 @@ const SuccessContent = () => {
                               size="lg"
                             >
                               <Home className="mr-2 h-5 w-5" />
-                              Về trang chủ
+                              {t.success.backToHome}
                             </Button>
                             <Button
                               onClick={() => router.push('/rooms')}
                               className="w-full"
                               variant="outline"
                             >
-                              Đặt phòng khác
+                              {t.success.bookAnotherRoom}
                             </Button>
                           </div>
                         </CardContent>

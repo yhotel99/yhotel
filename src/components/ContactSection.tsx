@@ -1,7 +1,11 @@
+"use client";
+
 import { memo } from "react";
 import { Phone, Mail, MapPin, Clock } from "lucide-react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const ContactSection = memo(() => {
+  const { t } = useLanguage();
   const contactInfo = [
     {
       icon: Phone,
@@ -39,10 +43,10 @@ const ContactSection = memo(() => {
         {/* Header */}
         <div className="text-center mb-6 md:mb-8">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground mb-2">
-            Liên Hệ <span className="text-foreground">Với Chúng Tôi</span>
+            {t.contact.title}
           </h2>
           <p className="text-sm md:text-base text-muted-foreground max-w-2xl mx-auto">
-            Đội ngũ chuyên viên của Y Hotel luôn sẵn sàng hỗ trợ và tư vấn 24/7
+            {t.contact.description}
           </p>
         </div>
 

@@ -8,16 +8,18 @@ import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import Image from "next/image";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 function RedirectContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const bookingId = searchParams.get("booking_id");
   const [error, setError] = useState<string | null>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!bookingId) {
-      setError("Thiếu thông tin đặt phòng");
+      setError(t.onepayRedirect.missingBooking);
       return;
     }
 
@@ -35,18 +37,18 @@ function RedirectContent() {
         if (cancelled) return;
 
         if (!res.ok) {
-          setError(data.error || "Không thể tạo liên kết thanh toán");
+          setError(data.error || t.onepayRedirect.error);
           return;
         }
 
         if (data.url) {
           window.location.href = data.url;
         } else {
-          setError("Không nhận được liên kết thanh toán");
+          setError(t.onepayRedirect.error);
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Đã xảy ra lỗi");
+          setError(err instanceof Error ? err.message : t.onepayRedirect.error);
         }
       }
     };
@@ -55,7 +57,7 @@ function RedirectContent() {
     return () => {
       cancelled = true;
     };
-  }, [bookingId]);
+  }, [bookingId, t]);
 
   if (error) {
     return (
@@ -77,7 +79,7 @@ function RedirectContent() {
                       )
                     }
                   >
-                    Quay lại trang thanh toán
+                    {t.onepayRedirect.backToPayment}
                   </Button>
                 </CardContent>
               </Card>
@@ -112,10 +114,10 @@ function RedirectContent() {
                   <CreditCard className="h-8 w-8 text-primary" />
                 </div>
                 <h1 className="text-xl font-display font-bold text-foreground mb-2">
-                  Đang chuyển đến cổng thanh toán OnePay
+                  {t.onepayRedirect.title}
                 </h1>
                 <p className="text-muted-foreground text-sm mb-8">
-                  Vui lòng không đóng trình duyệt. Bạn sẽ được chuyển sang trang thanh toán trong giây lát.
+                  {t.onepayRedirect.description}
                 </p>
                 <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto" />
               </CardContent>

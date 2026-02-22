@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS } from "date-fns/locale";
 import { 
   Calendar, 
   Users, 
@@ -35,6 +35,7 @@ import { BANK_BIN_CODES } from "@/lib/utils";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const PaymentContent = () => {
   const searchParams = useSearchParams();
@@ -49,6 +50,10 @@ const PaymentContent = () => {
   const maxRetries = 3;
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [, setSubscriptionKey] = useState(0); // Force re-subscription on retry
+  const { t, language } = useLanguage();
+
+  // Date locale based on language
+  const dateLocale = language === "vi" ? vi : enUS;
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
@@ -74,7 +79,7 @@ const PaymentContent = () => {
         if (process.env.NODE_ENV === 'development') {
           console.error('[Payment] API error:', response.status, response.statusText);
         }
-        throw new Error('Không tìm thấy thông tin đặt phòng');
+        throw new Error(t.payment.notFound);
       }
       const data = await response.json();
       if (process.env.NODE_ENV === 'development') {
@@ -252,8 +257,10 @@ const PaymentContent = () => {
                 const newStatusLabel = bookingStatusLabels[newStatus as keyof typeof bookingStatusLabels] || newStatus;
                 
                 toast({
-                  title: "Trạng thái đặt phòng đã thay đổi",
-                  description: `Từ "${oldStatusLabel}" sang "${newStatusLabel}"`,
+                  title: t.payment.statusChanged,
+                  description: t.payment.statusChangedFrom
+                    .replace('{oldStatus}', oldStatusLabel)
+                    .replace('{newStatus}', newStatusLabel),
                   duration: 5000,
                 });
 
@@ -265,8 +272,8 @@ const PaymentContent = () => {
                     console.log('[Realtime] Booking confirmed! Redirecting to success page...');
                   }
                   toast({
-                    title: "Thanh toán thành công!",
-                    description: "Đặt phòng của bạn đã được xác nhận. Đang chuyển hướng...",
+                    title: t.payment.paymentSuccess,
+                    description: t.payment.paymentSuccessDescription,
                     duration: 3000,
                   });
                   
@@ -285,8 +292,8 @@ const PaymentContent = () => {
                     console.log('[Realtime] Booking cancelled');
                   }
                   toast({
-                    title: "Đặt phòng đã bị hủy",
-                    description: "Vui lòng liên hệ với chúng tôi nếu bạn có thắc mắc.",
+                    title: t.payment.bookingCancelled,
+                    description: t.payment.bookingCancelledDescription,
                     variant: "destructive",
                     duration: 5000,
                   });
@@ -363,8 +370,8 @@ const PaymentContent = () => {
             // Max retries exceeded, show user-friendly message
             console.warn('[Realtime] ⚠️ Max retries exceeded. Realtime subscription failed. Falling back to polling.');
             toast({
-              title: "Kết nối cập nhật thời gian thực không khả dụng",
-              description: "Trang sẽ tự động làm mới để kiểm tra trạng thái đặt phòng.",
+              title: t.payment.realtimeUnavailable,
+              description: t.payment.realtimeUnavailableDescription,
               variant: "default",
               duration: 5000,
             });
@@ -462,8 +469,8 @@ const PaymentContent = () => {
 
       if (response.ok) {
         toast({
-          title: "Hết thời gian thanh toán",
-          description: "Đặt phòng đã bị hủy do quá thời gian chờ thanh toán. Vui lòng đặt lại phòng.",
+          title: t.payment.timeoutTitle,
+          description: t.payment.timeoutDescription,
           variant: "destructive",
           duration: 5000,
         });
@@ -475,16 +482,16 @@ const PaymentContent = () => {
       } else {
         console.error('Failed to cancel booking:', await response.text());
         toast({
-          title: "Lỗi hệ thống",
-          description: "Không thể hủy đặt phòng. Vui lòng liên hệ hỗ trợ.",
+          title: t.payment.systemError,
+          description: t.payment.cancelError,
           variant: "destructive",
         });
       }
     } catch (error) {
       console.error('Error cancelling booking:', error);
       toast({
-        title: "Lỗi hệ thống",
-        description: "Đã xảy ra lỗi khi hủy đặt phòng.",
+        title: t.payment.systemError,
+        description: t.payment.cancelErrorDescription,
         variant: "destructive",
       });
     } finally {
@@ -564,8 +571,8 @@ const PaymentContent = () => {
     navigator.clipboard.writeText(bankAccount.number);
     setIsCopied(true);
     toast({
-      title: "Đã sao chép",
-      description: "Số tài khoản đã được sao chép vào clipboard",
+      title: t.payment.copied,
+      description: t.payment.accountNumberCopied,
     });
     setTimeout(() => setIsCopied(false), 2000);
   };
@@ -573,15 +580,16 @@ const PaymentContent = () => {
   const handleCopyPaymentContent = () => {
     navigator.clipboard.writeText(paymentContent);
     toast({
-      title: "Đã sao chép",
-      description: "Nội dung chuyển khoản đã được sao chép",
+      title: t.payment.copied,
+      description: t.payment.transferContentCopied,
     });
   };
 
-  const handlePayWithOnePay = () => {
-    if (!bookingId) return;
-    router.push(`/checkout/onepay/redirect?booking_id=${bookingId}`);
-  };
+  // OnePay - Coming Soon (commented out)
+  // const handlePayWithOnePay = () => {
+  //   if (!bookingId) return;
+  //   router.push(`/checkout/onepay/redirect?booking_id=${bookingId}`);
+  // };
 
 
   if (!bookingId) {
@@ -593,7 +601,7 @@ const PaymentContent = () => {
             <Card className="border-0 bg-background/60 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">Không tìm thấy thông tin đặt phòng</p>
+                  <p className="text-muted-foreground mb-4">{t.payment.notFound}</p>
                 </div>
               </CardContent>
             </Card>
@@ -626,7 +634,7 @@ const PaymentContent = () => {
               <CardContent className="pt-6">
                 <div className="text-center py-12">
                   <p className="text-muted-foreground mb-4">
-                    {error instanceof Error ? error.message : "Không tìm thấy thông tin đặt phòng"}
+                    {error instanceof Error ? error.message : t.payment.notFound}
                   </p>
                 </div>
               </CardContent>
@@ -643,11 +651,11 @@ const PaymentContent = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "dd/MM/yyyy", { locale: vi });
+    return format(new Date(dateString), "dd/MM/yyyy", { locale: dateLocale });
   };
 
   const formatTime = (dateString: string) => {
-    return format(new Date(dateString), "HH:mm", { locale: vi });
+    return format(new Date(dateString), "HH:mm", { locale: dateLocale });
   };
 
   return (
@@ -663,10 +671,10 @@ const PaymentContent = () => {
                   <Banknote className="h-8 w-8 text-primary" />
                 </div>
                 <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-                  Chuyển Khoản Ngân Hàng
+                  {t.payment.title}
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                  Quét mã QR hoặc chuyển khoản theo thông tin bên dưới
+                  {t.payment.description}
                 </p>
               </div>
             </div>
@@ -679,7 +687,7 @@ const PaymentContent = () => {
                     <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                       <div className="mb-4 md:mb-1">
                         <CardTitle className="text-xl md:text-2xl font-display">
-                          Thông Tin Chuyển Khoản
+                          {t.payment.transferInfo}
                         </CardTitle>
                       </div>
                     </CardHeader>
@@ -709,7 +717,7 @@ const PaymentContent = () => {
                         <div className="flex-1 space-y-4">
                           <div className="space-y-3">
                             <div className="p-4 bg-background/50 rounded-lg border border-border/50">
-                              <p className="text-sm text-muted-foreground mb-2">Số tài khoản</p>
+                              <p className="text-sm text-muted-foreground mb-2">{t.payment.accountNumber}</p>
                               <div className="flex items-center justify-between gap-2">
                                 <span className="font-mono font-bold text-xl text-foreground">{bankAccount.number}</span>
                                 <Button
@@ -724,17 +732,17 @@ const PaymentContent = () => {
                             </div>
 
                             <div className="p-4 bg-background/50 rounded-lg border border-border/50">
-                              <p className="text-sm text-muted-foreground mb-2">Ngân hàng</p>
+                              <p className="text-sm text-muted-foreground mb-2">{t.payment.bank}</p>
                               <p className="font-semibold text-lg text-foreground">{bankAccount.bank}</p>
                             </div>
 
                             <div className="p-4 bg-background/50 rounded-lg border border-border/50">
-                              <p className="text-sm text-muted-foreground mb-2">Chủ tài khoản</p>
+                              <p className="text-sm text-muted-foreground mb-2">{t.payment.accountHolder}</p>
                               <p className="font-semibold text-lg text-foreground">{bankAccount.owner}</p>
                             </div>
 
                             <div className="p-4 bg-primary/10 rounded-lg border-2 border-primary/30">
-                              <p className="text-sm text-muted-foreground mb-2">Nội dung chuyển khoản</p>
+                              <p className="text-sm text-muted-foreground mb-2">{t.payment.transferContent}</p>
                               <div className="flex items-center justify-between gap-2">
                                 <span className="font-mono font-bold text-xl text-primary">{paymentContent}</span>
                                 <Button
@@ -747,7 +755,7 @@ const PaymentContent = () => {
                                 </Button>
                               </div>
                               <p className="text-sm font-semibold text-foreground mt-3 inline-block px-2 py-1 bg-yellow-200 dark:bg-yellow-900/30 rounded">
-                                ⚠️ Quan trọng: Vui lòng ghi đúng nội dung để chúng tôi xác nhận thanh toán nhanh nhất
+                                {t.payment.transferContentWarning}
                               </p>
                             </div>
                           </div>
@@ -760,11 +768,11 @@ const PaymentContent = () => {
                       <div className="p-6 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-lg border border-primary/20">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="text-sm text-muted-foreground mb-1">Số tiền cần chuyển</p>
+                            <p className="text-sm text-muted-foreground mb-1">{t.payment.amountToPay}</p>
                             <p className="text-2xl font-bold text-primary">{formatPrice(booking.total_amount)}đ</p>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm text-muted-foreground mb-1">Mã đặt phòng</p>
+                            <p className="text-sm text-muted-foreground mb-1">{t.payment.bookingCode}</p>
                             <p className="text-lg font-mono font-bold text-foreground">{paymentContent}</p>
                           </div>
                         </div>
@@ -773,34 +781,34 @@ const PaymentContent = () => {
                       {/* Instructions */}
                       <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
                         <p className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                          Hướng dẫn thanh toán:
+                          {t.payment.instructions}
                         </p>
                         <ol className="list-decimal list-inside space-y-1 text-sm text-blue-700 dark:text-blue-300">
-                          <li>Mở ứng dụng ngân hàng trên điện thoại (hỗ trợ tất cả ngân hàng tại Việt Nam)</li>
-                          <li>Chọn tính năng quét mã QR và quét mã VietQR bên trên</li>
-                          <li>Kiểm tra thông tin: số tiền {formatPrice(booking.total_amount)}đ, nội dung chuyển khoản {paymentContent}</li>
-                          <li>Xác nhận và hoàn tất giao dịch</li>
-                          <li>Chờ hệ thống tự động xác nhận thanh toán (trong vòng 15 phút)</li>
-                          <li>Chúng tôi sẽ gửi email xác nhận thanh toán thành công trong vài phút</li>
+                          <li>{t.payment.step1}</li>
+                          <li>{t.payment.step2}</li>
+                          <li>{t.payment.step3.replace('{amount}', formatPrice(booking.total_amount)).replace('{content}', paymentContent)}</li>
+                          <li>{t.payment.step4}</li>
+                          <li>{t.payment.step5}</li>
+                          <li>{t.payment.step6}</li>
                         </ol>
                         <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
                           <p className="text-xs text-blue-600 dark:text-blue-400">
-                            💡 <strong>Lưu ý:</strong> Mã VietQR tương thích với tất cả các ứng dụng ngân hàng tại Việt Nam. 
-                            Nếu không quét được QR, bạn có thể chuyển khoản thủ công theo thông tin tài khoản bên trên.
+                            {t.payment.qrNote}
                           </p>
                         </div>
                       </div>
 
                       <Separator />
 
-                      {/* OnePay - Thanh toán thẻ/ví */}
+                      {/* OnePay - Coming Soon (commented out) */}
+                      {/* 
                       <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
                         <p className="font-semibold text-emerald-900 dark:text-emerald-100 mb-2 flex items-center gap-2">
                           <CreditCard className="h-5 w-5" />
-                          Hoặc thanh toán bằng thẻ/ví qua OnePay
+                          {t.payment.onepayTitle}
                         </p>
                         <p className="text-sm text-emerald-700 dark:text-emerald-300 mb-4">
-                          Hỗ trợ thẻ nội địa, thẻ quốc tế (Visa, Master), ví điện tử, QR Code
+                          {t.payment.onepayDescription}
                         </p>
                         <Button
                           onClick={handlePayWithOnePay}
@@ -808,9 +816,10 @@ const PaymentContent = () => {
                           className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                         >
                           <CreditCard className="mr-2 h-4 w-4" />
-                          Thanh toán bằng thẻ/ví (OnePay)
+                          {t.payment.onepayButton}
                         </Button>
                       </div>
+                      */}
                     </CardContent>
                   </FloatingCard>
                 </GradientBorder>
@@ -824,7 +833,7 @@ const PaymentContent = () => {
                       <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                         <div className="mb-4">
                           <CardTitle className="text-xl md:text-2xl font-display">
-                            Thông Tin Đặt Phòng
+                            {t.payment.bookingInfo}
                           </CardTitle>
                         </div>
                         {/* Booking ID */}
@@ -832,7 +841,7 @@ const PaymentContent = () => {
                           <div className="absolute top-3 right-3">
                             <BookingStatusBadge status={booking.status} useCheckoutLabel={false} />
                           </div>
-                          <p className="text-xs text-muted-foreground mb-1">Mã đặt phòng</p>
+                          <p className="text-xs text-muted-foreground mb-1">{t.payment.bookingCode}</p>
                           <p className="font-mono font-bold text-xl text-primary pr-24">{booking?.booking_code || paymentContent}</p>
                         </div>
                       </CardHeader>
@@ -843,7 +852,7 @@ const PaymentContent = () => {
                           <div className="p-3 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-1.5">
                               <Calendar className="h-4 w-4 text-primary" />
-                              <p className="text-xs text-muted-foreground">Nhận phòng</p>
+                              <p className="text-xs text-muted-foreground">{t.payment.checkIn}</p>
                             </div>
                             <p className="font-bold text-base text-foreground mb-0.5">{formatDate(booking.check_in)}</p>
                             <p className="text-xs text-muted-foreground">{formatTime(booking.check_in)}</p>
@@ -853,7 +862,7 @@ const PaymentContent = () => {
                           <div className="p-3 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-1.5">
                               <Calendar className="h-4 w-4 text-primary" />
-                              <p className="text-xs text-muted-foreground">Trả phòng</p>
+                              <p className="text-xs text-muted-foreground">{t.payment.checkOut}</p>
                             </div>
                             <p className="font-bold text-base text-foreground mb-0.5">{formatDate(booking.check_out)}</p>
                             <p className="text-xs text-muted-foreground">{formatTime(booking.check_out)}</p>
@@ -863,18 +872,18 @@ const PaymentContent = () => {
                           <div className="p-3 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-1.5">
                               <Users className="h-4 w-4 text-primary" />
-                              <p className="text-xs text-muted-foreground">Số khách</p>
+                              <p className="text-xs text-muted-foreground">{t.payment.guests}</p>
                             </div>
-                            <p className="font-bold text-lg text-foreground">{booking.total_guests} người</p>
+                            <p className="font-bold text-lg text-foreground">{booking.total_guests} {t.payment.guestsUnit}</p>
                           </div>
                           
                           {/* Nights */}
                           <div className="p-3 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-1.5">
                               <Clock className="h-4 w-4 text-primary" />
-                              <p className="text-xs text-muted-foreground">Số đêm</p>
+                              <p className="text-xs text-muted-foreground">{t.payment.nights}</p>
                             </div>
-                            <p className="font-bold text-lg text-foreground">{booking.number_of_nights} đêm</p>
+                            <p className="font-bold text-lg text-foreground">{booking.number_of_nights} {t.payment.nightsUnit}</p>
                           </div>
                         </div>
 
@@ -885,7 +894,7 @@ const PaymentContent = () => {
                           <div>
                             <h3 className="text-lg font-display font-semibold mb-3 flex items-center gap-2">
                               <User className="h-5 w-5 text-primary" />
-                              Thông Tin Khách Hàng
+                              {t.payment.customerInfo}
                             </h3>
                             <div className="p-4 bg-muted/30 rounded-lg border border-border/50 space-y-3">
                               <div className="flex items-start gap-3">
@@ -893,7 +902,7 @@ const PaymentContent = () => {
                                   <User className="h-4 w-4 text-primary" />
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-1">Họ và tên</p>
+                                  <p className="text-xs text-muted-foreground mb-1">{t.payment.fullName}</p>
                                   <p className="font-semibold text-foreground">{booking.customer.full_name}</p>
                                 </div>
                               </div>
@@ -904,7 +913,7 @@ const PaymentContent = () => {
                                     <Mail className="h-4 w-4 text-primary" />
                                   </div>
                                   <div className="flex-1">
-                                    <p className="text-xs text-muted-foreground mb-1">Email</p>
+                                    <p className="text-xs text-muted-foreground mb-1">{t.payment.email}</p>
                                     <p className="font-medium text-foreground">{booking.customer.email}</p>
                                   </div>
                                 </div>
@@ -916,7 +925,7 @@ const PaymentContent = () => {
                                     <Phone className="h-4 w-4 text-primary" />
                                   </div>
                                   <div className="flex-1">
-                                    <p className="text-xs text-muted-foreground mb-1">Số điện thoại</p>
+                                    <p className="text-xs text-muted-foreground mb-1">{t.payment.phone}</p>
                                     <p className="font-medium text-foreground">{booking.customer.phone}</p>
                                   </div>
                                 </div>
@@ -931,7 +940,7 @@ const PaymentContent = () => {
                         <div>
                           <h3 className="text-lg font-display font-semibold mb-3 flex items-center gap-2">
                             <FileText className="h-5 w-5 text-primary" />
-                            Chi Tiết Đặt Phòng
+                            {t.payment.bookingDetails}
                           </h3>
                           <div className="space-y-2">
                             {booking.room && (
@@ -941,11 +950,11 @@ const PaymentContent = () => {
                                     <Building2 className="h-4 w-4 text-primary" />
                                   </div>
                                   <div className="flex-1">
-                                    <p className="text-xs text-muted-foreground mb-0.5">Phòng đã đặt</p>
+                                    <p className="text-xs text-muted-foreground mb-0.5">{t.payment.roomBooked}</p>
                                     <p className="font-semibold text-foreground">{booking.room.name}</p>
                                     {booking.room.room_type && (
                                       <p className="text-xs text-muted-foreground mt-0.5">
-                                        Loại phòng: {booking.room.room_type}
+                                        {t.payment.roomType} {booking.room.room_type}
                                       </p>
                                     )}
                                   </div>
@@ -960,7 +969,7 @@ const PaymentContent = () => {
                                     <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                   </div>
                                   <div className="flex-1">
-                                    <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">Ghi chú đặc biệt</p>
+                                    <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">{t.payment.specialNotes}</p>
                                     <p className="text-sm text-blue-900 dark:text-blue-100">{booking.notes}</p>
                                   </div>
                                 </div>
@@ -973,18 +982,18 @@ const PaymentContent = () => {
 
                         {/* Payment Summary */}
                         <div>
-                          <h3 className="text-lg font-display font-semibold mb-3">Tổng Thanh Toán</h3>
+                          <h3 className="text-lg font-display font-semibold mb-3">{t.payment.paymentSummary}</h3>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Giá phòng</span>
+                              <span className="text-muted-foreground">{t.payment.roomPrice}</span>
                               <span className="font-medium">{formatPrice(booking.total_amount)}đ</span>
                             </div>
                             <div className="flex justify-between items-center text-xs text-muted-foreground">
-                              <span>{booking.number_of_nights} đêm × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
+                              <span>{booking.number_of_nights} {t.payment.nightsUnit} × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
                             </div>
                             <Separator />
                             <div className="flex justify-between items-center pt-2">
-                              <span className="font-semibold text-lg">Tổng cộng</span>
+                              <span className="font-semibold text-lg">{t.payment.total}</span>
                               <span className="font-bold text-xl text-primary">{formatPrice(booking.total_amount)}đ</span>
                             </div>
                           </div>
@@ -997,15 +1006,15 @@ const PaymentContent = () => {
                               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
                                 <Clock className="h-8 w-8 text-primary animate-pulse" />
                               </div>
-                              <h3 className="text-lg font-semibold mb-2">Đang chờ thanh toán</h3>
+                              <h3 className="text-lg font-semibold mb-2">{t.payment.waitingPayment}</h3>
                               <p className="text-sm text-muted-foreground mb-4">
-                                Hệ thống sẽ tự động xác nhận sau:
+                                {t.payment.autoConfirm}
                               </p>
                               <div className="text-3xl font-bold text-primary font-mono">
                                 {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
                               </div>
                               <p className="text-xs text-muted-foreground mt-2">
-                                Chúng tôi sẽ kiểm tra thanh toán và xác nhận đặt phòng của bạn
+                                {t.payment.checkingPayment}
                               </p>
                             </div>
                           </div>
@@ -1014,7 +1023,7 @@ const PaymentContent = () => {
                         {!canProceedPayment && (
                           <div className="w-full p-4 bg-muted/30 rounded-lg border border-border/50">
                             <p className="text-center text-muted-foreground">
-                              Đơn đặt phòng đã được xử lý
+                              {t.payment.processed}
                             </p>
                           </div>
                         )}

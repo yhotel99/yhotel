@@ -21,7 +21,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,7 @@ import Footer from "@/components/Footer";
 import { useRoom, useRooms } from "@/hooks/use-rooms";
 import { RoomDetailSkeleton } from "@/components/RoomDetailSkeleton";
 import { getAmenityLabel } from "@/lib/constants";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import Script from "next/script";
 
 interface RoomDetailPageProps {
@@ -52,11 +53,11 @@ interface RoomDetailPageProps {
 }
 
 // Component để render HTML content từ Tiptap (giống bên blog)
-const HTMLContent = ({ content }: { content: string }) => {
+const HTMLContent = ({ content, t }: { content: string; t: any }) => {
   if (!content || !content.trim()) {
     return (
       <p className="text-muted-foreground text-sm sm:text-base md:text-lg">
-        Nội dung đang được cập nhật...
+        {t.roomDetail.contentUpdating}
       </p>
     );
   }
@@ -87,6 +88,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   // Unwrap params immediately to prevent enumeration
   const unwrappedParams = use(params);
   const { id } = unwrappedParams;
+  const { t, language } = useLanguage();
   const router = useRouter();
   const { toast } = useToast();
   const isScrolled = useScrollThreshold(100);
@@ -114,6 +116,8 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     specialRequests?: string;
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const dateLocale = language === "vi" ? vi : enUS;
 
   // Touch handlers for lightbox - moved before early return
   const lightboxTouchStartRef = useRef<{ x: number; y: number } | null>(null);
@@ -663,7 +667,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
               className="gap-2 backdrop-blur-sm bg-background/90 shadow-lg"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="hidden md:inline">Quay lại</span>
+              <span className="hidden md:inline">{t.roomDetail.backButton}</span>
             </Button>
           </Link>
         </motion.div>
@@ -676,7 +680,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
               <Link href="/rooms">
                 <Button variant="secondary" size="sm" className="gap-2 backdrop-blur-sm bg-background/80">
                   <ArrowLeft className="w-4 h-4" />
-                  <span className="hidden md:inline">Quay lại</span>
+                  <span className="hidden md:inline">{t.roomDetail.backButton}</span>
                 </Button>
               </Link>
             </div>
@@ -715,7 +719,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                         <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                           <div className="bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm">
-                            Click để xem full
+                            {t.roomDetail.clickToView}
                           </div>
                         </div>
                       </div>
@@ -735,7 +739,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                             ? "bg-white w-8"
                             : "bg-white/50 hover:bg-white/75"
                         }`}
-                        aria-label={`Chuyển đến hình ${index + 1}`}
+                        aria-label={`${t.roomDetail.goToImage} ${index + 1}`}
                       />
                     ))}
                   </div>
@@ -804,7 +808,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                         </h1>
                         {room.popular && (
                           <Badge className="bg-primary text-primary-foreground text-xs">
-                            Phổ biến
+                            {t.roomsPage.popularBadge}
                           </Badge>
                         )}
                         <Badge variant="outline" className="text-xs">
@@ -820,7 +824,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                         )}
                         <div className="flex items-center gap-1">
                           <Users className="w-3 h-3 md:w-4 md:h-4" />
-                          <span>Tối đa {room.guests} khách</span>
+                          <span>{t.roomDetail.capacity} {room.guests} {t.roomDetail.guests}</span>
                         </div>
                       </div>
                     </div>
@@ -829,7 +833,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                         <span className="text-2xl md:text-3xl lg:text-4xl font-bold text-primary">
                           {room.price}₫
                         </span>
-                        <span className="text-xs md:text-sm text-muted-foreground">/đêm</span>
+                        <span className="text-xs md:text-sm text-muted-foreground">{t.roomDetail.perNight}</span>
                       </div>
                     </div>
                   </div>
@@ -848,13 +852,13 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                           {/* Mô tả phòng */}
                           <div>
                             <h3 className="text-xl md:text-2xl font-display font-bold mb-3 text-foreground">
-                              Mô tả phòng
+                              {t.roomDetail.description}
                             </h3>
                             {room.description ? (
-                              <HTMLContent content={room.description.trim()} />
+                              <HTMLContent content={room.description.trim()} t={t} />
                             ) : (
                               <p className="text-muted-foreground leading-relaxed text-base md:text-lg">
-                                {`${room.name} là một không gian nghỉ ngơi đẳng cấp với thiết kế hiện đại và tiện nghi cao cấp. Phòng được trang bị đầy đủ các tiện ích cần thiết để mang đến cho bạn một trải nghiệm nghỉ dưỡng tuyệt vời nhất.`}
+                                {room.name} {t.roomDetail.defaultDescription}
                               </p>
                             )}
                           </div>
@@ -862,7 +866,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                           {/* Tiện ích */}
                           <div className="pt-4 border-t">
                             <h3 className="text-xl md:text-2xl font-display font-bold mb-3 text-foreground">
-                              Tiện ích
+                              {t.roomDetail.amenities}
                             </h3>
                             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                               {room.amenities && room.amenities.length > 0 ? (
@@ -880,7 +884,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                   );
                                 })
                               ) : (
-                                <p className="text-muted-foreground text-sm">Chưa có thông tin tiện ích</p>
+                                <p className="text-muted-foreground text-sm">{t.roomDetail.noAmenitiesInfo}</p>
                               )}
                             </div>
                           </div>
@@ -903,12 +907,12 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                   <GradientBorder containerClassName="relative">
                     <FloatingCard className="bg-card rounded-xl border border-border shadow-card pt-2 pb-2">
                       <CardHeader className="">
-                        <CardTitle className="text-lg md:text-xl font-display">Đặt phòng ngay</CardTitle>
+                        <CardTitle className="text-lg md:text-xl font-display">{t.roomDetail.bookNow}</CardTitle>
                         <div className="flex justify-between items-center mt-1">
                           <span className="text-xl md:text-2xl font-bold text-primary">
                             {room.price}₫
                           </span>
-                          <span className="text-xs md:text-sm text-muted-foreground">/đêm</span>
+                          <span className="text-xs md:text-sm text-muted-foreground">{t.roomDetail.perNight}</span>
                         </div>
                       </CardHeader>
                       <CardContent className="px-6 md:px-8 pt-[5px] pb-[5px]">
@@ -916,7 +920,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                           {/* Dates */}
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <Label className="text-xs md:text-sm mb-1.5 block">Ngày nhận phòng *</Label>
+                              <Label className="text-xs md:text-sm mb-1.5 block">{t.roomDetail.checkInDate} *</Label>
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button
@@ -928,9 +932,9 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                   >
                                     <CalendarIcon className="mr-2 h-3 w-3 md:h-4 md:w-4" />
                                     {formData.checkIn ? (
-                                      format(formData.checkIn, "dd/MM/yyyy", { locale: vi })
+                                      format(formData.checkIn, "dd/MM/yyyy", { locale: dateLocale })
                                     ) : (
-                                      <span>Chọn ngày</span>
+                                      <span>{t.roomDetail.selectCheckIn}</span>
                                     )}
                                   </Button>
                                 </PopoverTrigger>
@@ -946,12 +950,13 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                     }}
                                     disabled={(date) => date < new Date()}
                                     initialFocus
+                                    locale={dateLocale}
                                   />
                                 </PopoverContent>
                               </Popover>
                             </div>
                             <div>
-                              <Label className="text-xs md:text-sm mb-1.5 block">Ngày trả phòng *</Label>
+                              <Label className="text-xs md:text-sm mb-1.5 block">{t.roomDetail.checkOutDate} *</Label>
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button
@@ -963,9 +968,9 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                   >
                                     <CalendarIcon className="mr-2 h-3 w-3 md:h-4 md:w-4" />
                                     {formData.checkOut ? (
-                                      format(formData.checkOut, "dd/MM/yyyy", { locale: vi })
+                                      format(formData.checkOut, "dd/MM/yyyy", { locale: dateLocale })
                                     ) : (
-                                      <span>Chọn ngày</span>
+                                      <span>{t.roomDetail.selectCheckOut}</span>
                                     )}
                                   </Button>
                                 </PopoverTrigger>
@@ -976,6 +981,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                     onSelect={(date) => setFormData({ ...formData, checkOut: date })}
                                     disabled={(date) => !formData.checkIn || date <= formData.checkIn}
                                     initialFocus
+                                    locale={dateLocale}
                                   />
                                 </PopoverContent>
                               </Popover>
@@ -986,15 +992,15 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                           {formData.checkIn && formData.checkOut && nights > 0 && (
                             <div className="pt-4 border-t space-y-2.5">
                               <div className="flex justify-between items-center text-xs md:text-sm">
-                                <span className="text-muted-foreground">Số đêm ở:</span>
-                                <span className="font-medium">{nights} đêm</span>
+                                <span className="text-muted-foreground">{t.lookup.nights}:</span>
+                                <span className="font-medium">{nights} {t.lookup.nightsUnit}</span>
                               </div>
                               <div className="flex justify-between items-center text-xs md:text-sm">
-                                <span className="text-muted-foreground">Giá phòng ({nights} đêm):</span>
+                                <span className="text-muted-foreground">{t.lookup.roomPrice} ({nights} {t.lookup.nightsUnit}):</span>
                                 <span className="font-medium">{formatPrice(subtotal)}₫</span>
                               </div>
                               <div className="flex justify-between items-center pt-2 border-t">
-                                <span className="text-sm md:text-base font-semibold">Tổng tiền dự kiến:</span>
+                                <span className="text-sm md:text-base font-semibold">{t.lookup.total}:</span>
                                 <span className="text-base md:text-lg font-bold text-primary">{formatPrice(totalPrice)}₫</span>
                               </div>
                             </div>
@@ -1002,7 +1008,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
 
                           {/* Guests */}
                           <div>
-                            <Label className="text-xs md:text-sm mb-1.5 block">Số người *</Label>
+                            <Label className="text-xs md:text-sm mb-1.5 block">{t.roomDetail.numberOfGuests} *</Label>
                             <Select
                               value={formData.guests || ""}
                               onValueChange={(value) => setFormData({ ...formData, guests: value })}
@@ -1012,11 +1018,11 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                 !formData.guests && "text-muted-foreground"
                               )}>
                                 <Users className="mr-2 h-3 w-3 md:h-4 md:w-4" />
-                                <SelectValue placeholder="Chọn số người" />
+                                <SelectValue placeholder={t.roomDetail.selectGuests} />
                               </SelectTrigger>
                               <SelectContent>
                                 {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
-                                  <SelectItem key={num} value={String(num)}>{num} người</SelectItem>
+                                  <SelectItem key={num} value={String(num)}>{num} {t.roomDetail.guests}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
@@ -1025,7 +1031,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                           {/* Contact Information */}
                           <div className="pt-4 border-t space-y-4">
                             <div>
-                              <Label className="text-xs md:text-sm mb-1.5 block">Họ và tên *</Label>
+                              <Label className="text-xs md:text-sm mb-1.5 block">{t.roomDetail.fullName} *</Label>
                               <Input
                                 value={formData.fullName}
                                 onChange={(e) => {
@@ -1034,7 +1040,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                     setFormErrors((prev) => ({ ...prev, fullName: undefined }));
                                   }
                                 }}
-                                placeholder="Nguyễn Văn A"
+                                placeholder={t.roomDetail.enterFullName}
                                 className="h-9 md:h-10 text-xs md:text-sm placeholder:opacity-60"
                                 maxLength={100}
                                 required
@@ -1044,7 +1050,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                               )}
                             </div>
                             <div>
-                              <Label className="text-xs md:text-sm mb-1.5 block">Email *</Label>
+                              <Label className="text-xs md:text-sm mb-1.5 block">{t.roomDetail.email} *</Label>
                               <Input
                                 type="email"
                                 value={formData.email}
@@ -1054,7 +1060,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                     setFormErrors((prev) => ({ ...prev, email: undefined }));
                                   }
                                 }}
-                                placeholder="email@example.com"
+                                placeholder={t.roomDetail.enterEmail}
                                 className="h-9 md:h-10 text-xs md:text-sm placeholder:opacity-60"
                                 maxLength={255}
                                 required
@@ -1064,7 +1070,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                               )}
                             </div>
                             <div>
-                              <Label className="text-xs md:text-sm mb-1.5 block">Số điện thoại *</Label>
+                              <Label className="text-xs md:text-sm mb-1.5 block">{t.roomDetail.phone} *</Label>
                               <Input
                                 value={formData.phone}
                                 onChange={(e) => {
@@ -1073,7 +1079,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                     setFormErrors((prev) => ({ ...prev, phone: undefined }));
                                   }
                                 }}
-                                placeholder="+84 123 456 789"
+                                placeholder={t.roomDetail.enterPhone}
                                 className="h-9 md:h-10 text-xs md:text-sm placeholder:opacity-60"
                                 maxLength={20}
                                 required
@@ -1083,7 +1089,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                               )}
                             </div>
                             <div>
-                              <Label className="text-xs md:text-sm mb-1.5 block">Yêu cầu đặc biệt</Label>
+                              <Label className="text-xs md:text-sm mb-1.5 block">{t.roomDetail.specialRequests}</Label>
                               <Textarea
                                 value={formData.specialRequests}
                                 onChange={(e) => {
@@ -1092,7 +1098,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                     setFormErrors((prev) => ({ ...prev, specialRequests: undefined }));
                                   }
                                 }}
-                                placeholder="Ví dụ: Giường đôi, tầng cao..."
+                                placeholder={t.roomDetail.specialRequestsPlaceholder}
                                 rows={2}
                                 className="text-xs md:text-sm resize-none placeholder:opacity-60"
                                 maxLength={500}
@@ -1120,23 +1126,23 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                 htmlFor="terms"
                                 className="text-xs md:text-sm text-muted-foreground cursor-pointer leading-relaxed"
                               >
-                                Tôi đồng ý với{" "}
+                                {t.roomDetail.agreeToTerms}{" "}
                                 <button
                                   type="button"
                                   onClick={() => setIsTermsDialogOpen(true)}
                                   className="text-primary hover:underline"
                                 >
-                                  điều khoản và điều kiện
+                                  {t.roomDetail.termsAndConditions}
                                 </button>{" "}
-                                cũng như{" "}
+                                {t.roomDetail.and}{" "}
                                 <button
                                   type="button"
                                   onClick={() => setIsPrivacyDialogOpen(true)}
                                   className="text-primary hover:underline"
                                 >
-                                  chính sách bảo mật
+                                  {t.roomDetail.privacyPolicy}
                                 </button>{" "}
-                                của khách sạn *
+                                *
                               </label>
                             </div>
                           </div>
@@ -1149,7 +1155,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                             className="w-full mt-4 text-sm md:text-base"
                             disabled={isSubmitting}
                           >
-                            {isSubmitting ? "Đang xử lý..." : "Tiếp Tục Thanh Toán"}
+                            {isSubmitting ? t.roomDetail.booking : t.roomDetail.bookNow}
                             {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
                           </ShimmerButton>
                         </form>
@@ -1172,10 +1178,10 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                 className="text-center mb-8 md:mb-12"
               >
               <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground mb-4">
-                Các Phòng Tương Tự
+                {t.roomDetail.similarRooms}
               </h2>
               <p className="text-base text-muted-foreground max-w-3xl mx-auto">
-                Khám phá thêm các phòng khác với tiện nghi và dịch vụ tương tự
+                {t.rooms.description}
               </p>
             </motion.div>
 
@@ -1579,7 +1585,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
           </DialogTitle>
           <div className="space-y-6 text-sm md:text-base">
             <div>
-              <p className="text-muted-foreground text-xs mb-4">
+              <p className="text-muted-foreground text-xs mb-4" suppressHydrationWarning>
                 Cập nhật lần cuối: {new Date().toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric" })}
               </p>
             </div>
@@ -1752,7 +1758,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
           </DialogTitle>
           <div className="space-y-6 text-sm md:text-base">
             <div>
-              <p className="text-muted-foreground text-xs mb-4">
+              <p className="text-muted-foreground text-xs mb-4" suppressHydrationWarning>
                 Cập nhật lần cuối: {new Date().toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric" })}
               </p>
             </div>

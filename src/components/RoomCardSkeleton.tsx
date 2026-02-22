@@ -1,50 +1,67 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { CardContent } from "@/components/ui/card";
-import { GradientBorder } from "@/components/ui/gradient-border";
-import { FloatingCard } from "@/components/ui/floating-card";
 
 export function RoomCardSkeleton() {
   return (
-    <GradientBorder containerClassName="relative h-full">
-      <FloatingCard className="overflow-hidden h-full bg-card rounded-xl border border-border shadow-card">
+    <div className="border rounded-lg overflow-hidden bg-card h-full">
+      <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4">
         {/* Image skeleton */}
-        <div className="relative overflow-hidden rounded-t-xl">
-          <Skeleton className="w-full h-32 md:h-48 lg:h-52" />
-          {/* Badges skeleton */}
-          <div className="absolute top-2 right-2 flex gap-1.5">
-            <Skeleton className="h-5 w-16 rounded-full bg-background/90" />
-            <Skeleton className="h-5 w-20 rounded-full bg-background/90" />
-          </div>
-          {/* Quick info skeleton */}
-          <div className="absolute bottom-2 left-2 right-2">
-            <Skeleton className="h-6 w-24 rounded-md bg-black/40" />
-          </div>
+        <div className="relative h-40 md:h-full rounded-lg overflow-hidden flex-shrink-0">
+          <Skeleton className="w-full h-full" />
         </div>
 
-        <CardContent className="p-2 md:p-3 flex flex-col flex-1">
-          {/* Room name skeleton */}
-          <Skeleton className="h-5 w-3/4 mb-2" />
-          
-          {/* Price skeleton */}
-          <Skeleton className="h-6 w-32 mb-2" />
-          
-          {/* Features skeleton */}
-          <div className="mb-2 hidden md:block">
-            <Skeleton className="h-4 w-full mb-1" />
-            <Skeleton className="h-4 w-2/3" />
+        {/* Room Info skeleton */}
+        <div className="flex flex-col min-w-0">
+          <div className="flex-1">
+            <div className="flex items-start justify-between mb-2 gap-2">
+              <div className="flex-1 min-w-0">
+                {/* Room name skeleton */}
+                <div className="flex items-center gap-2 mb-1">
+                  <Skeleton className="h-4 w-4 rounded" />
+                  <Skeleton className="h-5 w-40" />
+                </div>
+                {/* Price skeleton */}
+                <div className="mb-2">
+                  <Skeleton className="h-6 w-32 mb-1" />
+                </div>
+              </div>
+              {/* Badge skeleton */}
+              <Skeleton className="h-5 w-16 rounded-full flex-shrink-0" />
+            </div>
+
+            {/* Description skeleton */}
+            <div className="mb-3">
+              <Skeleton className="h-4 w-full mb-1" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+
+            {/* Room details skeleton */}
+            <div className="flex gap-3 mb-3">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+
+            {/* Amenities skeleton */}
+            <div className="flex gap-2 mb-3">
+              <Skeleton className="h-7 w-10 rounded" />
+              <Skeleton className="h-7 w-10 rounded" />
+              <Skeleton className="h-7 w-10 rounded" />
+              <Skeleton className="h-7 w-10 rounded" />
+            </div>
           </div>
-          
+
           {/* Button skeleton */}
-          <Skeleton className="h-9 w-full mt-auto rounded-md" />
-        </CardContent>
-      </FloatingCard>
-    </GradientBorder>
+          <div className="pt-3 border-t mt-auto">
+            <Skeleton className="h-10 w-full rounded-md" />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
 export function RoomGridSkeleton({ count = 4 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 lg:gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {Array.from({ length: count }).map((_, index) => (
         <RoomCardSkeleton key={index} />
       ))}

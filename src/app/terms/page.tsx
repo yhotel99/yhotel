@@ -7,9 +7,19 @@ import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useScrollThreshold } from "@/hooks/use-scroll";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function TermsPage() {
   const isScrolled = useScrollThreshold(100);
+  const { t, language } = useLanguage();
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", { 
+      year: "numeric", 
+      month: "long", 
+      day: "numeric" 
+    });
+  };
 
   return (
     <div className="min-h-screen bg-luxury-gradient">
@@ -32,7 +42,7 @@ export default function TermsPage() {
               className="gap-2 backdrop-blur-sm bg-background/90 shadow-lg"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="hidden md:inline">Về trang chủ</span>
+              <span className="hidden md:inline">{t.terms.backToHome}</span>
             </Button>
           </Link>
         </motion.div>
@@ -49,11 +59,11 @@ export default function TermsPage() {
               <div className="flex items-center justify-center gap-3 mb-4">
                 <FileText className="w-8 h-8 md:w-10 md:h-10 text-primary" />
                 <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-foreground">
-                  Điều Khoản và Điều Kiện
+                  {t.terms.title}
                 </h1>
               </div>
-              <p className="text-muted-foreground text-sm md:text-base max-w-2xl mx-auto">
-                Cập nhật lần cuối: {new Date().toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric" })}
+              <p className="text-muted-foreground text-sm md:text-base max-w-2xl mx-auto" suppressHydrationWarning>
+                {t.terms.lastUpdated} {formatDate(new Date())}
               </p>
             </motion.div>
 
@@ -62,7 +72,7 @@ export default function TermsPage() {
               <Link href="/">
                 <Button variant="secondary" size="sm" className="gap-2 backdrop-blur-sm bg-background/80">
                   <ArrowLeft className="w-4 h-4" />
-                  <span className="hidden md:inline">Về trang chủ</span>
+                  <span className="hidden md:inline">{t.terms.backToHome}</span>
                 </Button>
               </Link>
             </div>
@@ -82,49 +92,43 @@ export default function TermsPage() {
                 {/* Introduction */}
                 <div>
                   <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4">
-                    1. Giới Thiệu
+                    {t.terms.section1Title}
                   </h2>
                   <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                    Chào mừng bạn đến với Y Hotel Cần Thơ. Khi bạn sử dụng dịch vụ đặt phòng trực tuyến của chúng tôi,
-                    bạn đồng ý tuân thủ các điều khoản và điều kiện được nêu trong tài liệu này. Vui lòng đọc kỹ các
-                    điều khoản trước khi thực hiện đặt phòng.
+                    {t.terms.section1Content}
                   </p>
                 </div>
 
                 {/* Booking Terms */}
                 <div>
                   <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4">
-                    2. Điều Khoản Đặt Phòng
+                    {t.terms.section2Title}
                   </h2>
                   <div className="space-y-4">
                     <div className="flex items-start gap-3">
                       <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                       <div>
-                        <h3 className="font-semibold text-foreground mb-1">2.1. Xác Nhận Đặt Phòng</h3>
+                        <h3 className="font-semibold text-foreground mb-1">{t.terms.section2_1Title}</h3>
                         <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
-                          Đặt phòng của bạn sẽ được xác nhận sau khi thanh toán thành công. Bạn sẽ nhận được email
-                          xác nhận chứa thông tin chi tiết về đặt phòng của mình.
+                          {t.terms.section2_1Content}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                       <div>
-                        <h3 className="font-semibold text-foreground mb-1">2.2. Thông Tin Khách Hàng</h3>
+                        <h3 className="font-semibold text-foreground mb-1">{t.terms.section2_2Title}</h3>
                         <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
-                          Bạn có trách nhiệm cung cấp thông tin chính xác và đầy đủ khi đặt phòng. Y Hotel không chịu
-                          trách nhiệm về bất kỳ hậu quả nào phát sinh từ thông tin không chính xác.
+                          {t.terms.section2_2Content}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
                       <CheckCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                       <div>
-                        <h3 className="font-semibold text-foreground mb-1">2.3. Giá Cả và Thanh Toán</h3>
+                        <h3 className="font-semibold text-foreground mb-1">{t.terms.section2_3Title}</h3>
                         <p className="text-muted-foreground text-sm md:text-base leading-relaxed">
-                          Tất cả giá được hiển thị bằng VNĐ và đã bao gồm thuế VAT. Giá có thể thay đổi tùy theo thời
-                          điểm đặt phòng. Thanh toán có thể được thực hiện qua thẻ tín dụng, chuyển khoản ngân hàng hoặc
-                          các phương thức thanh toán trực tuyến khác.
+                          {t.terms.section2_3Content}
                         </p>
                       </div>
                     </div>
@@ -134,20 +138,17 @@ export default function TermsPage() {
                 {/* Cancellation Policy */}
                 <div>
                   <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4">
-                    3. Chính Sách Hủy Phòng
+                    {t.terms.section3Title}
                   </h2>
                   <div className="space-y-3">
                     <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                      <strong className="text-foreground">Hủy miễn phí:</strong> Bạn có thể hủy đặt phòng miễn phí
-                      trước 24 giờ so với thời gian check-in dự kiến.
+                      <strong className="text-foreground">{t.terms.section3FreeCancellation}</strong> {t.terms.section3FreeCancellationContent}
                     </p>
                     <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                      <strong className="text-foreground">Hủy có phí:</strong> Nếu hủy trong vòng 24 giờ trước khi
-                      check-in, bạn sẽ bị tính phí hủy phòng tương đương 50% giá trị đặt phòng.
+                      <strong className="text-foreground">{t.terms.section3PaidCancellation}</strong> {t.terms.section3PaidCancellationContent}
                     </p>
                     <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                      <strong className="text-foreground">Không đến (No-show):</strong> Nếu bạn không đến và không
-                      thông báo trước, toàn bộ số tiền đặt phòng sẽ không được hoàn lại.
+                      <strong className="text-foreground">{t.terms.section3NoShow}</strong> {t.terms.section3NoShowContent}
                     </p>
                   </div>
                 </div>
@@ -155,16 +156,14 @@ export default function TermsPage() {
                 {/* Check-in/Check-out */}
                 <div>
                   <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4">
-                    4. Thời Gian Check-in và Check-out
+                    {t.terms.section4Title}
                   </h2>
                   <div className="space-y-3">
                     <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                      <strong className="text-foreground">Check-in:</strong> Từ 14:00 trở đi. Nếu bạn đến sớm hơn, chúng
-                      tôi sẽ cố gắng sắp xếp phòng sớm nếu có sẵn, nhưng không được đảm bảo.
+                      <strong className="text-foreground">{t.terms.section4CheckIn}</strong> {t.terms.section4CheckInContent}
                     </p>
                     <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                      <strong className="text-foreground">Check-out:</strong> Trước 12:00. Nếu bạn muốn check-out
-                      muộn hơn, vui lòng liên hệ với lễ tân để được sắp xếp (có thể phát sinh phí).
+                      <strong className="text-foreground">{t.terms.section4CheckOut}</strong> {t.terms.section4CheckOutContent}
                     </p>
                   </div>
                 </div>
@@ -172,37 +171,28 @@ export default function TermsPage() {
                 {/* Guest Responsibilities */}
                 <div>
                   <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4">
-                    5. Trách Nhiệm Của Khách Hàng
+                    {t.terms.section5Title}
                   </h2>
                   <ul className="space-y-2 text-muted-foreground text-sm md:text-base">
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>Khách hàng phải tuân thủ các quy định của khách sạn trong thời gian lưu trú.</span>
+                      <span>{t.terms.section5Item1}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>
-                        Khách hàng chịu trách nhiệm về mọi thiệt hại đối với tài sản của khách sạn do lỗi của mình gây
-                        ra.
-                      </span>
+                      <span>{t.terms.section5Item2}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>
-                        Không được hút thuốc trong phòng. Vi phạm sẽ bị tính phí làm sạch và có thể bị từ chối phục vụ.
-                      </span>
+                      <span>{t.terms.section5Item3}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>
-                        Không được mang thú cưng vào khách sạn (trừ khi có thỏa thuận trước).
-                      </span>
+                      <span>{t.terms.section5Item4}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>
-                        Khách hàng phải cung cấp giấy tờ tùy thân hợp lệ khi check-in theo quy định của pháp luật.
-                      </span>
+                      <span>{t.terms.section5Item5}</span>
                     </li>
                   </ul>
                 </div>
@@ -210,28 +200,20 @@ export default function TermsPage() {
                 {/* Hotel Responsibilities */}
                 <div>
                   <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4">
-                    6. Trách Nhiệm Của Khách Sạn
+                    {t.terms.section6Title}
                   </h2>
                   <ul className="space-y-2 text-muted-foreground text-sm md:text-base">
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>
-                        Y Hotel cam kết cung cấp dịch vụ chất lượng cao và đảm bảo phòng được chuẩn bị sẵn sàng khi bạn
-                        đến.
-                      </span>
+                      <span>{t.terms.section6Item1}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>
-                        Khách sạn sẽ bảo mật thông tin cá nhân của khách hàng theo chính sách bảo mật.
-                      </span>
+                      <span>{t.terms.section6Item2}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>
-                        Trong trường hợp không thể cung cấp phòng đã đặt, khách sạn sẽ sắp xếp phòng thay thế tương đương
-                        hoặc hoàn tiền.
-                      </span>
+                      <span>{t.terms.section6Item3}</span>
                     </li>
                   </ul>
                 </div>
@@ -239,42 +221,38 @@ export default function TermsPage() {
                 {/* Limitation of Liability */}
                 <div>
                   <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4">
-                    7. Giới Hạn Trách Nhiệm
+                    {t.terms.section7Title}
                   </h2>
                   <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                    Y Hotel không chịu trách nhiệm về bất kỳ tổn thất, thiệt hại nào phát sinh từ các sự kiện ngoài tầm
-                    kiểm soát như thiên tai, hỏa hoạn, đình công, hoặc các sự kiện bất khả kháng khác. Khách sạn cũng
-                    không chịu trách nhiệm về tài sản cá nhân của khách hàng bị mất hoặc hư hỏng trong khách sạn.
+                    {t.terms.section7Content}
                   </p>
                 </div>
 
                 {/* Changes to Terms */}
                 <div>
                   <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4">
-                    8. Thay Đổi Điều Khoản
+                    {t.terms.section8Title}
                   </h2>
                   <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                    Y Hotel có quyền thay đổi các điều khoản và điều kiện này bất cứ lúc nào. Các thay đổi sẽ có hiệu
-                    lực ngay sau khi được đăng tải trên website. Việc bạn tiếp tục sử dụng dịch vụ sau khi có thay đổi
-                    được coi là bạn đã chấp nhận các điều khoản mới.
+                    {t.terms.section8Content}
                   </p>
                 </div>
 
                 {/* Contact Information */}
                 <div className="pt-6 border-t">
                   <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4">
-                    9. Liên Hệ
+                    {t.terms.section9Title}
                   </h2>
                   <p className="text-muted-foreground leading-relaxed text-sm md:text-base mb-4">
-                    Nếu bạn có bất kỳ câu hỏi nào về các điều khoản và điều kiện này, vui lòng liên hệ với chúng tôi:
+                    {t.terms.section9Content}
                   </p>
                   <div className="space-y-2 text-sm md:text-base">
                     <p className="text-foreground">
-                      <strong>Y Hotel Cần Thơ</strong>
+                      <strong>{t.terms.hotelName}</strong>
                     </p>
-                    <p className="text-muted-foreground">Địa chỉ: 60-62-64 Lý Hồng Thanh, Cái Khế, Cần Thơ</p>
-                    <p className="text-muted-foreground">Điện thoại: +84 123 456 789</p>
-                    <p className="text-muted-foreground">Email: info@yhotel.com</p>
+                    <p className="text-muted-foreground">{t.terms.address}</p>
+                    <p className="text-muted-foreground">{t.terms.phone}</p>
+                    <p className="text-muted-foreground">{t.terms.email}</p>
                   </div>
                 </div>
               </div>

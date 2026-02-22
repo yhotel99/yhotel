@@ -12,10 +12,12 @@ import { FloatingCard } from "@/components/ui/floating-card";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBlogs } from "@/hooks/use-blogs";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 
 const BlogSection = () => {
+  const { t } = useLanguage();
   // Fetch blogs from API
   const { blogs, isLoading } = useBlogs({
     page: 1,
@@ -76,10 +78,10 @@ const BlogSection = () => {
         {/* Header - Optimized with CSS */}
         <div className="text-center mb-8 md:mb-12 animate-fade-in-up">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground mb-3 md:mb-6">
-            Blog & Tin Tức
+            {t.blog.title}
           </h2>
           <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Khám phá những câu chuyện thú vị, kinh nghiệm du lịch và cập nhật mới nhất từ Y Hotel
+            {t.blog.description}
           </p>
         </div>
 
@@ -329,7 +331,7 @@ const BlogSection = () => {
         <div className="flex justify-center mt-8 md:mt-12 animate-fade-in-up">
           <Link href="/blog">
             <Button variant="outline" className="border-primary/30 hover:border-primary/50">
-              Xem tất cả bài viết
+              {t.blog.viewAllPosts}
             </Button>
           </Link>
         </div>

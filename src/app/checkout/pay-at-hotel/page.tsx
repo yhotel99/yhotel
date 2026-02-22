@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS } from "date-fns/locale";
 import { 
   Store, 
   Calendar, 
@@ -26,11 +26,16 @@ import { RoomDetailSkeleton } from "@/components/RoomDetailSkeleton";
 import { BookingStatusBadge } from "@/components/BookingStatusBadge";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const PayAtHotelContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const bookingId = searchParams.get("booking_id");
+  const { t, language } = useLanguage();
+
+  // Date locale based on language
+  const dateLocale = language === "vi" ? vi : enUS;
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
@@ -38,7 +43,7 @@ const PayAtHotelContent = () => {
       if (!bookingId) return null;
       const response = await fetch(`/api/bookings/${bookingId}`);
       if (!response.ok) {
-        throw new Error('Không tìm thấy thông tin đặt phòng');
+        throw new Error(t.payAtHotel.notFound);
       }
       return response.json();
     },
@@ -50,11 +55,11 @@ const PayAtHotelContent = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "dd/MM/yyyy", { locale: vi });
+    return format(new Date(dateString), "dd/MM/yyyy", { locale: dateLocale });
   };
 
   const formatTime = (dateString: string) => {
-    return format(new Date(dateString), "HH:mm", { locale: vi });
+    return format(new Date(dateString), "HH:mm", { locale: dateLocale });
   };
 
   if (!bookingId) {
@@ -66,7 +71,7 @@ const PayAtHotelContent = () => {
             <Card className="border-0 bg-background/60 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">Không tìm thấy thông tin đặt phòng</p>
+                  <p className="text-muted-foreground mb-4">{t.payAtHotel.notFound}</p>
                 </div>
               </CardContent>
             </Card>
@@ -99,7 +104,7 @@ const PayAtHotelContent = () => {
               <CardContent className="pt-6">
                 <div className="text-center py-12">
                   <p className="text-muted-foreground mb-4">
-                    {error instanceof Error ? error.message : "Không tìm thấy thông tin đặt phòng"}
+                    {error instanceof Error ? error.message : t.payAtHotel.notFound}
                   </p>
                 </div>
               </CardContent>
@@ -124,10 +129,10 @@ const PayAtHotelContent = () => {
                   <Store className="h-12 w-12 text-primary" />
                 </div>
                 <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-                  Yêu Cầu Đặt Phòng Đã Được Gửi
+                  {t.payAtHotel.title}
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                  Cảm ơn bạn đã chọn phương thức thanh toán tại khách sạn. Chúng tôi đã nhận được yêu cầu đặt phòng của bạn và sẽ liên hệ để xác nhận trong thời gian sớm nhất.
+                  {t.payAtHotel.description}
                 </p>
               </div>
 
@@ -139,7 +144,7 @@ const PayAtHotelContent = () => {
                       <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                         <div className="mb-4 md:mb-1">
                           <CardTitle className="text-xl md:text-2xl font-display">
-                            Thông Tin Đặt Phòng
+                            {t.payAtHotel.bookingInfo}
                           </CardTitle>
                         </div>
                       </CardHeader>
@@ -149,12 +154,12 @@ const PayAtHotelContent = () => {
                           <div className="absolute top-4 right-4">
                             <BookingStatusBadge status={booking.status} />
                           </div>
-                          <p className="text-xs text-muted-foreground mb-1">Mã đặt phòng</p>
+                          <p className="text-xs text-muted-foreground mb-1">{t.payAtHotel.bookingCode}</p>
                           <p className="font-mono font-bold text-2xl text-primary pr-32">
                             {booking.booking_code || booking.id.slice(0, 8).toUpperCase()}
                           </p>
                           <p className="text-xs text-muted-foreground mt-2">
-                            Vui lòng lưu lại mã này để tra cứu đặt phòng
+                            {t.payAtHotel.saveCodeNote}
                           </p>
                         </div>
 
@@ -164,7 +169,7 @@ const PayAtHotelContent = () => {
                           <div className="p-4 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-2">
                               <Calendar className="h-5 w-5 text-primary" />
-                              <p className="text-sm font-semibold text-foreground">Nhận phòng</p>
+                              <p className="text-sm font-semibold text-foreground">{t.payAtHotel.checkIn}</p>
                             </div>
                             <p className="font-bold text-lg text-foreground mb-1">{formatDate(booking.check_in)}</p>
                             <p className="text-sm text-muted-foreground">{formatTime(booking.check_in)}</p>
@@ -174,7 +179,7 @@ const PayAtHotelContent = () => {
                           <div className="p-4 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-2">
                               <Calendar className="h-5 w-5 text-primary" />
-                              <p className="text-sm font-semibold text-foreground">Trả phòng</p>
+                              <p className="text-sm font-semibold text-foreground">{t.payAtHotel.checkOut}</p>
                             </div>
                             <p className="font-bold text-lg text-foreground mb-1">{formatDate(booking.check_out)}</p>
                             <p className="text-sm text-muted-foreground">{formatTime(booking.check_out)}</p>
@@ -184,18 +189,18 @@ const PayAtHotelContent = () => {
                           <div className="p-4 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-2">
                               <Users className="h-5 w-5 text-primary" />
-                              <p className="text-sm font-semibold text-foreground">Số khách</p>
+                              <p className="text-sm font-semibold text-foreground">{t.payAtHotel.guests}</p>
                             </div>
-                            <p className="font-bold text-xl text-foreground">{booking.total_guests} người</p>
+                            <p className="font-bold text-xl text-foreground">{booking.total_guests} {t.payAtHotel.guestsUnit}</p>
                           </div>
                           
                           {/* Nights */}
                           <div className="p-4 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-2">
                               <Clock className="h-5 w-5 text-primary" />
-                              <p className="text-sm font-semibold text-foreground">Số đêm</p>
+                              <p className="text-sm font-semibold text-foreground">{t.payAtHotel.nights}</p>
                             </div>
-                            <p className="font-bold text-xl text-foreground">{booking.number_of_nights} đêm</p>
+                            <p className="font-bold text-xl text-foreground">{booking.number_of_nights} {t.payAtHotel.nightsUnit}</p>
                           </div>
                         </div>
 
@@ -208,7 +213,7 @@ const PayAtHotelContent = () => {
                                   <Building2 className="h-5 w-5 text-primary" />
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-sm text-muted-foreground mb-1">Phòng</p>
+                                  <p className="text-sm text-muted-foreground mb-1">{t.payAtHotel.room}</p>
                                   <p className="font-semibold text-lg text-foreground">{booking.room.name}</p>
                                 </div>
                               </div>
@@ -221,7 +226,7 @@ const PayAtHotelContent = () => {
                                   <User className="h-5 w-5 text-primary" />
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-sm text-muted-foreground mb-1">Khách hàng</p>
+                                  <p className="text-sm text-muted-foreground mb-1">{t.payAtHotel.customer}</p>
                                   <p className="font-semibold text-lg text-foreground">{booking.customer.full_name}</p>
                                   {booking.customer.email && (
                                     <div className="flex items-center gap-2 mt-2">
@@ -245,18 +250,18 @@ const PayAtHotelContent = () => {
 
                         {/* Payment Summary */}
                         <div>
-                          <h3 className="text-lg font-display font-semibold mb-3">Tổng Thanh Toán</h3>
+                          <h3 className="text-lg font-display font-semibold mb-3">{t.payAtHotel.paymentSummary}</h3>
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">Giá phòng</span>
+                              <span className="text-muted-foreground">{t.payAtHotel.roomPrice}</span>
                               <span className="font-medium">{formatPrice(booking.total_amount)}đ</span>
                             </div>
                             <div className="flex justify-between items-center text-xs text-muted-foreground">
-                              <span>{booking.number_of_nights} đêm × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
+                              <span>{booking.number_of_nights} {t.payAtHotel.nightsUnit} × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
                             </div>
                             <Separator />
                             <div className="flex justify-between items-center pt-2">
-                              <span className="font-semibold text-lg">Tổng cộng</span>
+                              <span className="font-semibold text-lg">{t.payAtHotel.total}</span>
                               <span className="font-bold text-xl text-primary">{formatPrice(booking.total_amount)}đ</span>
                             </div>
                           </div>
@@ -265,10 +270,10 @@ const PayAtHotelContent = () => {
                               <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                               <div className="text-sm">
                                 <p className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
-                                  Thanh toán tại khách sạn
+                                  {t.payAtHotel.paymentNote}
                                 </p>
                                 <p className="text-amber-700 dark:text-amber-300">
-                                  Bạn sẽ thanh toán số tiền này trực tiếp tại quầy lễ tân khi check-in. Vui lòng mang theo CMND/CCCD hoặc hộ chiếu.
+                                  {t.payAtHotel.paymentNoteDescription}
                                 </p>
                               </div>
                             </div>
@@ -287,7 +292,7 @@ const PayAtHotelContent = () => {
                         <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                           <div className="mb-4">
                             <CardTitle className="text-xl md:text-2xl font-display">
-                              Bước Tiếp Theo
+                              {t.payAtHotel.nextSteps}
                             </CardTitle>
                           </div>
                         </CardHeader>
@@ -295,31 +300,31 @@ const PayAtHotelContent = () => {
                           <div className="space-y-4">
                             <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
                               <p className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                                📞 Chờ cuộc gọi xác nhận
+                                {t.payAtHotel.waitingCallTitle}
                               </p>
                               <p className="text-sm text-blue-700 dark:text-blue-300">
-                                Nhân viên sẽ gọi điện xác nhận đặt phòng trong thời gian sớm nhất. Vui lòng giữ máy và kiểm tra cuộc gọi từ số lạ.
+                                {t.payAtHotel.waitingCallDescription}
                               </p>
                             </div>
 
                             <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg">
                               <p className="font-semibold text-green-900 dark:text-green-100 mb-2">
-                                ✅ Lưu ý quan trọng
+                                {t.payAtHotel.importantNotesTitle}
                               </p>
                               <ul className="text-sm text-green-700 dark:text-green-300 space-y-1 list-disc list-inside">
-                                <li>Giữ máy để nhận cuộc gọi xác nhận</li>
-                                <li>Mang theo CMND/CCCD khi check-in</li>
-                                <li>Đến đúng giờ nhận phòng</li>
-                                <li>Thanh toán tại quầy lễ tân</li>
+                                <li>{t.payAtHotel.importantNote1}</li>
+                                <li>{t.payAtHotel.importantNote2}</li>
+                                <li>{t.payAtHotel.importantNote3}</li>
+                                <li>{t.payAtHotel.importantNote4}</li>
                               </ul>
                             </div>
 
                             <div className="p-4 bg-purple-50 dark:bg-purple-950 border border-purple-200 dark:border-purple-800 rounded-lg">
                               <p className="font-semibold text-purple-900 dark:text-purple-100 mb-2">
-                                📧 Email xác nhận
+                                {t.payAtHotel.emailConfirmTitle}
                               </p>
                               <p className="text-sm text-purple-700 dark:text-purple-300">
-                                Sau khi xác nhận qua điện thoại, chúng tôi sẽ gửi email xác nhận đặt phòng đến địa chỉ email của bạn.
+                                {t.payAtHotel.emailConfirmDescription}
                               </p>
                             </div>
                           </div>
@@ -334,14 +339,14 @@ const PayAtHotelContent = () => {
                               size="lg"
                             >
                               <Home className="mr-2 h-5 w-5" />
-                              Về trang chủ
+                              {t.payAtHotel.backToHome}
                             </Button>
                             <Button
                               onClick={() => router.push('/rooms')}
                               className="w-full"
                               variant="outline"
                             >
-                              Đặt phòng khác
+                              {t.payAtHotel.bookAnotherRoom}
                             </Button>
                           </div>
                         </CardContent>

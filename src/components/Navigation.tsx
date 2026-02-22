@@ -8,11 +8,14 @@ import { Button } from "@/components/ui/button";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { useScrollThreshold } from "@/hooks/use-scroll";
 import { cn } from "@/lib/utils";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const Navigation = memo(() => {
   const [isOpen, setIsOpen] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const isScrolled = useScrollThreshold(20);
+  const { t } = useLanguage();
 
   // Handle menu animation state
   useEffect(() => {
@@ -25,10 +28,10 @@ const Navigation = memo(() => {
   }, [isOpen]);
 
   const navItems = [
-    { name: "Trang Chủ", href: "/" },
-    { name: "Phòng & Suites", href: "/rooms" },
+    { name: t.nav.home, href: "/" },
+    { name: t.nav.rooms, href: "/rooms" },
     { name: "Blog", href: "/blog" },
-    { name: "Tra Cứu Đặt Phòng", href: "/lookup" },
+    { name: t.nav.lookup, href: "/lookup" },
   ];
 
   return (
@@ -73,9 +76,10 @@ const Navigation = memo(() => {
               <Phone className="w-4 h-4" />
               <span>+84 123 456 789</span>
             </div>
+            <LanguageSwitcher />
             <Link href="/rooms">
               <Button variant="luxury" size="sm">
-                Đặt Phòng
+                {t.nav.booking}
               </Button>
             </Link>
           </div>
@@ -133,6 +137,20 @@ const Navigation = memo(() => {
                   <div className="h-px bg-gradient-to-r from-transparent via-background/20 to-transparent" />
                 </div>
 
+                {/* Language Switcher - Mobile */}
+                <div
+                  className={cn(
+                    "px-4 py-2",
+                    isOpen && "animate-fade-in-up"
+                  )}
+                  style={isOpen ? { animationDelay: `${(navItems.length * 0.1) + 0.05}s` } : {}}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-background/70 text-sm">{t.nav.language} / Language</span>
+                    <LanguageSwitcher />
+                  </div>
+                </div>
+
                 {/* Contact Info Section */}
                 <div
                   className={cn(
@@ -150,7 +168,7 @@ const Navigation = memo(() => {
                         <Phone className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs text-background/60 uppercase tracking-wider mb-0.5">Điện thoại</p>
+                        <p className="text-xs text-background/60 uppercase tracking-wider mb-0.5">{t.nav.phone}</p>
                         <p className="text-background font-medium text-sm group-hover:text-primary transition-colors duration-300">
                           +84 123 456 789
                         </p>
@@ -166,7 +184,7 @@ const Navigation = memo(() => {
                         <Mail className="w-4 h-4 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-xs text-background/60 uppercase tracking-wider mb-0.5">Email</p>
+                        <p className="text-xs text-background/60 uppercase tracking-wider mb-0.5">{t.nav.email}</p>
                         <p className="text-background font-medium text-sm group-hover:text-primary transition-colors duration-300 break-all">
                           info@yhotel.com
                         </p>
@@ -189,7 +207,7 @@ const Navigation = memo(() => {
                         className="w-full h-14 text-base md:text-lg font-semibold shadow-2xl hover:shadow-primary/50 relative overflow-hidden group"
                       >
                         <span className="relative z-10 flex items-center justify-center gap-2">
-                          <span>Đặt Phòng Ngay</span>
+                          <span>{t.common.bookNow}</span>
                           <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
                         </span>
                         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />

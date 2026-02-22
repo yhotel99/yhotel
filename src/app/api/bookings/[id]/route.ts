@@ -40,6 +40,22 @@ export async function GET(
       );
     }
 
+    // Lấy thông tin booking_rooms (cho multi-room booking)
+    const { data: bookingRooms } = await supabase
+      .from('booking_rooms')
+      .select(
+        `
+        *,
+        rooms (
+          id,
+          name,
+          room_type,
+          price_per_night
+        )
+        `
+      )
+      .eq('booking_id', id);
+
     // Lấy payment_method (nếu có) từ bảng payments
     let paymentMethod: string | null = null;
     try {
@@ -61,6 +77,7 @@ export async function GET(
     return NextResponse.json({
       ...booking,
       payment_method: paymentMethod,
+      booking_rooms: bookingRooms || [],
     });
   } catch (error) {
     console.error('Error fetching booking:', error);

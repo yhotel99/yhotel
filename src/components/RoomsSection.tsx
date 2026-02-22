@@ -12,6 +12,7 @@ import { GradientBorder } from "@/components/ui/gradient-border";
 import { useRooms, usePrefetchRoom } from "@/hooks/use-rooms";
 import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
 import { getAmenityLabel } from "@/lib/constants";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const categoryLabels: Record<string, string> = {
   standard: "Standard",
@@ -28,6 +29,7 @@ const getCategoryLabel = (category: string): string => {
 const RoomsSection = () => {
   const { data: rooms = [], isLoading: loading } = useRooms(undefined, undefined, true);
   const prefetchRoom = usePrefetchRoom();
+  const { t } = useLanguage();
 
   // Show only first 4 rooms on homepage - memoized
   const displayRooms = useMemo(() => rooms.slice(0, 4), [rooms]);
@@ -38,12 +40,10 @@ const RoomsSection = () => {
         {/* Header - Optimized with CSS */}
         <div className="text-center mb-8 md:mb-12 animate-fade-in-up">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground mb-6 whitespace-nowrap">
-            Phòng & Suites
+            {t.rooms.title}
           </h2>
           <p className="text-base text-muted-foreground max-w-3xl mx-auto">
-            Trải nghiệm không gian nghỉ ngơi với trang thiết bị hoàn toàn mới, thiết kế hiện đại và 
-            tiện nghi cao cấp. Mỗi phòng được trang bị nội thất sang trọng, công nghệ thông minh để 
-            mang đến sự thoải mái tối đa cho kỳ nghỉ của bạn.
+            {t.rooms.description}
           </p>
         </div>
 
@@ -52,7 +52,7 @@ const RoomsSection = () => {
           <RoomGridSkeleton count={4} />
         ) : displayRooms.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground">Chưa có phòng nào.</p>
+            <p className="text-muted-foreground">{t.rooms.noRooms}</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
@@ -90,7 +90,7 @@ const RoomsSection = () => {
                     <div className="absolute top-2 right-2 flex gap-1.5">
                       {room.popular && (
                         <Badge className="bg-primary/95 text-primary-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm shadow-sm">
-                          ⭐ Phổ biến
+                          ⭐ {t.rooms.popular}
                         </Badge>
                       )}
                       <Badge variant="outline" className="bg-background/90 text-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm border-background/50">
@@ -132,7 +132,7 @@ const RoomsSection = () => {
                         <span className="text-sm md:text-lg lg:text-xl font-bold text-primary">
                           {room.price}₫
                         </span>
-                        <span className="text-[10px] md:text-xs text-muted-foreground">/đêm</span>
+                        <span className="text-[10px] md:text-xs text-muted-foreground">{t.rooms.perNight}</span>
                       </div>
                     </div>
 
@@ -163,7 +163,7 @@ const RoomsSection = () => {
                         window.location.href = `/rooms/${encodeURIComponent(room.id)}`;
                       }}
                     >
-                      Đặt Ngay
+                      {t.rooms.bookNow}
                     </ShimmerButton>
                   </CardContent>
                 </FloatingCard>
@@ -178,7 +178,7 @@ const RoomsSection = () => {
         <div className="text-center mt-12 animate-fade-in-up">
           <Link href="/rooms">
             <ShimmerButton variant="luxury" size="lg" className="px-8">
-              Xem Tất Cả Phòng
+              {t.rooms.viewAllRooms}
             </ShimmerButton>
           </Link>
         </div>

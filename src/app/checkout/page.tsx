@@ -4,7 +4,7 @@ import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS } from "date-fns/locale";
 import { 
   Calendar, 
   Users, 
@@ -33,12 +33,14 @@ import { BOOKING_STATUS, PAYMENT_METHOD } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const CheckoutContent = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { toast } = useToast();
   const bookingId = searchParams.get("booking_id");
+  const { t, language } = useLanguage();
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
@@ -46,7 +48,7 @@ const CheckoutContent = () => {
       if (!bookingId) return null;
       const response = await fetch(`/api/bookings/${bookingId}`);
       if (!response.ok) {
-        throw new Error('Không tìm thấy thông tin đặt phòng');
+        throw new Error(t.checkout.errorLoading);
       }
       return response.json();
     },
@@ -54,6 +56,9 @@ const CheckoutContent = () => {
   });
 
   const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "pay_at_hotel" | "onepay">("bank_transfer");
+
+  // Date locale based on language
+  const dateLocale = language === "vi" ? vi : enUS;
 
   const handleContinue = async () => {
     if (!bookingId || !booking) return;
@@ -82,11 +87,11 @@ const CheckoutContent = () => {
       } catch (error) {
         console.error("Failed to update payment method (bank_transfer):", error);
         toast({
-          title: "Không thể cập nhật phương thức thanh toán",
+          title: t.checkout.updatePaymentError,
           description:
             error instanceof Error
               ? error.message
-              : "Đã xảy ra lỗi. Vui lòng thử lại sau hoặc chọn phương thức khác.",
+              : t.checkout.updatePaymentErrorDescription,
           variant: "destructive",
         });
         return;
@@ -94,9 +99,12 @@ const CheckoutContent = () => {
 
       // Chuyển đến trang thanh toán chuyển khoản với QR code
       router.push(`/checkout/payment?booking_id=${bookingId}`);
-    } else if (paymentMethod === "onepay") {
-      router.push(`/checkout/onepay/redirect?booking_id=${bookingId}`);
-    } else if (paymentMethod === "pay_at_hotel") {
+    } 
+    // OnePay - Coming Soon (commented out)
+    // else if (paymentMethod === "onepay") {
+    //   router.push(`/checkout/onepay/redirect?booking_id=${bookingId}`);
+    // } 
+    else if (paymentMethod === "pay_at_hotel") {
       // Cập nhật phương thức thanh toán, đảm bảo trạng thái là pending (chờ xác nhận)
       try {
         const response = await fetch(`/api/bookings/${bookingId}`, {
@@ -123,11 +131,11 @@ const CheckoutContent = () => {
       } catch (error) {
         console.error("Failed to update payment method (pay_at_hotel):", error);
         toast({
-          title: "Không thể cập nhật phương thức thanh toán",
+          title: t.checkout.updatePaymentError,
           description:
             error instanceof Error
               ? error.message
-              : "Đã xảy ra lỗi. Vui lòng thử lại sau hoặc chọn phương thức khác.",
+              : t.checkout.updatePaymentErrorDescription,
           variant: "destructive",
         });
       }
@@ -143,7 +151,7 @@ const CheckoutContent = () => {
             <Card className="border-0 bg-background/60 backdrop-blur-sm">
               <CardContent className="pt-6">
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground mb-4">Không tìm thấy thông tin đặt phòng</p>
+                  <p className="text-muted-foreground mb-4">{t.checkout.notFound}</p>
                 </div>
               </CardContent>
             </Card>
@@ -168,7 +176,7 @@ const CheckoutContent = () => {
               <CardContent className="pt-6">
                 <div className="text-center py-12">
                   <p className="text-muted-foreground mb-4">
-                    {error instanceof Error ? error.message : "Không tìm thấy thông tin đặt phòng"}
+                    {error instanceof Error ? error.message : t.checkout.errorLoading}
                   </p>
                 </div>
               </CardContent>
@@ -185,11 +193,11 @@ const CheckoutContent = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), "dd/MM/yyyy", { locale: vi });
+    return format(new Date(dateString), "dd/MM/yyyy", { locale: dateLocale });
   };
 
   const formatTime = (dateString: string) => {
-    return format(new Date(dateString), "HH:mm", { locale: vi });
+    return format(new Date(dateString), "HH:mm", { locale: dateLocale });
   };
 
   const canProceedPayment = booking.status === BOOKING_STATUS.PENDING || 
@@ -205,10 +213,10 @@ const CheckoutContent = () => {
             <div className="mb-12">
               <div className="text-center mb-8">
                 <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
-                  Thanh Toán Đặt Phòng
+                  {t.checkout.title}
                 </h1>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                  Vui lòng kiểm tra thông tin và hoàn tất thanh toán
+                  {t.checkout.description}
                 </p>
               </div>
             </div>
@@ -221,7 +229,7 @@ const CheckoutContent = () => {
                     <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                       <div className="mb-4 md:mb-1">
                         <CardTitle className="text-xl md:text-2xl font-display">
-                          Phương Thức Thanh Toán
+                          {t.checkout.paymentMethod}
                         </CardTitle>
                       </div>
                     </CardHeader>
@@ -263,9 +271,9 @@ const CheckoutContent = () => {
                               )} />
                             </div>
                             <div className="flex-1">
-                              <p className="font-semibold text-base mb-1">Chuyển khoản ngân hàng</p>
+                              <p className="font-semibold text-base mb-1">{t.checkout.bankTransfer}</p>
                               <p className="text-sm text-muted-foreground">
-                                Chuyển khoản đến tài khoản ngân hàng của chúng tôi
+                                {t.checkout.bankTransferDescription}
                               </p>
                             </div>
                             <div className={cn(
@@ -282,7 +290,7 @@ const CheckoutContent = () => {
                           {paymentMethod === "bank_transfer" && (
                             <div className="mt-4 pt-4 border-t border-primary/20">
                               <p className="text-sm text-muted-foreground leading-relaxed">
-                                Bạn sẽ được chuyển đến trang thanh toán với mã QR để quét và chuyển khoản nhanh chóng.
+                                {t.checkout.bankTransferNote}
                               </p>
                             </div>
                           )}
@@ -326,9 +334,9 @@ const CheckoutContent = () => {
                               )} />
                             </div>
                             <div className="flex-1">
-                              <p className="font-semibold text-base mb-1">Thanh toán tại khách sạn</p>
+                              <p className="font-semibold text-base mb-1">{t.checkout.payAtHotel}</p>
                               <p className="text-sm text-muted-foreground">
-                                Thanh toán khi nhận phòng tại khách sạn
+                                {t.checkout.payAtHotelDescription}
                               </p>
                             </div>
                             <div className={cn(
@@ -344,68 +352,42 @@ const CheckoutContent = () => {
                           </div>
                           {paymentMethod === "pay_at_hotel" && (
                             <div className="mt-4 pt-4 border-t border-primary/20">
-                              <p className="text-sm font-medium mb-2 text-foreground">Lưu ý:</p>
+                              <p className="text-sm font-medium mb-2 text-foreground">{t.checkout.payAtHotelNoteTitle}</p>
                               <p className="text-sm text-muted-foreground leading-relaxed">
-                                Bạn sẽ thanh toán trực tiếp tại quầy lễ tân khi check-in. Vui lòng mang theo CMND/CCCD hoặc hộ chiếu.
+                                {t.checkout.payAtHotelNote}
                               </p>
                             </div>
                           )}
                         </div>
                       </label>
 
-                      <label className="block relative cursor-pointer group">
+                      {/* OnePay - Coming Soon */}
+                      <label className="block relative cursor-not-allowed group opacity-60">
                         <input
                           type="radio"
                           name="payment"
                           value="onepay"
-                          checked={paymentMethod === "onepay"}
-                          onChange={(e) => setPaymentMethod(e.target.value as "onepay")}
+                          disabled
                           className="sr-only"
                         />
-                        <div className={cn(
-                          "p-4 border-2 rounded-lg transition-all duration-300",
-                          paymentMethod === "onepay"
-                            ? "border-primary bg-primary/5 shadow-md"
-                            : "border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50"
-                        )}>
+                        <div className="p-4 border-2 rounded-lg border-border bg-muted/30">
                           <div className="flex items-start gap-4">
-                            <div className={cn(
-                              "p-2 rounded-lg transition-colors",
-                              paymentMethod === "onepay"
-                                ? "bg-primary/20"
-                                : "bg-primary/10"
-                            )}>
-                              <CreditCard className={cn(
-                                "h-5 w-5 transition-colors",
-                                paymentMethod === "onepay"
-                                  ? "text-primary"
-                                  : "text-primary/70"
-                              )} />
+                            <div className="p-2 rounded-lg bg-primary/10">
+                              <CreditCard className="h-5 w-5 text-primary/70" />
                             </div>
                             <div className="flex-1">
-                              <p className="font-semibold text-base mb-1">Thẻ/Ví (OnePay)</p>
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-semibold text-base">{t.checkout.onepay}</p>
+                                <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full">
+                                  Coming Soon
+                                </span>
+                              </div>
                               <p className="text-sm text-muted-foreground">
-                                Thanh toán bằng thẻ nội địa, Visa, Master, ví điện tử, QR Code
+                                {t.checkout.onepayDescription}
                               </p>
                             </div>
-                            <div className={cn(
-                              "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
-                              paymentMethod === "onepay"
-                                ? "border-primary bg-primary"
-                                : "border-border"
-                            )}>
-                              {paymentMethod === "onepay" && (
-                                <div className="h-2.5 w-2.5 rounded-full bg-white" />
-                              )}
-                            </div>
+                            <div className="h-5 w-5 rounded-full border-2 border-border flex items-center justify-center" />
                           </div>
-                          {paymentMethod === "onepay" && (
-                            <div className="mt-4 pt-4 border-t border-primary/20">
-                              <p className="text-sm text-muted-foreground leading-relaxed">
-                                Bạn sẽ được chuyển đến cổng OnePay để thanh toán bằng thẻ, ví điện tử hoặc QR.
-                              </p>
-                            </div>
-                          )}
                         </div>
                       </label>
                     </CardContent>
@@ -422,7 +404,7 @@ const CheckoutContent = () => {
                       <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
                         <div className="mb-4">
                           <CardTitle className="text-xl md:text-2xl font-display">
-                            Thông Tin Đặt Phòng
+                            {t.checkout.bookingInfo}
                           </CardTitle>
                         </div>
                         {/* Booking ID */}
@@ -430,7 +412,7 @@ const CheckoutContent = () => {
                           <div className="absolute top-3 right-3">
                             <BookingStatusBadge status={booking.status} />
                           </div>
-                          <p className="text-xs text-muted-foreground mb-1">Mã đặt phòng</p>
+                          <p className="text-xs text-muted-foreground mb-1">{t.checkout.bookingCode}</p>
                           <p className="font-mono font-bold text-xl text-primary pr-24">{booking.booking_code || booking.id.slice(0, 8).toUpperCase()}</p>
                         </div>
                       </CardHeader>
@@ -441,7 +423,7 @@ const CheckoutContent = () => {
                           <div className="p-3 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-1.5">
                               <Calendar className="h-4 w-4 text-primary" />
-                              <p className="text-xs text-muted-foreground">Nhận phòng</p>
+                              <p className="text-xs text-muted-foreground">{t.checkout.checkIn}</p>
                             </div>
                             <p className="font-bold text-base text-foreground mb-0.5">{formatDate(booking.check_in)}</p>
                             <p className="text-xs text-muted-foreground">{formatTime(booking.check_in)}</p>
@@ -451,7 +433,7 @@ const CheckoutContent = () => {
                           <div className="p-3 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-1.5">
                               <Calendar className="h-4 w-4 text-primary" />
-                              <p className="text-xs text-muted-foreground">Trả phòng</p>
+                              <p className="text-xs text-muted-foreground">{t.checkout.checkOut}</p>
                             </div>
                             <p className="font-bold text-base text-foreground mb-0.5">{formatDate(booking.check_out)}</p>
                             <p className="text-xs text-muted-foreground">{formatTime(booking.check_out)}</p>
@@ -461,18 +443,18 @@ const CheckoutContent = () => {
                           <div className="p-3 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-1.5">
                               <Users className="h-4 w-4 text-primary" />
-                              <p className="text-xs text-muted-foreground">Số khách</p>
+                              <p className="text-xs text-muted-foreground">{t.checkout.guests}</p>
                             </div>
-                            <p className="font-bold text-lg text-foreground">{booking.total_guests} người</p>
+                            <p className="font-bold text-lg text-foreground">{booking.total_guests} {t.checkout.guestsUnit}</p>
                           </div>
                           
                           {/* Nights */}
                           <div className="p-3 border rounded-lg bg-muted/30">
                             <div className="flex items-center gap-2 mb-1.5">
                               <Clock className="h-4 w-4 text-primary" />
-                              <p className="text-xs text-muted-foreground">Số đêm</p>
+                              <p className="text-xs text-muted-foreground">{t.checkout.nights}</p>
                             </div>
-                            <p className="font-bold text-lg text-foreground">{booking.number_of_nights} đêm</p>
+                            <p className="font-bold text-lg text-foreground">{booking.number_of_nights} {t.checkout.nightsUnit}</p>
                           </div>
                         </div>
 
@@ -485,7 +467,7 @@ const CheckoutContent = () => {
                                   <Building2 className="h-4 w-4 text-primary" />
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-0.5">Phòng</p>
+                                  <p className="text-xs text-muted-foreground mb-0.5">{t.checkout.room}</p>
                                   <p className="font-semibold text-foreground">{booking.room.name}</p>
                                   {booking.room.room_type && (
                                     <div className="flex items-center gap-1.5 mt-1">
@@ -504,7 +486,7 @@ const CheckoutContent = () => {
                                   <User className="h-4 w-4 text-primary" />
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-0.5">Khách hàng</p>
+                                  <p className="text-xs text-muted-foreground mb-0.5">{t.checkout.customer}</p>
                                   <p className="font-semibold text-foreground">{booking.customer.full_name}</p>
                                   {booking.customer.email && (
                                     <p className="text-xs text-muted-foreground mt-0.5">{booking.customer.email}</p>
@@ -526,7 +508,7 @@ const CheckoutContent = () => {
                                   <Clock className="h-4 w-4 text-primary" />
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-0.5">Ngày đặt phòng</p>
+                                  <p className="text-xs text-muted-foreground mb-0.5">{t.checkout.bookingDate}</p>
                                   <p className="font-semibold text-foreground">{formatDate(booking.created_at)}</p>
                                   <p className="text-xs text-muted-foreground mt-0.5">{formatTime(booking.created_at)}</p>
                                 </div>
@@ -540,7 +522,7 @@ const CheckoutContent = () => {
                                   <FileText className="h-4 w-4 text-primary" />
                                 </div>
                                 <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-1">Ghi chú</p>
+                                  <p className="text-xs text-muted-foreground mb-1">{t.checkout.notes}</p>
                                   <p className="text-sm text-foreground whitespace-pre-wrap">{booking.notes}</p>
                                 </div>
                               </div>
@@ -552,27 +534,27 @@ const CheckoutContent = () => {
 
                         {/* Payment Summary */}
                         <div>
-                          <h3 className="text-lg font-display font-semibold mb-3">Tổng Thanh Toán</h3>
+                          <h3 className="text-lg font-display font-semibold mb-3">{t.checkout.paymentSummary}</h3>
                           <div className="space-y-2">
                             {booking.room?.price_per_night ? (
                               <>
                                 <div className="flex justify-between items-center">
-                                  <span className="text-muted-foreground">Giá phòng/đêm</span>
+                                  <span className="text-muted-foreground">{t.checkout.roomPricePerNight}</span>
                                   <span className="font-medium">{formatPrice(booking.room.price_per_night)}đ</span>
                                 </div>
                                 <div className="flex justify-between items-center text-xs text-muted-foreground pl-2">
-                                  <span>{booking.number_of_nights} đêm × {formatPrice(booking.room.price_per_night)}đ</span>
+                                  <span>{booking.number_of_nights} {t.checkout.nightsUnit} × {formatPrice(booking.room.price_per_night)}đ</span>
                                   <span className="font-medium">{formatPrice(booking.room.price_per_night * booking.number_of_nights)}đ</span>
                                 </div>
                               </>
                             ) : (
                               <>
                                 <div className="flex justify-between items-center">
-                                  <span className="text-muted-foreground">Giá phòng</span>
+                                  <span className="text-muted-foreground">{t.checkout.roomPrice}</span>
                                   <span className="font-medium">{formatPrice(booking.total_amount)}đ</span>
                                 </div>
                                 <div className="flex justify-between items-center text-xs text-muted-foreground pl-2">
-                                  <span>{booking.number_of_nights} đêm × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
+                                  <span>{booking.number_of_nights} {t.checkout.nightsUnit} × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
                                   <span className="font-medium">{formatPrice(booking.total_amount)}đ</span>
                                 </div>
                               </>
@@ -581,18 +563,18 @@ const CheckoutContent = () => {
                               <>
                                 <Separator className="my-2" />
                                 <div className="flex justify-between items-center">
-                                  <span className="text-muted-foreground">Đã cọc</span>
+                                  <span className="text-muted-foreground">{t.checkout.deposit}</span>
                                   <span className="font-medium text-green-600 dark:text-green-400">{formatPrice(booking.advance_payment)}đ</span>
                                 </div>
                                 <div className="flex justify-between items-center text-xs text-muted-foreground pl-2">
-                                  <span>Còn lại</span>
+                                  <span>{t.checkout.remaining}</span>
                                   <span className="font-medium">{formatPrice(booking.total_amount - booking.advance_payment)}đ</span>
                                 </div>
                               </>
                             )}
                             <Separator />
                             <div className="flex justify-between items-center pt-2">
-                              <span className="font-semibold text-lg">Tổng cộng</span>
+                              <span className="font-semibold text-lg">{t.checkout.total}</span>
                               <span className="font-bold text-xl text-primary">{formatPrice(booking.total_amount)}đ</span>
                             </div>
                           </div>
@@ -605,10 +587,10 @@ const CheckoutContent = () => {
                               <Lock className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                               <div className="text-sm">
                                 <p className="font-semibold text-green-900 dark:text-green-100 mb-1">
-                                  Bảo mật thanh toán
+                                  {t.checkout.securityTitle}
                                 </p>
                                 <p className="text-green-700 dark:text-green-300">
-                                  Thông tin thanh toán của bạn được mã hóa và bảo mật theo tiêu chuẩn quốc tế.
+                                  {t.checkout.securityDescription}
                                 </p>
                               </div>
                             </div>
@@ -619,10 +601,10 @@ const CheckoutContent = () => {
                               <Shield className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                               <div className="text-sm">
                                 <p className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
-                                  Đơn đặt phòng đã được xử lý
+                                  {t.checkout.processedTitle}
                                 </p>
                                 <p className="text-amber-700 dark:text-amber-300">
-                                  Đơn đặt phòng này đã ở trạng thái khác và không thể thanh toán.
+                                  {t.checkout.processedDescription}
                                 </p>
                               </div>
                             </div>
@@ -638,10 +620,10 @@ const CheckoutContent = () => {
                           variant="luxury"
                         >
                           {!canProceedPayment ? (
-                            "Đơn đặt phòng đã được xử lý"
+                            t.checkout.processed
                           ) : (
                             <>
-                              Tiếp tục
+                              {t.checkout.continue}
                               <ArrowRight className="ml-2 h-5 w-5" />
                             </>
                           )}
@@ -649,11 +631,11 @@ const CheckoutContent = () => {
 
                         {/* Terms */}
                         <p className="text-xs text-center text-muted-foreground leading-relaxed">
-                          Bằng cách thanh toán, bạn đồng ý với{" "}
+                          {t.checkout.termsAgreement}{" "}
                           <a href="/terms" className="underline hover:text-primary">
-                            điều khoản và điều kiện
+                            {t.checkout.termsLink}
                           </a>{" "}
-                          của chúng tôi
+                          {t.checkout.termsOf}
                         </p>
                       </CardContent>
                     </FloatingCard>

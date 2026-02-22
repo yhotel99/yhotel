@@ -6,16 +6,7 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-
-const ONEPAY_RESPONSE_MESSAGES: Record<string, string> = {
-  "0": "Giao dịch thành công",
-  "99": "Người dùng hủy giao dịch",
-  F: "Xác thực 3D Secure thất bại",
-  "5": "Số dư không đủ",
-  "4": "Thẻ hết hạn",
-  "25": "Mã OTP không hợp lệ",
-  "253": "Hết thời gian nhập thông tin",
-};
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 function ReturnContent() {
   const searchParams = useSearchParams();
@@ -23,11 +14,26 @@ function ReturnContent() {
   const bookingId = searchParams.get("booking_id");
   const [status, setStatus] = useState<"loading" | "success" | "failed">("loading");
   const [message, setMessage] = useState<string>("");
+  const { t } = useLanguage();
+
+  // OnePay response messages
+  const getResponseMessage = (code: string): string => {
+    const messages: Record<string, string> = {
+      "0": t.onepayReturn.responseSuccess,
+      "99": t.onepayReturn.responseCancelled,
+      "F": t.onepayReturn.response3DSecureFailed,
+      "5": t.onepayReturn.responseInsufficientFunds,
+      "4": t.onepayReturn.responseCardExpired,
+      "25": t.onepayReturn.responseInvalidOTP,
+      "253": t.onepayReturn.responseTimeout,
+    };
+    return messages[code] || t.onepayReturn.failedTitle;
+  };
 
   useEffect(() => {
     if (!bookingId) {
       setStatus("failed");
-      setMessage("Thiếu thông tin đặt phòng");
+      setMessage(t.onepayReturn.missingBooking);
       return;
     }
 
@@ -46,31 +52,29 @@ function ReturnContent() {
 
         if (!res.ok) {
           setStatus("failed");
-          setMessage(data.error || "Xác thực thất bại");
+          setMessage(data.error || t.onepayReturn.verifyFailed);
           return;
         }
 
         if (data.success) {
           setStatus("success");
-          setMessage(data.message || "Thanh toán thành công");
+          setMessage(data.message || t.onepayReturn.responseSuccess);
           setTimeout(() => {
             router.push(`/checkout/success?booking_id=${bookingId}`);
           }, 2000);
         } else {
           setStatus("failed");
           const code = params.vpc_TxnResponseCode as string;
-          setMessage(
-            ONEPAY_RESPONSE_MESSAGES[code] || data.message || "Thanh toán thất bại"
-          );
+          setMessage(getResponseMessage(code) || data.message || t.onepayReturn.failedTitle);
         }
       } catch (err) {
         setStatus("failed");
-        setMessage("Đã xảy ra lỗi khi xử lý kết quả thanh toán");
+        setMessage(t.onepayReturn.errorProcessing);
       }
     };
 
     verifyAndRedirect();
-  }, [bookingId, searchParams, router]);
+  }, [bookingId, searchParams, router, t, getResponseMessage]);
 
   return (
     <div className="min-h-screen bg-luxury-gradient">
@@ -84,7 +88,7 @@ function ReturnContent() {
                   <>
                     <Loader2 className="h-16 w-16 animate-spin text-primary mx-auto mb-4" />
                     <p className="text-lg text-muted-foreground">
-                      Đang xác thực thanh toán...
+                      {t.onepayReturn.verifying}
                     </p>
                   </>
                 )}
@@ -92,11 +96,11 @@ function ReturnContent() {
                   <>
                     <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
                     <h2 className="text-xl font-bold text-foreground mb-2">
-                      Thanh toán thành công!
+                      {t.onepayReturn.successTitle}
                     </h2>
                     <p className="text-muted-foreground mb-4">{message}</p>
                     <p className="text-sm text-muted-foreground">
-                      Đang chuyển đến trang xác nhận...
+                      {t.onepayReturn.successDescription}
                     </p>
                   </>
                 )}
@@ -104,7 +108,7 @@ function ReturnContent() {
                   <>
                     <XCircle className="h-16 w-16 text-destructive mx-auto mb-4" />
                     <h2 className="text-xl font-bold text-foreground mb-2">
-                      Thanh toán thất bại
+                      {t.onepayReturn.failedTitle}
                     </h2>
                     <p className="text-muted-foreground mb-6">{message}</p>
                     <button
@@ -117,7 +121,7 @@ function ReturnContent() {
                       }
                       className="text-primary hover:underline font-medium"
                     >
-                      Quay lại trang thanh toán
+                      {t.onepayReturn.backToPayment}
                     </button>
                   </>
                 )}

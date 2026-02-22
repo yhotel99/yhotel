@@ -9,6 +9,7 @@ import { Search, ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 // Banner images
 // Ưu tiên dùng ảnh local/Unsplash để tránh lỗi 400 từ Supabase storage
@@ -21,6 +22,7 @@ const bannerImages = [
 
 const HeroSection = () => {
   const router = useRouter();
+  const { t } = useLanguage();
   const [checkIn, setCheckIn] = useState<Date | undefined>(undefined);
   const [checkOut, setCheckOut] = useState<Date | undefined>(undefined);
   const [guests, setGuests] = useState<number>(2);
@@ -60,13 +62,13 @@ const HeroSection = () => {
 
   // Format date as "Mo 5 Jan 2026" (English format to match design)
   const formatDateShort = (date: Date | undefined) => {
-    if (!date) return "Chọn ngày";
+    if (!date) return t.hero.selectDate;
     return format(date, "EEE d MMM yyyy");
   };
 
   // Shorter format for mobile
   const formatDateShortMobile = (date: Date | undefined) => {
-    if (!date) return "Chọn ngày";
+    if (!date) return t.hero.selectDate;
     return format(date, "d MMM");
   };
 
@@ -116,7 +118,7 @@ const HeroSection = () => {
                     <PopoverTrigger asChild>
                       <button className="w-full flex flex-row items-center justify-center md:justify-start gap-2 py-2 md:py-1.5 px-2 md:px-3 hover:bg-gray-50 rounded-lg transition-colors">
                         <div className="text-red-600 text-xs md:text-sm font-medium">
-                          Check-in
+                          {t.hero.checkIn}
                         </div>
                         <div className="text-foreground text-sm md:text-base font-medium">
                           <span className="hidden md:inline">{formatDateShort(checkIn)}</span>
@@ -154,7 +156,7 @@ const HeroSection = () => {
                         disabled={!checkIn}
                       >
                         <div className="text-red-600 text-xs md:text-sm font-medium">
-                          Check-out
+                          {t.hero.checkOut}
                         </div>
                         <div className="text-foreground text-sm md:text-base font-medium">
                           <span className="hidden md:inline">{formatDateShort(checkOut)}</span>
@@ -192,10 +194,10 @@ const HeroSection = () => {
                     <PopoverTrigger asChild>
                       <button className="w-full flex flex-row items-center justify-center md:justify-start gap-2 py-2 md:py-1.5 px-2 md:px-3 hover:bg-gray-50 rounded-lg transition-colors">
                         <div className="text-red-600 text-xs md:text-sm font-medium">
-                          Guests
+                          {t.hero.guests}
                         </div>
                         <div className="text-foreground text-sm md:text-base font-medium flex items-center gap-1">
-                          <span>{guests} {guests === 1 ? 'Guest' : 'Guests'}</span>
+                          <span>{guests} {guests === 1 ? t.common.guest : t.hero.guests}</span>
                           <ChevronDown className="h-4 w-4 text-muted-foreground" />
                         </div>
                       </button>
@@ -203,7 +205,7 @@ const HeroSection = () => {
                     <PopoverContent className="w-auto p-2" align="start">
                       <div className="space-y-2">
                         <div className="px-3 py-2 text-sm font-medium text-foreground">
-                          Số khách
+                          {t.hero.numberOfGuests}
                         </div>
                         {[1, 2, 3, 4, 5, 6].map((num) => (
                           <button
@@ -219,7 +221,7 @@ const HeroSection = () => {
                                 : "hover:bg-gray-100 text-foreground"
                             )}
                           >
-                            {num} {num === 1 ? 'Guest' : 'Guests'}
+                            {num} {num === 1 ? t.common.guest : t.hero.guests}
                           </button>
                         ))}
                       </div>
@@ -239,8 +241,7 @@ const HeroSection = () => {
                     className="w-full md:w-auto text-sm md:text-base px-4 md:px-6 py-2 md:py-2"
                   >
                     <Search className="mr-2 h-4 w-4 md:h-5 md:w-5" />
-                    <span className="hidden md:inline">Find room</span>
-                    <span className="md:hidden">Tìm phòng</span>
+                    <span>{t.hero.findRoom}</span>
                   </Button>
                 </div>
               </div>

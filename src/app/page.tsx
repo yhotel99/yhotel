@@ -10,6 +10,9 @@ const AboutSection = dynamic(() => import("@/components/AboutSection"), {
 const RoomsSection = dynamic(() => import("@/components/RoomsSection"), {
   loading: () => <div className="py-12 md:py-16" />,
 });
+const MultiBookingPromo = dynamic(() => import("@/components/MultiBookingPromo"), {
+  loading: () => <div className="py-12 md:py-16" />,
+});
 const ServicesSection = dynamic(() => import("@/components/ServicesSection"), {
   loading: () => <div className="py-12 md:py-16" />,
 });
@@ -31,6 +34,7 @@ export default function Home() {
         <HeroSection />
         <AboutSection />
         <RoomsSection />
+        <MultiBookingPromo />
         <ServicesSection />
         <GallerySection />
         <BlogSection />
