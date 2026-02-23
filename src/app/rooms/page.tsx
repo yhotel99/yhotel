@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Bed, Users, Search, X, ArrowLeft, Calendar as CalendarIcon, Building2, Plus, Wifi, Car, Coffee, Utensils, Shirt, Phone } from "lucide-react";
+import { Bed, Users, Search, X, ArrowLeft, Calendar as CalendarIcon, Building2, Plus } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
@@ -29,6 +29,7 @@ import { vi, enUS } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import type { RoomResponse } from "@/types/database";
 import { getAmenityLabel } from "@/lib/constants";
+import { getAmenityIcon } from "@/lib/amenity-icons";
 import { cn } from "@/lib/utils";
 
 const categoryLabels: Record<string, string> = {
@@ -43,18 +44,7 @@ const getCategoryLabel = (category: string): string => {
   return categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
 };
 
-// Helper to get amenity icon
-const getAmenityIcon = (amenity: string) => {
-  const iconMap: Record<string, any> = {
-    wifi_high_speed: Wifi,
-    parking: Car,
-    coffee: Coffee,
-    breakfast_service: Utensils,
-    laundry: Shirt,
-    taxi_support: Phone,
-  };
-  return iconMap[amenity] || null;
-};
+
 
 const RoomsPageContent = () => {
   const { t, language } = useLanguage();

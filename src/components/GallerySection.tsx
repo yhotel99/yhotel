@@ -176,12 +176,6 @@ const GallerySection = () => {
                   loading={index < 4 ? "eager" : "lazy"}
                   quality={85}
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <p className="text-white font-medium text-sm md:text-base mb-1">{image.alt}</p>
-                    <p className="text-white/90 text-xs md:text-sm">{image.category}</p>
-                  </div>
-                </div>
               </div>
             );
           })}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Building2, Users, Plus, Wifi, Car, Coffee, Utensils, Shirt, Phone } from "lucide-react";
+import { Building2, Users, Plus } from "lucide-react";
 import { memo, useMemo } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { useRooms, usePrefetchRoom } from "@/hooks/use-rooms";
 import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
 import { getAmenityLabel } from "@/lib/constants";
+import { getAmenityIcon } from "@/lib/amenity-icons";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { motion } from "framer-motion";
 
@@ -24,18 +25,7 @@ const getCategoryLabel = (category: string): string => {
   return categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
 };
 
-// Helper to get amenity icon
-const getAmenityIcon = (amenity: string) => {
-  const iconMap: Record<string, any> = {
-    wifi_high_speed: Wifi,
-    parking: Car,
-    coffee: Coffee,
-    breakfast_service: Utensils,
-    laundry: Shirt,
-    taxi_support: Phone,
-  };
-  return iconMap[amenity] || null;
-};
+
 
 const RoomsSection = () => {
   const { data: rooms = [], isLoading: loading } = useRooms(undefined, undefined, true);
