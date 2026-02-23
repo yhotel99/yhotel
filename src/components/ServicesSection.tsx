@@ -67,7 +67,7 @@ const ServicesSection = memo(() => {
       </div>
 
       <div className="relative w-full flex flex-col items-center justify-center overflow-hidden">
-        <Marquee pauseOnHover className="[--duration:20s]">
+        <Marquee pauseOnHover className="[--duration:45s]">
           {services.map((service, index) => (
             <ServiceCard key={index} {...service} />
           ))}

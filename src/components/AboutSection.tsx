@@ -6,7 +6,7 @@ import Image from "next/image";
 import { CardContent } from "@/components/ui/card";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { GradientBorder } from "@/components/ui/gradient-border";
-import lobbyImage from "@/assets/lobby.jpg";
+import hotelExterior from "@/assets/hotel-exterior.jpg";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const AboutSection = () => {
@@ -119,8 +119,8 @@ const AboutSection = () => {
             <GradientBorder containerClassName="group">
               <div className="relative overflow-hidden rounded-xl shadow-luxury h-[400px] md:h-[500px]">
                 <Image
-                  src={typeof lobbyImage === 'string' ? lobbyImage : lobbyImage.src}
-                  alt={t.common.lobbyAlt}
+                  src={typeof hotelExterior === 'string' ? hotelExterior : hotelExterior.src}
+                  alt="Khách sạn Y Hotel - Kiến trúc hiện đại với thiết kế sang trọng"
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
