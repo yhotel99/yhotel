@@ -107,6 +107,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     fullName: "",
     email: "",
     phone: "",
+    nationality: "",
     specialRequests: "",
     agreedToTerms: false,
   });
@@ -143,6 +144,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
           fullName?: string;
           email?: string;
           phone?: string;
+          nationality?: string;
           specialRequests?: string;
           agreedToTerms?: boolean;
         };
@@ -155,6 +157,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
           fullName: parsed.fullName ?? prev.fullName,
           email: parsed.email ?? prev.email,
           phone: parsed.phone ?? prev.phone,
+          nationality: parsed.nationality ?? prev.nationality,
           specialRequests: parsed.specialRequests ?? prev.specialRequests,
           agreedToTerms: parsed.agreedToTerms ?? prev.agreedToTerms,
         }));
@@ -175,6 +178,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
         fullName: formData.fullName,
         email: formData.email,
         phone: formData.phone,
+        nationality: formData.nationality,
         specialRequests: formData.specialRequests,
         agreedToTerms: formData.agreedToTerms,
       };
@@ -466,6 +470,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
         customer_name: formData.fullName,
         customer_email: formData.email,
         customer_phone: formData.phone,
+        customer_nationality: formData.nationality || null,
         ...(formData.specialRequests && { notes: formData.specialRequests }),
       };
 
@@ -559,6 +564,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
           fullName: "",
           email: "",
           phone: "",
+          nationality: "",
           specialRequests: "",
           agreedToTerms: false,
         });
@@ -870,23 +876,17 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                               {t.roomDetail.amenities}
                             </h3>
                             {room.amenities && room.amenities.length > 0 ? (
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {room.amenities.map((amenity, idx) => {
                                   const amenityLabel = getAmenityLabel(amenity);
                                   const AmenityIcon = getAmenityIcon(amenity);
                                   return (
                                     <div
                                       key={idx}
-                                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/30 hover:bg-muted hover:border-primary/30 transition-colors group"
+                                      className="flex items-center gap-2 text-sm text-muted-foreground"
                                     >
-                                      {AmenityIcon && (
-                                        <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                                          <AmenityIcon className="w-5 h-5 text-primary" />
-                                        </div>
-                                      )}
-                                      <span className="text-sm md:text-base text-foreground font-medium">
-                                        {amenityLabel}
-                                      </span>
+                                      {AmenityIcon && <AmenityIcon className="w-4 h-4 text-primary" />}
+                                      <span>{amenityLabel}</span>
                                     </div>
                                   );
                                 })}
@@ -1094,6 +1094,38 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                               {formErrors.phone && (
                                 <p className="mt-1 text-xs text-destructive">{formErrors.phone}</p>
                               )}
+                            </div>
+                            <div>
+                              <Label className="text-xs md:text-sm mb-1.5 block">{t.booking.nationalityLabel}</Label>
+                              <Select 
+                                value={formData.nationality} 
+                                onValueChange={(value) => setFormData(prev => ({ ...prev, nationality: value }))}
+                              >
+                                <SelectTrigger className="h-9 md:h-10 text-xs md:text-sm placeholder:text-muted-foreground/50">
+                                  <SelectValue placeholder={t.booking.nationalityPlaceholder} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Vietnam">Việt Nam / Vietnam</SelectItem>
+                                  <SelectItem value="USA">Hoa Kỳ / USA</SelectItem>
+                                  <SelectItem value="Japan">Nhật Bản / Japan</SelectItem>
+                                  <SelectItem value="South Korea">Hàn Quốc / South Korea</SelectItem>
+                                  <SelectItem value="China">Trung Quốc / China</SelectItem>
+                                  <SelectItem value="Thailand">Thái Lan / Thailand</SelectItem>
+                                  <SelectItem value="Singapore">Singapore</SelectItem>
+                                  <SelectItem value="Malaysia">Malaysia</SelectItem>
+                                  <SelectItem value="Australia">Úc / Australia</SelectItem>
+                                  <SelectItem value="UK">Anh / UK</SelectItem>
+                                  <SelectItem value="France">Pháp / France</SelectItem>
+                                  <SelectItem value="Germany">Đức / Germany</SelectItem>
+                                  <SelectItem value="Canada">Canada</SelectItem>
+                                  <SelectItem value="Taiwan">Đài Loan / Taiwan</SelectItem>
+                                  <SelectItem value="Hong Kong">Hồng Kông / Hong Kong</SelectItem>
+                                  <SelectItem value="India">Ấn Độ / India</SelectItem>
+                                  <SelectItem value="Indonesia">Indonesia</SelectItem>
+                                  <SelectItem value="Philippines">Philippines</SelectItem>
+                                  <SelectItem value="Other">Khác / Other</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                             <div>
                               <Label className="text-xs md:text-sm mb-1.5 block">{t.roomDetail.specialRequests}</Label>
