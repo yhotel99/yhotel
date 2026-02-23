@@ -129,9 +129,9 @@ export default function LookupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-luxury-gradient">
+    <div className="min-h-screen bg-luxury-gradient flex flex-col">
       <Navigation />
-      <main className="pt-14 lg:pt-16">
+      <main className="pt-14 lg:pt-16 flex-1">
         {/* Header Section */}
         <section className="py-20 bg-gradient-section">
           <div className="container-luxury">
@@ -232,7 +232,7 @@ export default function LookupPage() {
 
         {/* Results Section */}
         {hasSearched && (
-          <section className="py-12 bg-gradient-section">
+          <section className="py-12 bg-gradient-section min-h-[400px]">
             <div className="container-luxury">
               {isLoading ? (
                 <motion.div

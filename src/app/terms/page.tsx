@@ -22,9 +22,9 @@ export default function TermsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-luxury-gradient">
+    <div className="min-h-screen bg-luxury-gradient flex flex-col">
       <Navigation />
-      <main className="pt-14 lg:pt-16">
+      <main className="pt-14 lg:pt-16 flex-1">
         {/* Sticky Back Button */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

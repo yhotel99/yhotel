@@ -61,9 +61,9 @@ const BlogListingPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#f5f5f5]">
+    <div className="min-h-screen bg-[#f5f5f5] flex flex-col">
       <Navigation />
-      <main className="pt-14 lg:pt-16">
+      <main className="pt-14 lg:pt-16 flex-1">
         {/* Sticky Back Button */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

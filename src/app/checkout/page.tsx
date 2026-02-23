@@ -144,9 +144,9 @@ const CheckoutContent = () => {
 
   if (!bookingId) {
     return (
-      <div className="min-h-screen bg-luxury-gradient">
+      <div className="min-h-screen bg-luxury-gradient flex flex-col">
         <Navigation />
-        <main className="pt-14 lg:pt-16">
+        <main className="pt-14 lg:pt-16 flex-1">
           <div className="container-luxury py-20">
             <Card className="border-0 bg-background/60 backdrop-blur-sm">
               <CardContent className="pt-6">
@@ -168,9 +168,9 @@ const CheckoutContent = () => {
 
   if (error || !booking) {
     return (
-      <div className="min-h-screen bg-luxury-gradient">
+      <div className="min-h-screen bg-luxury-gradient flex flex-col">
         <Navigation />
-        <main className="pt-14 lg:pt-16">
+        <main className="pt-14 lg:pt-16 flex-1">
           <div className="container-luxury py-20">
             <Card className="border-0 bg-background/60 backdrop-blur-sm">
               <CardContent className="pt-6">
@@ -204,9 +204,9 @@ const CheckoutContent = () => {
                             booking.status === BOOKING_STATUS.AWAITING_PAYMENT;
 
   return (
-    <div className="min-h-screen bg-luxury-gradient">
+    <div className="min-h-screen bg-luxury-gradient flex flex-col">
       <Navigation />
-      <main className="pt-14 lg:pt-16">
+      <main className="pt-14 lg:pt-16 flex-1">
         <section className="py-20 bg-gradient-section">
           <div className="container-luxury">
             {/* Header */}

@@ -83,9 +83,9 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
   // Handle loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-luxury-gradient">
+      <div className="min-h-screen bg-luxury-gradient flex flex-col">
         <Navigation />
-        <main className="pt-14 lg:pt-16">
+        <main className="pt-14 lg:pt-16 flex-1">
           <div className="bg-gradient-subtle py-4 md:py-6">
             <div className="container-luxury">
               <div className="h-[250px] sm:h-[350px] md:h-[450px] lg:h-[550px] bg-muted animate-pulse rounded-xl" />
@@ -119,9 +119,9 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
   // Handle error state
   if (error || !blog) {
     return (
-      <div className="min-h-screen bg-luxury-gradient">
+      <div className="min-h-screen bg-luxury-gradient flex flex-col">
         <Navigation />
-        <main className="pt-14 lg:pt-16">
+        <main className="pt-14 lg:pt-16 flex-1">
           <div className="container-luxury py-16">
             <div className="max-w-xl mx-auto text-center space-y-4">
               <h1 className="text-2xl md:text-3xl font-display font-bold">
@@ -196,9 +196,9 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-luxury-gradient">
+    <div className="min-h-screen bg-luxury-gradient flex flex-col">
       <Navigation />
-      <main className="pt-14 lg:pt-16">
+      <main className="pt-14 lg:pt-16 flex-1">
         <Script
           id="blog-structured-data"
           type="application/ld+json"

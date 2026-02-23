@@ -41,11 +41,11 @@ export function RoomCardSkeleton() {
             </div>
 
             {/* Amenities skeleton */}
-            <div className="flex gap-2 mb-3">
-              <Skeleton className="h-7 w-10 rounded" />
-              <Skeleton className="h-7 w-10 rounded" />
-              <Skeleton className="h-7 w-10 rounded" />
-              <Skeleton className="h-7 w-10 rounded" />
+            <div className="flex flex-wrap gap-2 mb-3">
+              <div className="h-7 w-10 bg-muted/30 rounded animate-pulse" />
+              <div className="h-7 w-10 bg-muted/30 rounded animate-pulse" />
+              <div className="h-7 w-10 bg-muted/30 rounded animate-pulse" />
+              <div className="h-7 w-10 bg-muted/30 rounded animate-pulse" />
             </div>
           </div>
 

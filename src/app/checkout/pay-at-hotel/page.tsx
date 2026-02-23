@@ -64,9 +64,9 @@ const PayAtHotelContent = () => {
 
   if (!bookingId) {
     return (
-      <div className="min-h-screen bg-luxury-gradient">
+      <div className="min-h-screen bg-luxury-gradient flex flex-col">
         <Navigation />
-        <main className="pt-14 lg:pt-16">
+        <main className="pt-14 lg:pt-16 flex-1">
           <div className="container-luxury py-20">
             <Card className="border-0 bg-background/60 backdrop-blur-sm">
               <CardContent className="pt-6">
@@ -84,9 +84,9 @@ const PayAtHotelContent = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-luxury-gradient">
+      <div className="min-h-screen bg-luxury-gradient flex flex-col">
         <Navigation />
-        <main className="pt-14 lg:pt-16">
+        <main className="pt-14 lg:pt-16 flex-1">
           <RoomDetailSkeleton />
         </main>
         <Footer />
@@ -96,9 +96,9 @@ const PayAtHotelContent = () => {
 
   if (error || !booking) {
     return (
-      <div className="min-h-screen bg-luxury-gradient">
+      <div className="min-h-screen bg-luxury-gradient flex flex-col">
         <Navigation />
-        <main className="pt-14 lg:pt-16">
+        <main className="pt-14 lg:pt-16 flex-1">
           <div className="container-luxury py-20">
             <Card className="border-0 bg-background/60 backdrop-blur-sm">
               <CardContent className="pt-6">
@@ -117,9 +117,9 @@ const PayAtHotelContent = () => {
   }
 
   return (
-    <div className="min-h-screen bg-luxury-gradient">
+    <div className="min-h-screen bg-luxury-gradient flex flex-col">
       <Navigation />
-      <main className="pt-14 lg:pt-16">
+      <main className="pt-14 lg:pt-16 flex-1">
         <section className="py-20 bg-gradient-section">
           <div className="container-luxury">
             <div className="max-w-4xl mx-auto">
