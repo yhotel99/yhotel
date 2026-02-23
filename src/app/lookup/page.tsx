@@ -235,10 +235,92 @@ export default function LookupPage() {
           <section className="py-12 bg-gradient-section">
             <div className="container-luxury">
               {isLoading ? (
-                <div className="text-center py-12">
-                  <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-                  <p className="text-muted-foreground">{t.lookup.searching}</p>
-                </div>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="max-w-4xl mx-auto space-y-6"
+                >
+                  <div className="text-center mb-6">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-2" />
+                    <p className="text-muted-foreground">{t.lookup.searching}</p>
+                  </div>
+                  {/* Skeleton Cards */}
+                  {[1, 2].map((index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.1, ease: [0.25, 0.1, 0.25, 1] }}
+                    >
+                      <GradientBorder>
+                        <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
+                          <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
+                            <div className="mb-4">
+                              <div className="relative p-3 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-lg border border-primary/20 mb-4">
+                                <div className="absolute top-3 right-3">
+                                  <div className="h-6 w-20 bg-muted/50 rounded-full animate-pulse" />
+                                </div>
+                                <div className="h-3 w-24 bg-muted/50 rounded mb-2 animate-pulse" />
+                                <div className="h-6 w-32 bg-muted/50 rounded animate-pulse" />
+                              </div>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="px-6 md:px-8 pb-6 md:pb-8 pt-4 space-y-4">
+                            {/* Skeleton Grid */}
+                            <div className="grid grid-cols-2 gap-3">
+                              {[1, 2, 3, 4].map((i) => (
+                                <div key={i} className="p-3 border rounded-lg bg-muted/30">
+                                  <div className="h-4 w-20 bg-muted/50 rounded mb-2 animate-pulse" />
+                                  <div className="h-5 w-24 bg-muted/50 rounded mb-1 animate-pulse" />
+                                  <div className="h-3 w-16 bg-muted/50 rounded animate-pulse" />
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Skeleton Room & Customer */}
+                            <div className="space-y-2">
+                              {[1, 2].map((i) => (
+                                <div key={i} className="p-3 bg-muted/30 rounded-lg border border-border/50">
+                                  <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-primary/10 rounded-lg">
+                                      <div className="h-4 w-4 bg-muted/50 rounded animate-pulse" />
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                      <div className="h-3 w-16 bg-muted/50 rounded animate-pulse" />
+                                      <div className="h-4 w-32 bg-muted/50 rounded animate-pulse" />
+                                      <div className="h-3 w-24 bg-muted/50 rounded animate-pulse" />
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            <Separator className="my-4" />
+
+                            {/* Skeleton Payment Summary */}
+                            <div>
+                              <div className="h-5 w-32 bg-muted/50 rounded mb-3 animate-pulse" />
+                              <div className="space-y-2">
+                                {[1, 2].map((i) => (
+                                  <div key={i} className="flex justify-between items-center">
+                                    <div className="h-4 w-24 bg-muted/50 rounded animate-pulse" />
+                                    <div className="h-4 w-20 bg-muted/50 rounded animate-pulse" />
+                                  </div>
+                                ))}
+                                <Separator />
+                                <div className="flex justify-between items-center pt-2">
+                                  <div className="h-5 w-20 bg-muted/50 rounded animate-pulse" />
+                                  <div className="h-6 w-28 bg-muted/50 rounded animate-pulse" />
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </FloatingCard>
+                      </GradientBorder>
+                    </motion.div>
+                  ))}
+                </motion.div>
               ) : bookings.length > 0 ? (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}

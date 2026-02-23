@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 import { Room, RoomWithImages, RoomResponse } from '@/types/database';
-import { isTestOrPlaceholderRoom, deduplicateRooms } from '@/lib/utils/room-filters';
 
 // Mark as dynamic route since we use request.url for query params
 export const dynamic = 'force-dynamic';
@@ -76,9 +75,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const roomType = searchParams.get('type');
     const status = searchParams.get('status'); // No default - get all if not specified
-    const skipFilters = searchParams.get('skipFilters') === 'true'; // Skip test/placeholder filters
 
-    console.log('Query params - type:', roomType, 'status:', status, 'skipFilters:', skipFilters); // Debug log
+    console.log('Query params - type:', roomType, 'status:', status); // Debug log
 
     // Build query - optimize by selecting only needed fields
     let query = supabase
@@ -178,15 +176,8 @@ export async function GET(request: Request) {
       };
     });
 
-    // Apply filters only if skipFilters is not true
-    let finalRooms = rooms;
-    
-    if (!skipFilters) {
-      // Filter out test/placeholder rooms
-      const productionRooms = rooms.filter(room => !isTestOrPlaceholderRoom(room));
-      // Deduplicate rooms with same name
-      finalRooms = deduplicateRooms(productionRooms);
-    }
+    // No filters applied - show all rooms
+    const finalRooms = rooms;
 
     // Convert to API response format
     const response: RoomResponse[] = finalRooms.map(transformRoomToResponse);

@@ -129,7 +129,7 @@ const RoomsPageContent = () => {
   const error = queryError ? t.roomsPage.errorLoading : null;
 
   // Fetch available rooms if check_in and check_out params exist
-  const { data: availableRooms = [] } = useQuery<RoomResponse[]>({
+  const { data: availableRooms = [], isLoading: isLoadingAvailable } = useQuery<RoomResponse[]>({
     queryKey: ['available-rooms', checkInParam, checkOutParam],
     queryFn: async () => {
       if (!checkInParam || !checkOutParam) return [];
@@ -150,6 +150,9 @@ const RoomsPageContent = () => {
 
   // Use available rooms if we have date params, otherwise use all rooms
   const roomsToDisplay = checkInParam && checkOutParam ? availableRooms : rooms;
+  
+  // Determine if we're currently loading
+  const isLoadingRooms = checkInParam && checkOutParam ? isLoadingAvailable : loading;
 
   // Handle date range selection
   const handleDateRangeSelect = (range: { from?: Date; to?: Date } | undefined) => {
@@ -500,7 +503,7 @@ const RoomsPageContent = () => {
         {bookingMode === 'single' && (
           <section className="py-12 bg-gradient-subtle">
           <div className="container-luxury">
-            {loading ? (
+            {isLoadingRooms ? (
               <RoomGridSkeleton count={8} />
             ) : error ? (
               <div className="text-center py-16">

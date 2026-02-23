@@ -13,12 +13,6 @@ import {
   X,
   Building2,
   Loader2,
-  Wifi,
-  Car,
-  Coffee,
-  Utensils,
-  Shirt,
-  Phone,
   FileText,
   Shield,
   CheckCircle,
@@ -43,6 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { RoomCardSkeleton } from "@/components/RoomCardSkeleton";
 import { getAmenityLabel } from "@/lib/constants";
+import { getAmenityIcon } from "@/lib/amenity-icons";
 
 interface SelectedRoom {
   room_id: string;
@@ -267,19 +262,6 @@ export const MultiRoomBookingSection = () => {
       ? parseFloat(price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) 
       : price;
     return (numPrice || 0).toLocaleString('vi-VN');
-  };
-
-  // Helper to get amenity icon
-  const getAmenityIcon = (amenity: string) => {
-    const iconMap: Record<string, any> = {
-      wifi_high_speed: Wifi,
-      parking: Car,
-      coffee: Coffee,
-      breakfast_service: Utensils,
-      laundry: Shirt,
-      taxi_support: Phone,
-    };
-    return iconMap[amenity] || null;
   };
 
   return (
@@ -903,21 +885,6 @@ export const MultiRoomBookingSection = () => {
                         );
                       })}
                     </div>
-                  </div>
-                )}
-
-                {/* Features */}
-                {selectedRoomDetail.features && selectedRoomDetail.features.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-semibold mb-3">Đặc điểm</h3>
-                    <ul className="space-y-2">
-                      {selectedRoomDetail.features.map((feature: string, idx: number) => (
-                        <li key={idx} className="flex items-start gap-2 text-muted-foreground">
-                          <CheckCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                          <span>{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
                   </div>
                 )}
 

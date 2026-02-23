@@ -257,13 +257,9 @@ const BookingSectionContent = () => {
       const rooms = await response.json();
       setAvailableRooms(rooms);
 
-      if (rooms.length === 0) {
-        toast({
-          title: t.booking.noRoomsTitle,
-          description: t.booking.noRoomsDesc,
-          variant: "default",
-        });
-      } else {
+      // Only show toast when rooms are found (success case)
+      // No need to show toast for empty results - the dialog will display the message
+      if (rooms.length > 0) {
         toast({
           title: t.booking.foundRoomsTitle,
           description: t.booking.foundRoomsDesc.replace('{count}', rooms.length.toString()),
@@ -781,9 +777,31 @@ const BookingSectionContent = () => {
 
           <div className="flex-1 overflow-y-auto min-h-0 space-y-4 py-4">
             {isCheckingAvailable ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <span className="ml-3 text-muted-foreground">Đang kiểm tra phòng trống...</span>
+              <div className="space-y-4">
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  <span className="ml-3 text-muted-foreground">{language === 'vi' ? 'Đang kiểm tra phòng trống...' : 'Checking available rooms...'}</span>
+                </div>
+                {/* Skeleton Cards */}
+                {[1, 2, 3].map((i) => (
+                  <Card key={i} className="p-4 animate-pulse">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                        <div className="space-y-2">
+                          <div className="h-5 w-32 bg-muted rounded" />
+                          <div className="h-4 w-20 bg-muted rounded" />
+                          <div className="h-3 w-24 bg-muted rounded" />
+                        </div>
+                        <div className="space-y-2">
+                          <div className="h-4 w-28 bg-muted rounded" />
+                        </div>
+                        <div className="flex justify-end">
+                          <div className="h-6 w-16 bg-muted rounded-full" />
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </div>
             ) : availableRooms.length === 0 ? (
               <div className="text-center py-12">
