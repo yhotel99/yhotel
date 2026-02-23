@@ -261,7 +261,7 @@ const RoomsPageContent = () => {
         </motion.div>
 
         {/* Header Section */}
-        <section className="py-12 md:py-16 bg-gradient-subtle">
+        <section className="pt-12 md:pt-16 bg-gradient-subtle">
           <div className="container-luxury">
             <motion.div
               initial={{ opacity: 0, y: 30 }}

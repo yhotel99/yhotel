@@ -283,7 +283,7 @@ export const MultiRoomBookingSection = () => {
   };
 
   return (
-    <section className="py-20 bg-gradient-section">
+    <section className="-mt-8 pb-20 bg-gradient-section">
       <div className="container-luxury">
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
