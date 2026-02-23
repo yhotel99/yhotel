@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useRooms } from "@/hooks/use-rooms";
 import { format } from "date-fns";
-import { vi } from "date-fns/locale";
+import { vi, enUS } from "date-fns/locale";
 import { Calendar as CalendarIcon, Users, MapPin, Phone, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,12 +19,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 import type { RoomResponse } from "@/types/database";
 
 const BookingSectionContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const { t, language } = useLanguage();
+  
+  // Date locale based on language
+  const dateLocale = language === "vi" ? vi : enUS;
   
   // Get roomId from URL if available
   const roomIdFromUrl = searchParams.get("roomId");
@@ -146,7 +151,7 @@ const BookingSectionContent = () => {
         
         return {
           value: cat.value,
-          label: `Phòng ${cat.label} - ${avgPrice.toLocaleString('vi-VN')}đ/đêm`,
+          label: `${t.booking.roomLabel} ${cat.label} - ${avgPrice.toLocaleString('vi-VN')}${t.booking.pricePerNight}`,
           price: avgPrice.toLocaleString('vi-VN'),
         };
       });
@@ -183,37 +188,37 @@ const BookingSectionContent = () => {
 
     // Full name validation
     if (!fullName) {
-      errors.fullName = "Vui lòng nhập họ và tên.";
+      errors.fullName = t.booking.fullNameRequired;
     } else if (fullName.length < 2 || fullName.length > 100) {
-      errors.fullName = "Họ và tên phải từ 2–100 ký tự.";
+      errors.fullName = t.booking.fullNameLength;
     } else if (!/^[\p{L}\s'.-]+$/u.test(fullName)) {
-      errors.fullName = "Họ và tên chỉ được chứa chữ cái và khoảng trắng.";
+      errors.fullName = t.booking.fullNameInvalid;
     }
 
     // Email validation
     if (!email) {
-      errors.email = "Vui lòng nhập email.";
+      errors.email = t.booking.emailRequired;
     } else if (email.length > 255) {
-      errors.email = "Email tối đa 255 ký tự.";
+      errors.email = t.booking.emailMaxLength;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = "Email không đúng định dạng.";
+      errors.email = t.booking.emailInvalid;
     }
 
     // Phone validation
     const digitsOnly = phone.replace(/\D/g, "");
     if (!phone) {
-      errors.phone = "Vui lòng nhập số điện thoại.";
+      errors.phone = t.booking.phoneRequired;
     } else if (digitsOnly.length < 8 || digitsOnly.length > 15) {
-      errors.phone = "Số điện thoại phải từ 8–15 chữ số.";
+      errors.phone = t.booking.phoneLength;
     } else if (!/^(\+?\d[\d\s\-().]{7,})$/.test(phone)) {
-      errors.phone = "Số điện thoại không hợp lệ.";
+      errors.phone = t.booking.phoneInvalid;
     }
 
     // Special requests validation
     if (specialRequests.length > 500) {
-      errors.specialRequests = "Yêu cầu đặc biệt tối đa 500 ký tự.";
+      errors.specialRequests = t.booking.specialRequestsMaxLength;
     } else if (/<[^>]+>/.test(specialRequests)) {
-      errors.specialRequests = "Vui lòng không nhập mã HTML hoặc script.";
+      errors.specialRequests = t.booking.specialRequestsNoHtml;
     }
 
     return errors;
@@ -222,8 +227,8 @@ const BookingSectionContent = () => {
   const handleCheckAvailable = async () => {
     if (!formData.checkIn || !formData.checkOut) {
       toast({
-        title: "Vui lòng chọn ngày",
-        description: "Bạn cần chọn ngày nhận phòng và ngày trả phòng trước",
+        title: t.booking.selectDateTitle,
+        description: t.booking.selectDateDesc,
         variant: "destructive",
       });
       return;
@@ -246,7 +251,7 @@ const BookingSectionContent = () => {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Không thể kiểm tra phòng trống');
+        throw new Error(error.error || t.booking.roomNotAvailableError);
       }
 
       const rooms = await response.json();
@@ -254,21 +259,21 @@ const BookingSectionContent = () => {
 
       if (rooms.length === 0) {
         toast({
-          title: "Không có phòng trống",
-          description: "Không tìm thấy phòng trống trong khoảng thời gian đã chọn",
+          title: t.booking.noRoomsTitle,
+          description: t.booking.noRoomsDesc,
           variant: "default",
         });
       } else {
         toast({
-          title: "Tìm thấy phòng trống",
-          description: `Có ${rooms.length} phòng trống trong khoảng thời gian này`,
+          title: t.booking.foundRoomsTitle,
+          description: t.booking.foundRoomsDesc.replace('{count}', rooms.length.toString()),
         });
       }
     } catch (error) {
       console.error('Error checking available rooms:', error);
       toast({
-        title: "Lỗi kiểm tra phòng trống",
-        description: error instanceof Error ? error.message : "Đã xảy ra lỗi. Vui lòng thử lại sau.",
+        title: t.booking.checkErrorTitle,
+        description: error instanceof Error ? error.message : t.booking.checkErrorDesc,
         variant: "destructive",
       });
       setAvailableRooms([]);
@@ -284,8 +289,8 @@ const BookingSectionContent = () => {
     if (Object.keys(fieldErrors).length > 0) {
       setFormErrors(fieldErrors);
       toast({
-        title: "Thông tin không hợp lệ",
-        description: "Vui lòng kiểm tra lại các trường được đánh dấu.",
+        title: t.booking.invalidInfoTitle,
+        description: t.booking.invalidInfoDesc,
         variant: "destructive",
       });
       return;
@@ -294,8 +299,8 @@ const BookingSectionContent = () => {
     // Basic validation
     if (!formData.checkIn || !formData.checkOut || !formData.roomType || !formData.fullName || !formData.email || !formData.phone) {
       toast({
-        title: "Thông tin chưa đầy đủ",
-        description: "Vui lòng điền đầy đủ thông tin bắt buộc",
+        title: t.booking.incompleteInfoTitle,
+        description: t.booking.incompleteInfoDesc,
         variant: "destructive",
       });
       return;
@@ -346,8 +351,8 @@ const BookingSectionContent = () => {
 
         if (response.status === 400 && errorCode === 'ROOM_NOT_AVAILABLE') {
           toast({
-            title: "Phòng đã được đặt",
-            description: result.error || "Phòng đã được đặt trong khoảng thời gian này. Vui lòng chọn phòng hoặc thời gian khác.",
+            title: t.booking.roomBookedTitle,
+            description: result.error || t.booking.roomBookedDesc,
             variant: "destructive",
           });
           return;
@@ -412,8 +417,8 @@ const BookingSectionContent = () => {
           result_keys: Object.keys(result || {}),
         });
         toast({
-          title: "Đặt phòng thành công!",
-          description: result.message || "Chúng tôi đã nhận được yêu cầu đặt phòng của bạn. Vui lòng sử dụng email và số điện thoại để tra cứu đặt phòng.",
+          title: t.booking.bookingSuccessTitle,
+          description: result.message || t.booking.bookingSuccessDesc,
           variant: "default",
         });
         // Redirect to lookup page as fallback
@@ -436,8 +441,8 @@ const BookingSectionContent = () => {
     } catch (error) {
       console.error('Error creating booking:', error);
       toast({
-        title: "Đặt phòng thất bại",
-        description: error instanceof Error ? error.message : "Đã xảy ra lỗi. Vui lòng thử lại sau hoặc liên hệ trực tiếp với khách sạn.",
+        title: t.booking.bookingFailedTitle,
+        description: error instanceof Error ? error.message : t.booking.bookingFailedDesc,
         variant: "destructive",
       });
     } finally {
@@ -450,10 +455,10 @@ const BookingSectionContent = () => {
       <div className="container-luxury">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-6">
-            Đặt Phòng Trực Tuyến
+            {t.booking.title}
           </h2>
           <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Đặt phòng nhanh chóng và tiện lợi với hệ thống trực tuyến của Y Hotel
+            {t.booking.description}
           </p>
         </div>
 
@@ -462,7 +467,7 @@ const BookingSectionContent = () => {
           <div className="lg:col-span-2">
             <Card className="border-0 bg-background/60 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-xl font-display">Thông Tin Đặt Phòng</CardTitle>
+                <CardTitle className="text-xl font-display">{t.booking.formTitle}</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-6">
@@ -471,7 +476,7 @@ const BookingSectionContent = () => {
                     <div>
                       <Label className="flex items-center gap-2 mb-2">
                         <CalendarIcon className="w-4 h-4" />
-                        Ngày nhận phòng *
+                        {t.booking.checkInLabel}
                       </Label>
                       <Popover>
                         <PopoverTrigger asChild>
@@ -484,9 +489,9 @@ const BookingSectionContent = () => {
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {formData.checkIn ? (
-                              format(formData.checkIn, "dd/MM/yyyy", { locale: vi })
+                              format(formData.checkIn, "dd/MM/yyyy", { locale: dateLocale })
                             ) : (
-                              <span>Chọn ngày nhận phòng</span>
+                              <span>{t.booking.selectCheckIn}</span>
                             )}
                           </Button>
                         </PopoverTrigger>
@@ -510,7 +515,7 @@ const BookingSectionContent = () => {
                     <div>
                       <Label className="flex items-center gap-2 mb-2">
                         <CalendarIcon className="w-4 h-4" />
-                        Ngày trả phòng *
+                        {t.booking.checkOutLabel}
                       </Label>
                       <Popover>
                         <PopoverTrigger asChild>
@@ -524,9 +529,9 @@ const BookingSectionContent = () => {
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {formData.checkOut ? (
-                              format(formData.checkOut, "dd/MM/yyyy", { locale: vi })
+                              format(formData.checkOut, "dd/MM/yyyy", { locale: dateLocale })
                             ) : (
-                              <span>Chọn ngày trả phòng</span>
+                              <span>{t.booking.selectCheckOut}</span>
                             )}
                           </Button>
                         </PopoverTrigger>
@@ -612,10 +617,10 @@ const BookingSectionContent = () => {
 
                   {/* Room Type */}
                   <div>
-                    <Label htmlFor="roomType" className="mb-2 block">Loại phòng *</Label>
+                    <Label htmlFor="roomType" className="mb-2 block">{t.booking.roomTypeLabel}</Label>
                     <Select value={formData.roomType} onValueChange={(value) => handleInputChange("roomType", value)}>
                       <SelectTrigger>
-                        <SelectValue placeholder="Chọn loại phòng" />
+                        <SelectValue placeholder={t.booking.selectRoomType} />
                       </SelectTrigger>
                       <SelectContent>
                         {roomTypes.map(room => (
@@ -628,12 +633,12 @@ const BookingSectionContent = () => {
                   {/* Personal Information */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="fullName" className="mb-2 block">Họ và tên *</Label>
+                      <Label htmlFor="fullName" className="mb-2 block">{t.booking.fullNameLabel}</Label>
                       <Input
                         id="fullName"
                         value={formData.fullName}
                         onChange={(e) => handleInputChange("fullName", e.target.value)}
-                        placeholder="Nhập họ và tên"
+                        placeholder={t.booking.fullNamePlaceholder}
                         maxLength={100}
                         required
                       />
@@ -677,12 +682,12 @@ const BookingSectionContent = () => {
                   </div>
 
                   <div>
-                    <Label htmlFor="specialRequests" className="mb-2 block">Yêu cầu đặc biệt</Label>
+                    <Label htmlFor="specialRequests" className="mb-2 block">{t.booking.specialRequestsLabel}</Label>
                     <Textarea
                       id="specialRequests"
                       value={formData.specialRequests}
                       onChange={(e) => handleInputChange("specialRequests", e.target.value)}
-                      placeholder="Ví dụ: Giường đôi, tầng cao, view biển..."
+                      placeholder={t.booking.specialRequestsPlaceholder}
                       rows={3}
                       maxLength={500}
                     />
@@ -700,7 +705,7 @@ const BookingSectionContent = () => {
                     className="w-full text-base py-3"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting ? "Đang xử lý..." : "Đặt Phòng Ngay"}
+                    {isSubmitting ? t.booking.processing : t.booking.bookNow}
                   </Button>
                 </form>
               </CardContent>
@@ -712,7 +717,7 @@ const BookingSectionContent = () => {
             {/* Quick Contact */}
             <Card className="border-0 bg-background/60 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-lg font-display">Liên Hệ Trực Tiếp</CardTitle>
+                <CardTitle className="text-lg font-display">{t.booking.contactDirectTitle}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -738,7 +743,7 @@ const BookingSectionContent = () => {
             {/* Policies */}
             <Card className="border-0 bg-background/60 backdrop-blur-sm">
               <CardHeader>
-                <CardTitle className="text-lg font-display">Chính Sách Khách Sạn</CardTitle>
+                <CardTitle className="text-lg font-display">{t.booking.policyTitle}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div>
@@ -763,12 +768,12 @@ const BookingSectionContent = () => {
       <Dialog open={isCheckAvailableOpen} onOpenChange={setIsCheckAvailableOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Kiểm tra phòng trống</DialogTitle>
+            <DialogTitle>{t.booking.checkAvailabilityTitle}</DialogTitle>
             <DialogDescription>
               {formData.checkIn && formData.checkOut && (
                 <>
-                  Từ {format(formData.checkIn, "dd/MM/yyyy", { locale: vi })} đến{" "}
-                  {format(formData.checkOut, "dd/MM/yyyy", { locale: vi })}
+                  {t.booking.dateRangeFrom} {format(formData.checkIn, "dd/MM/yyyy", { locale: dateLocale })} {t.booking.dateRangeTo}{" "}
+                  {format(formData.checkOut, "dd/MM/yyyy", { locale: dateLocale })}
                 </>
               )}
             </DialogDescription>
@@ -804,13 +809,13 @@ const BookingSectionContent = () => {
                               {room.category}
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
-                              Tối đa {room.guests} khách
+                              {t.roomDetail.capacity} {room.guests} {room.guests > 1 ? t.common.guests : t.common.guest}
                             </p>
                           </div>
                           <div className="text-sm">
                             <span className="text-muted-foreground">Giá: </span>
                             <span className="font-semibold text-primary">
-                              {room.price}₫/đêm
+                              {room.price}₫{t.common.perNight}
                             </span>
                           </div>
                           <div className="flex justify-end">

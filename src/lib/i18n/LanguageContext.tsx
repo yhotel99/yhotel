@@ -7,6 +7,7 @@ interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: typeof translations.vi | typeof translations.en;
+  isHydrated: boolean;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -14,16 +15,19 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 const DEFAULT_LANGUAGE: Language = "vi";
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Always start with default language to ensure server/client match
   const [language, setLanguageState] = useState<Language>(DEFAULT_LANGUAGE);
   const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
+    // Only run on client after mount
+    setIsHydrated(true);
+    
     // Load language from localStorage after hydration
     const savedLanguage = localStorage.getItem("language") as Language;
     if (savedLanguage && (savedLanguage === "vi" || savedLanguage === "en")) {
       setLanguageState(savedLanguage);
     }
-    setIsHydrated(true);
   }, []);
 
   const setLanguage = (lang: Language) => {
@@ -37,7 +41,8 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     language,
     setLanguage,
     t: translations[language],
-  }), [language]);
+    isHydrated,
+  }), [language, isHydrated]);
 
   return (
     <LanguageContext.Provider value={value}>

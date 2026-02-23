@@ -1,56 +1,36 @@
 "use client";
 
 import { memo } from "react";
-import { Wifi, Car, Coffee, Dumbbell, Utensils, Waves } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Marquee } from "@/registry/magicui/marquee";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { AMENITIES_OPTIONS } from "@/lib/constants";
+import { getAmenityIcon } from "@/lib/amenity-icons";
 
 const ServicesSection = memo(() => {
   const { t } = useLanguage();
 
-  const services = [
-    {
-      icon: Wifi,
-      title: t.services.wifiTitle,
-      description: t.services.wifiDesc
-    },
-    {
-      icon: Car,
-      title: t.services.parkingTitle,
-      description: t.services.parkingDesc
-    },
-    {
-      icon: Coffee,
-      title: t.services.breakfastTitle,
-      description: t.services.breakfastDesc
-    },
-    {
-      icon: Dumbbell,
-      title: t.services.gymTitle,
-      description: t.services.gymDesc
-    },
-    {
-      icon: Utensils,
-      title: t.services.restaurantTitle,
-      description: t.services.restaurantDesc
-    },
-    {
-      icon: Waves,
-      title: t.services.poolTitle,
-      description: t.services.poolDesc
-    }
-  ];
+  // Map amenities with translations from home translations
+  const services = AMENITIES_OPTIONS.map((amenity) => {
+    const icon = getAmenityIcon(amenity.value);
+    // Get translated label from services.amenities in home translations
+    const translatedLabel = t.services?.amenities?.[amenity.value as keyof typeof t.services.amenities] || amenity.label;
+    
+    return {
+      icon,
+      title: translatedLabel,
+    };
+  }).filter((service) => service.icon !== null);
 
   const ServiceCard = ({
     icon: Icon,
     title,
-    description,
   }: {
-    icon: React.ElementType;
+    icon: React.ElementType | null;
     title: string;
-    description: string;
   }) => {
+    if (!Icon) return null;
+
     return (
       <figure
         className={cn(
@@ -65,10 +45,9 @@ const ServicesSection = memo(() => {
           <div className="w-16 h-16 mb-4 bg-gradient-to-br from-primary to-primary/60 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
             <Icon className="w-8 h-8 text-primary-foreground" />
           </div>
-          <figcaption className="text-sm font-medium dark:text-white mb-2">
+          <figcaption className="text-sm font-medium dark:text-white">
             {title}
           </figcaption>
-          <blockquote className="text-xs text-muted-foreground">{description}</blockquote>
         </div>
       </figure>
     );

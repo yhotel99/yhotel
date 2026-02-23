@@ -220,7 +220,7 @@ Content-Type: application/json
   "customer": {
     "full_name": "Nguyễn Văn A",
     "email": "nguyenvana@email.com",
-    "phone": "0912345678"
+    "phone": "0787913388"
   },
   "check_in": "2024-01-15T14:00:00Z",
   "check_out": "2024-01-17T12:00:00Z",
@@ -231,7 +231,7 @@ Content-Type: application/json
 
 **Tra cứu đặt phòng**
 ```http
-GET /api/bookings/lookup?email=nguyenvana@email.com&phone=0912345678
+GET /api/bookings/lookup?email=nguyenvana@email.com&phone=0787913388
 ```
 
 **Cập nhật trạng thái đặt phòng** (Admin)
@@ -260,7 +260,7 @@ Content-Type: application/json
 {
   "full_name": "Nguyễn Văn A",
   "email": "nguyenvana@email.com",
-  "phone": "0912345678",
+  "phone": "0787913388",
   "customer_type": "regular"
 }
 ```

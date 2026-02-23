@@ -37,9 +37,9 @@ const AboutSection = () => {
 
   const stats = [
     { number: "20+", label: t.about.modernRooms },
-    { number: "50+", label: t.about.premiumServices },
+    { number: "30+", label: t.about.premiumServices },
     { number: "100%", label: t.about.newEquipment },
-    { number: "5⭐", label: t.about.internationalStandard }
+    { number: "24/7", label: t.about.internationalStandard }
   ];
 
   return (
@@ -120,26 +120,12 @@ const AboutSection = () => {
               <div className="relative overflow-hidden rounded-xl shadow-luxury h-[400px] md:h-[500px]">
                 <Image
                   src={typeof lobbyImage === 'string' ? lobbyImage : lobbyImage.src}
-                  alt="Sảnh khách sang trọng tại Y Hotel với thiết kế hiện đại và không gian rộng rãi"
+                  alt={t.common.lobbyAlt}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
                   className="object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-              </div>
-              
-              {/* Floating Card - Optimized */}
-              <div className="absolute -bottom-6 -left-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                <FloatingCard className="p-6 bg-white shadow-luxury rounded-xl">
-                  <div className="text-center">
-                    <div className="text-2xl font-display font-bold text-gradient mb-2">
-                      5.0⭐
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {t.about.perfectRating}
-                    </div>
-                  </div>
-                </FloatingCard>
               </div>
             </GradientBorder>
           </div>

@@ -270,10 +270,10 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
               <div className="lg:col-span-2 space-y-4 md:space-y-6">
                 <div className="relative border border-border rounded-xl p-4 sm:p-5 md:p-6 lg:p-8 bg-background">
                   {blog.content && blog.content.trim() ? (
-                    <HTMLContent content={blog.content.trim()} emptyMessage={t.roomDetail.contentUpdating} />
+                    <HTMLContent content={blog.content.trim()} emptyMessage={t.blogDetail.notFoundDescription} />
                   ) : (
                     <div className="space-y-4">
-                      <p className="text-muted-foreground text-sm sm:text-base md:text-lg">{t.roomDetail.contentUpdating}</p>
+                      <p className="text-muted-foreground text-sm sm:text-base md:text-lg">{t.blogDetail.notFoundDescription}</p>
                     </div>
                   )}
                 </div>

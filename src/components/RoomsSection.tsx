@@ -1,18 +1,16 @@
 "use client";
 
-import { Bed, Users } from "lucide-react";
+import { Building2, Users, Plus, Wifi, Car, Coffee, Utensils, Shirt, Phone } from "lucide-react";
 import { memo, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
-import { FloatingCard } from "@/components/ui/floating-card";
-import { GradientBorder } from "@/components/ui/gradient-border";
 import { useRooms, usePrefetchRoom } from "@/hooks/use-rooms";
 import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
 import { getAmenityLabel } from "@/lib/constants";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { motion } from "framer-motion";
 
 const categoryLabels: Record<string, string> = {
   standard: "Standard",
@@ -26,6 +24,19 @@ const getCategoryLabel = (category: string): string => {
   return categoryLabels[category] || category.charAt(0).toUpperCase() + category.slice(1);
 };
 
+// Helper to get amenity icon
+const getAmenityIcon = (amenity: string) => {
+  const iconMap: Record<string, any> = {
+    wifi_high_speed: Wifi,
+    parking: Car,
+    coffee: Coffee,
+    breakfast_service: Utensils,
+    laundry: Shirt,
+    taxi_support: Phone,
+  };
+  return iconMap[amenity] || null;
+};
+
 const RoomsSection = () => {
   const { data: rooms = [], isLoading: loading } = useRooms(undefined, undefined, true);
   const prefetchRoom = usePrefetchRoom();
@@ -37,14 +48,26 @@ const RoomsSection = () => {
   return (
     <section id="rooms" className="py-12 md:py-16 bg-gradient-subtle">
       <div className="container-luxury">
-        {/* Header - Optimized with CSS */}
-        <div className="text-center mb-8 md:mb-12 animate-fade-in-up">
-          <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground mb-6 whitespace-nowrap">
+        {/* Header */}
+        <div className="text-center mb-8 md:mb-12">
+          <motion.h2 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground mb-6"
+          >
             {t.rooms.title}
-          </h2>
-          <p className="text-base text-muted-foreground max-w-3xl mx-auto">
+          </motion.h2>
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="text-base text-muted-foreground max-w-3xl mx-auto"
+          >
             {t.rooms.description}
-          </p>
+          </motion.p>
         </div>
 
         {/* Room Cards */}
@@ -55,133 +78,161 @@ const RoomsSection = () => {
             <p className="text-muted-foreground">{t.rooms.noRooms}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 lg:gap-6">
-            {displayRooms.map((room, index) => (
-            <div
-              key={room.id}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <Link 
-                href={`/rooms/${encodeURIComponent(room.id)}`} 
-                className="block h-full"
-                onMouseEnter={() => prefetchRoom(room.id, true)}
-              >
-                <GradientBorder 
-                  containerClassName="relative h-full"
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+            {displayRooms.map((room, index) => {
+              const pricePerNight = typeof room.price === 'string' 
+                ? parseFloat(room.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) 
+                : 0;
+              
+              return (
+                <motion.div
+                  key={room.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
-                  <FloatingCard 
-                    className="group overflow-hidden h-full bg-card rounded-xl border border-border shadow-card hover:shadow-hover transition-shadow cursor-pointer"
-                    delay={0}
+                  <Link 
+                    href={`/rooms/${encodeURIComponent(room.id)}`} 
+                    className="block h-full"
+                    onMouseEnter={() => prefetchRoom(room.id, true)}
                   >
-                  {/* Image - Optimized with Next Image */}
-                  <div className="relative overflow-hidden rounded-t-xl h-32 md:h-48 lg:h-52">
-                    <Image
-                      src={room.image}
-                      alt={`Phòng ${room.name} tại Y Hotel - ${room.size} với view đẹp và tiện nghi cao cấp`}
-                      fill
-                      sizes="(max-width: 768px) 50vw, (max-width: 1024px) 25vw, 20vw"
-                      className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
-                      loading={index < 2 ? "eager" : "lazy"}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                    
-                    {/* Badges */}
-                    <div className="absolute top-2 right-2 flex gap-1.5">
-                      {room.popular && (
-                        <Badge className="bg-primary/95 text-primary-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm shadow-sm">
-                          ⭐ {t.rooms.popular}
-                        </Badge>
-                      )}
-                      <Badge variant="outline" className="bg-background/90 text-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm border-background/50">
-                        {getCategoryLabel(room.category)}
-                      </Badge>
-                    </div>
-
-                    {/* Quick Info Overlay */}
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <div className="flex items-center justify-between text-white text-xs sm:text-sm">
-                        <div className="flex items-center gap-2 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-md">
-                          <div className="flex items-center gap-1">
-                            <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                            <span className="font-medium">{room.guests}</span>
-                          </div>
-                          {room.size && (
-                            <>
-                              <span className="text-white/60">•</span>
-                              <div className="flex items-center gap-1">
-                                <Bed className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                <span className="hidden sm:inline">{room.size}</span>
-                              </div>
-                            </>
+                    <div className="border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg bg-card h-full">
+                      <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4">
+                        {/* Room Image */}
+                        <div className="relative h-40 md:h-full rounded-lg overflow-hidden flex-shrink-0">
+                          <img
+                            src={room.image}
+                            alt={room.name}
+                            className="w-full h-full object-cover"
+                          />
+                          {room.popular && (
+                            <Badge className="absolute top-2 right-2 bg-primary/95 text-primary-foreground text-xs">
+                              ⭐ {t.rooms.popular}
+                            </Badge>
                           )}
+                        </div>
+
+                        {/* Room Info */}
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between mb-2 gap-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Building2 className="w-4 h-4 text-primary flex-shrink-0" />
+                                  <h3 className="font-semibold text-base sm:text-lg truncate">{room.name}</h3>
+                                </div>
+                                <div className="mb-2">
+                                  <div className="flex items-baseline gap-1">
+                                    <p className="text-lg sm:text-xl font-bold text-primary">
+                                      {pricePerNight.toLocaleString('vi-VN')}₫
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">{t.rooms.perNight}</p>
+                                  </div>
+                                </div>
+                              </div>
+                              {room.category && (
+                                <Badge variant="outline" className="text-xs flex-shrink-0">
+                                  {getCategoryLabel(room.category)}
+                                </Badge>
+                              )}
+                            </div>
+
+                            {/* Room Description */}
+                            {room.description && (
+                              <div 
+                                className="text-sm text-muted-foreground mb-3 line-clamp-2"
+                                dangerouslySetInnerHTML={{ __html: room.description }}
+                              />
+                            )}
+
+                            {/* Room Details */}
+                            <div className="flex flex-wrap gap-3 mb-3">
+                              {room.guests && (
+                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                  <Users className="w-4 h-4" />
+                                  <span>{room.guests} {room.guests > 1 ? t.common.guests : t.common.guest}</span>
+                                </div>
+                              )}
+                              {room.size && (
+                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                  <Building2 className="w-4 h-4" />
+                                  <span>{room.size}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Amenities */}
+                            {room.amenities && room.amenities.length > 0 && (
+                              <div className="flex flex-wrap gap-2 mb-3">
+                                {room.amenities.slice(0, 4).map((amenity, idx) => {
+                                  const Icon = getAmenityIcon(amenity);
+                                  return Icon ? (
+                                    <div
+                                      key={idx}
+                                      className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded"
+                                      title={getAmenityLabel(amenity)}
+                                    >
+                                      <Icon className="w-3.5 h-3.5" />
+                                    </div>
+                                  ) : (
+                                    <Badge
+                                      key={idx}
+                                      variant="secondary"
+                                      className="text-xs"
+                                    >
+                                      {getAmenityLabel(amenity)}
+                                    </Badge>
+                                  );
+                                })}
+                                {room.amenities.length > 4 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    +{room.amenities.length - 4}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action Button */}
+                          <div className="pt-3 border-t mt-auto">
+                            <Button
+                              variant="default"
+                              className="w-full bg-primary hover:bg-primary/90"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                window.location.href = `/rooms/${encodeURIComponent(room.id)}`;
+                              }}
+                            >
+                              <Plus className="w-4 h-4 mr-2" />
+                              {t.rooms.bookNow}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-
-                  <CardContent className="p-2 md:p-3 flex flex-col flex-1">
-                    {/* Room Name */}
-                    <h3 className="text-xs md:text-base lg:text-lg font-display font-semibold text-foreground mb-1 line-clamp-1 group-hover:text-primary transition-colors">
-                      {room.name}
-                    </h3>
-
-                    {/* Price */}
-                    <div className="mb-1.5">
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-sm md:text-lg lg:text-xl font-bold text-primary">
-                          {room.price}₫
-                        </span>
-                        <span className="text-[10px] md:text-xs text-muted-foreground">{t.rooms.perNight}</span>
-                      </div>
-                    </div>
-
-                    {/* Amenities - Chips */}
-                    <div className="mb-1.5 hidden md:block relative">
-                      <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-                        {(room.amenities || []).map((amenity, idx) => (
-                          <Badge
-                            key={idx}
-                            variant="outline"
-                            className="text-[9px] md:text-[10px] px-1.5 py-0.5 h-auto font-normal bg-muted/50 border-border/50 whitespace-nowrap flex-shrink-0"
-                          >
-                            {getAmenityLabel(amenity)}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent pointer-events-none" />
-                    </div>
-
-                    {/* Action Button */}
-                    <ShimmerButton
-                      variant="luxury"
-                      size="sm"
-                      className="w-full text-[10px] md:text-sm mt-auto py-1 md:py-1.5"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.location.href = `/rooms/${encodeURIComponent(room.id)}`;
-                      }}
-                    >
-                      {t.rooms.bookNow}
-                    </ShimmerButton>
-                  </CardContent>
-                </FloatingCard>
-              </GradientBorder>
-              </Link>
-            </div>
-            ))}
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         )}
 
-        {/* View All Button - Optimized with CSS */}
-        <div className="text-center mt-12 animate-fade-in-up">
+        {/* View All Button */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="text-center mt-12"
+        >
           <Link href="/rooms">
             <ShimmerButton variant="luxury" size="lg" className="px-8">
               {t.rooms.viewAllRooms}
             </ShimmerButton>
           </Link>
-        </div>
+        </motion.div>
 
       </div>
     </section>

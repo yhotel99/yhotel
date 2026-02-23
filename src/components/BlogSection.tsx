@@ -31,7 +31,7 @@ const BlogSection = () => {
       const wordsPerMinute = 200;
       const words = content.split(/\s+/).length;
       const minutes = Math.ceil(words / wordsPerMinute);
-      return `${minutes} phút đọc`;
+      return `${minutes} ${t.blog.readTime}`;
     };
 
     // Format date
@@ -52,7 +52,7 @@ const BlogSection = () => {
       image: blog.image || "/placeholder.svg",
       author: blog.author?.full_name || "Y Hotel",
       date: formatDate(blog.date),
-      category: "Tin tức", // Default category since API doesn't have categories
+      category: t.common.defaultCategory, // Default category since API doesn't have categories
       readTime: calculateReadTime(blog.content),
       featured: false, // First blog will be featured
     }));
@@ -206,7 +206,7 @@ const BlogSection = () => {
                       />
                       {/* Featured Badge - Top Left */}
                       <Badge className="absolute top-4 left-4 z-10 bg-primary text-primary-foreground px-4 py-1.5 text-sm font-semibold">
-                        BÀI VIẾT NỔI BẬT
+                        {t.blog.featured}
                       </Badge>
                     </div>
                     
@@ -243,7 +243,7 @@ const BlogSection = () => {
                           <span>{featuredPost.readTime}</span>
                         </div>
                         <ShimmerButton variant="luxury" size="sm">
-                          Đọc Tiếp →
+                          {t.blog.readMore}
                         </ShimmerButton>
                       </div>
                     </div>
@@ -313,7 +313,7 @@ const BlogSection = () => {
                             <span>{post.readTime}</span>
                           </div>
                           <ShimmerButton variant="luxury" size="sm" className="text-[10px] md:text-xs px-1.5 md:px-3 py-0.5 md:py-1">
-                            Đọc tiếp →
+                            {t.blog.readMore}
                           </ShimmerButton>
                         </div>
                       </CardContent>

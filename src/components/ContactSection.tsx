@@ -9,27 +9,27 @@ const ContactSection = memo(() => {
   const contactInfo = [
     {
       icon: Phone,
-      title: "Điện Thoại",
-      details: ["+84 292 123 4567", "+84 987 654 321"],
-      badge: "Hotline 24/7"
+      title: t.contact.phoneTitle,
+      details: ["+84 787 913 388", "0787 913 388"],
+      badge: t.contact.phoneBadge
     },
     {
       icon: Mail,
-      title: "Email",
-      details: ["info@yhotel.com", "booking@yhotel.com"],
-      badge: "Phản hồi trong 2 giờ"
+      title: t.contact.emailTitle,
+      details: ["hello@yhotel.vn"],
+      badge: t.contact.emailBadge
     },
     {
       icon: MapPin,
-      title: "Địa Chỉ",
-      details: ["60-62-64 Lý Hồng Thanh", "Cái Khế, Cần Thơ"],
-      badge: "Trung tâm thành phố"
+      title: t.contact.addressTitle,
+      details: [t.contact.addressLine1, t.contact.addressLine2],
+      badge: t.contact.addressBadge
     },
     {
       icon: Clock,
-      title: "Giờ Làm Việc",
-      details: ["Lễ tân: 24/7", "Nhà hàng: 6:00 - 23:00"],
-      badge: "Phục vụ không ngừng nghỉ"
+      title: t.contact.workingHoursTitle,
+      details: [t.contact.receptionHours],
+      badge: t.contact.workingHoursBadge
     }
   ];
 
@@ -59,7 +59,7 @@ const ContactSection = memo(() => {
               return (
                 <div
                   key={index}
-                  className="group relative bg-white/80 backdrop-blur-sm border border-border/40 rounded-lg p-4 md:p-5 hover:border-primary/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5"
+                  className="group relative bg-white/80 backdrop-blur-sm border border-border/40 rounded-lg p-4 md:p-5 hover:border-primary/50 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 flex flex-col"
                 >
                   {/* Icon */}
                   <div className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 mb-3 group-hover:from-primary/20 group-hover:to-primary/10 transition-colors">
@@ -72,7 +72,7 @@ const ContactSection = memo(() => {
                   </h3>
 
                   {/* Details */}
-                  <div className="space-y-1 mb-3">
+                  <div className="space-y-1 mb-3 flex-grow">
                     {info.details.map((detail, idx) => (
                       <p key={idx} className="text-xs md:text-sm text-muted-foreground leading-snug">
                         {detail}
@@ -80,8 +80,8 @@ const ContactSection = memo(() => {
                     ))}
                   </div>
 
-                  {/* Badge */}
-                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] md:text-xs font-medium bg-primary/10 text-primary">
+                  {/* Badge - Fixed at bottom */}
+                  <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] md:text-xs font-medium bg-primary/10 text-primary self-start mt-auto">
                     {info.badge}
                   </div>
                 </div>

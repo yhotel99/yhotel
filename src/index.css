@@ -75,18 +75,18 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
       hsl(106 34% 67% / 0.9) 0%, 
       hsl(106 34% 75% / 0.8) 50%, 
       hsl(106 34% 55% / 0.9) 100%);
-    --gradient-overlay: linear-gradient(180deg, transparent 0%, hsl(104 33% 89% / 0.6) 100%);
+    --gradient-overlay: linear-gradient(180deg, transparent 0%, hsl(104 33% 89% / 0.2) 100%);
     --gradient-section: linear-gradient(to bottom, 
       hsl(60 4% 98%) 0%, 
       hsl(60 4% 97%) 50%, 
       hsl(60 4% 98%) 100%);
     --gradient-shimmer: linear-gradient(110deg, transparent 45%, hsl(var(--primary) / 0.1) 50%, transparent 55%);
     --gradient-aurora: linear-gradient(135deg, 
-      hsl(var(--primary) / 0.05) 0%, 
-      hsl(var(--gold) / 0.02) 25%, 
-      hsl(var(--primary) / 0.03) 50%, 
-      hsl(var(--gold) / 0.05) 75%, 
-      hsl(var(--primary) / 0.05) 100%);
+      hsl(var(--primary) / 0.02) 0%, 
+      hsl(var(--gold) / 0.01) 25%, 
+      hsl(var(--primary) / 0.015) 50%, 
+      hsl(var(--gold) / 0.02) 75%, 
+      hsl(var(--primary) / 0.02) 100%);
 
     /* Shadows - Increased for better contrast */
     --shadow-luxury: 0 25px 50px -12px hsl(106 34% 67% / 0.25);
@@ -169,7 +169,7 @@ Elegant green and gray color palette with sophisticated gradients and smooth ani
       hsl(106 34% 67% / 0.9) 0%, 
       hsl(106 34% 75% / 0.8) 50%, 
       hsl(106 34% 55% / 0.9) 100%);
-    --gradient-overlay: linear-gradient(180deg, transparent 0%, hsl(104 33% 85% / 0.8) 100%);
+    --gradient-overlay: linear-gradient(180deg, transparent 0%, hsl(104 33% 85% / 0.3) 100%);
     --gradient-section: linear-gradient(to bottom, 
       hsl(104 33% 85%) 0%, 
       hsl(104 33% 87%) 50%, 

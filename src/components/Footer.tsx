@@ -72,14 +72,14 @@ const Footer = memo(() => {
                   </div>
                   <div className="flex items-center space-x-3">
                     <Phone className="w-5 h-5 text-primary flex-shrink-0" />
-                    <a href="tel:+842921234567" className="text-sm text-background/70 hover:text-primary transition-colors">
-                      +84 292 123 4567
+                    <a href="tel:+84787913388" className="text-sm text-background/70 hover:text-primary transition-colors">
+                      +84 787 913 388
                     </a>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Mail className="w-5 h-5 text-primary flex-shrink-0" />
-                    <a href="mailto:info@yhotel.com" className="text-sm text-background/70 hover:text-primary transition-colors">
-                      info@yhotel.com
+                    <a href="mailto:hello@yhotel.vn" className="text-sm text-background/70 hover:text-primary transition-colors">
+                      hello@yhotel.vn
                     </a>
                   </div>
                 </div>
@@ -146,21 +146,6 @@ const Footer = memo(() => {
         {/* Bottom Bar */}
         <div className="border-t border-background/20 py-6">
           <div className="flex flex-col items-center justify-center gap-4">
-            <a
-              href="https://online.gov.vn"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block focus:outline-none focus:ring-2 focus:ring-primary/50 rounded"
-              aria-label={t.footer.registeredNotice}
-            >
-              <Image
-                src="/logo-da-thong-bao-bo-cong-thuong-mau-xanh.png"
-                alt={t.footer.registeredNotice}
-                width={120}
-                height={50}
-                className="h-10 w-auto object-contain"
-              />
-            </a>
             <p className="text-background/60 text-xs md:text-sm">
               {t.footer.copyright}
             </p>

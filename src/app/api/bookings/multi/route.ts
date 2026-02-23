@@ -22,7 +22,8 @@ function normalizePhone(phone: string): string {
 async function findOrCreateCustomer(
   fullName: string,
   email: string,
-  phone: string
+  phone: string,
+  nationality?: string | null
 ): Promise<string | null> {
   const normalizedEmail = email ? normalizeEmail(email) : '';
   const normalizedPhone = phone ? normalizePhone(phone) : '';
@@ -64,6 +65,7 @@ async function findOrCreateCustomer(
           full_name: fullName,
           email: normalizedEmail || null,
           phone: normalizedPhone || null,
+          nationality: nationality || null,
           customer_type: 'regular',
           source: 'website',
         },
@@ -99,6 +101,7 @@ export async function POST(request: Request) {
       customer_name,
       customer_email,
       customer_phone,
+      customer_nationality,
       total_guests,
       room_items, // Array of { room_id, amount }
       notes,
@@ -143,7 +146,8 @@ export async function POST(request: Request) {
     const customerId = await findOrCreateCustomer(
       customer_name,
       normalizedEmail,
-      normalizedPhone
+      normalizedPhone,
+      customer_nationality
     );
 
     if (!customerId) {

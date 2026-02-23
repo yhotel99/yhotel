@@ -15,17 +15,17 @@ const cabin = Cabin({
 });
 
 export const metadata: Metadata = {
-  title: "Y Hotel Cần Thơ - Khách Sạn 5 Sao Sang Trọng | Đặt Phòng Trực Tuyến",
-  description: "Y Hotel Cần Thơ - Khách sạn 5 sao sang trọng với thiết bị hiện đại, không gian tinh tế và dịch vụ đẳng cấp quốc tế. Đặt phòng trực tuyến dễ dàng, giá tốt nhất. Trải nghiệm nghỉ dưỡng đẳng cấp tại trung tâm Cần Thơ.",
-  keywords: "khách sạn Cần Thơ, khách sạn 5 sao Cần Thơ, khách sạn sang trọng, đặt phòng khách sạn, Y Hotel, nghỉ dưỡng cao cấp, phòng khách sạn cao cấp, khách sạn trung tâm Cần Thơ, hotel luxury Cần Thơ, booking khách sạn, khách sạn hiện đại, dịch vụ 5 sao, khách sạn miền Tây",
+  title: "Y Hotel Cần Thơ - Khách Sạn Hiện Đại | Đặt Phòng Trực Tuyến",
+  description: "Y Hotel Cần Thơ - Khách sạn hiện đại với thiết bị mới, không gian thoải mái và dịch vụ chuyên nghiệp. Đặt phòng trực tuyến dễ dàng, giá tốt nhất. Trải nghiệm lưu trú thoải mái tại trung tâm Cần Thơ.",
+  keywords: "khách sạn Cần Thơ, khách sạn hiện đại Cần Thơ, đặt phòng khách sạn, Y Hotel, nghỉ dưỡng Cần Thơ, phòng khách sạn, khách sạn trung tâm Cần Thơ, hotel Cần Thơ, booking khách sạn, khách sạn tiện nghi, khách sạn miền Tây",
   authors: [{ name: "Y Hotel" }],
   icons: {
     icon: "/logo.png",
     apple: "/logo.png",
   },
   openGraph: {
-    title: "Y Hotel Cần Thơ - Khách Sạn 5 Sao Sang Trọng",
-    description: "Khách sạn 5 sao tại Cần Thơ với thiết bị hiện đại, không gian sang trọng và dịch vụ đẳng cấp quốc tế. Đặt phòng ngay để trải nghiệm sự khác biệt.",
+    title: "Y Hotel Cần Thơ - Khách Sạn Hiện Đại",
+    description: "Khách sạn hiện đại tại Cần Thơ với thiết bị mới, không gian thoải mái và dịch vụ chuyên nghiệp. Đặt phòng ngay để trải nghiệm.",
     type: "website",
     locale: "vi_VN",
     siteName: "Y Hotel",
@@ -33,8 +33,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Y Hotel Cần Thơ - Khách Sạn 5 Sao",
-    description: "Khách sạn 5 sao tại Cần Thơ - Thiết bị hiện đại, dịch vụ đẳng cấp",
+    title: "Y Hotel Cần Thơ - Khách Sạn Hiện Đại",
+    description: "Khách sạn hiện đại tại Cần Thơ - Thiết bị mới, dịch vụ chuyên nghiệp",
     site: "@lovable_dev",
     images: ["/logo.png"],
   },
@@ -64,10 +64,10 @@ export default function RootLayout({
     "@context": "https://schema.org",
     "@type": "Hotel",
     "name": "Y Hotel Cần Thơ",
-    "description": "Khách sạn 5 sao sang trọng với thiết bị hiện đại, không gian tinh tế và dịch vụ đẳng cấp quốc tế. Tọa lạc tại vị trí trung tâm thành phố Cần Thơ, mang đến trải nghiệm nghỉ dưỡng hoàn hảo với tiêu chuẩn cao nhất.",
+    "description": "Khách sạn hiện đại với thiết bị mới, không gian thoải mái và dịch vụ chuyên nghiệp. Tọa lạc tại vị trí trung tâm thành phố Cần Thơ, mang đến trải nghiệm lưu trú thoải mái với tiêu chuẩn tốt nhất.",
     "url": "https://yhotel.lovable.app",
     "telephone": "+84-292-123-4567",
-    "email": "info@yhotel.com",
+    "email": "hello@yhotel.vn",
     "image": "https://yhotel.lovable.app/logo.png",
     "address": {
       "@type": "PostalAddress",
@@ -164,7 +164,7 @@ export default function RootLayout({
         "name": "Làm thế nào để đặt phòng tại Y Hotel?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "Bạn có thể đặt phòng trực tuyến qua website yhotel.lovable.app, gọi điện đến hotline +84 123 456 789, hoặc email đến booking@yhotel.com. Đặt phòng online để nhận giá tốt nhất."
+          "text": "Bạn có thể đặt phòng trực tuyến qua website yhotel.lovable.app, gọi điện đến hotline +84 123 456 789, hoặc email đến hello@yhotel.vn. Đặt phòng online để nhận giá tốt nhất."
         }
       }
     ]

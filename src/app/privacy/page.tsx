@@ -85,10 +85,10 @@ export default function PrivacyPage() {
                 <div>
                   <h2 className="text-xl md:text-2xl font-display font-bold text-foreground mb-4 flex items-center gap-2">
                     <Lock className="w-5 h-5 text-primary" />
-                    {t.privacy.section1Title}
+                    {t.privacy.section1.title}
                   </h2>
                   <p className="text-muted-foreground leading-relaxed text-sm md:text-base mb-4">
-                    {t.privacy.section1Intro}
+                    {t.privacy.section1.content}
                   </p>
                   
                   <div className="space-y-4">

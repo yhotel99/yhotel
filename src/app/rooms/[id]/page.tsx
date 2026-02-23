@@ -45,6 +45,7 @@ import Footer from "@/components/Footer";
 import { useRoom, useRooms } from "@/hooks/use-rooms";
 import { RoomDetailSkeleton } from "@/components/RoomDetailSkeleton";
 import { getAmenityLabel } from "@/lib/constants";
+import { getAmenityIcon } from "@/lib/amenity-icons";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import Script from "next/script";
 
@@ -265,37 +266,37 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
 
     // Full name validation
     if (!fullName) {
-      errors.fullName = "Vui lòng nhập họ và tên.";
+      errors.fullName = t.booking.fullNameRequired;
     } else if (fullName.length < 2 || fullName.length > 100) {
-      errors.fullName = "Họ và tên phải từ 2–100 ký tự.";
+      errors.fullName = t.booking.fullNameLength;
     } else if (!/^[\p{L}\s'.-]+$/u.test(fullName)) {
-      errors.fullName = "Họ và tên chỉ được chứa chữ cái và khoảng trắng.";
+      errors.fullName = t.booking.fullNameInvalid;
     }
 
     // Email validation
     if (!email) {
-      errors.email = "Vui lòng nhập email.";
+      errors.email = t.booking.emailRequired;
     } else if (email.length > 255) {
-      errors.email = "Email tối đa 255 ký tự.";
+      errors.email = t.booking.emailMaxLength;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = "Email không đúng định dạng.";
+      errors.email = t.booking.emailInvalid;
     }
 
     // Phone validation
     const digitsOnly = phone.replace(/\D/g, "");
     if (!phone) {
-      errors.phone = "Vui lòng nhập số điện thoại.";
+      errors.phone = t.booking.phoneRequired;
     } else if (digitsOnly.length < 8 || digitsOnly.length > 15) {
-      errors.phone = "Số điện thoại phải từ 8–15 chữ số.";
+      errors.phone = t.booking.phoneLength;
     } else if (!/^(\+?\d[\d\s\-().]{7,})$/.test(phone)) {
-      errors.phone = "Số điện thoại không hợp lệ.";
+      errors.phone = t.booking.phoneInvalid;
     }
 
     // Special requests validation
     if (specialRequests.length > 500) {
-      errors.specialRequests = "Yêu cầu đặc biệt tối đa 500 ký tự.";
+      errors.specialRequests = t.booking.specialRequestsMaxLength;
     } else if (/<[^>]+>/.test(specialRequests)) {
-      errors.specialRequests = "Vui lòng không nhập mã HTML hoặc script.";
+      errors.specialRequests = t.booking.specialRequestsNoHtml;
     }
 
     return errors;
@@ -542,8 +543,8 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
           result_keys: Object.keys(result || {}),
         });
         toast({
-          title: "Đặt phòng thành công!",
-          description: result.message || "Chúng tôi đã nhận được yêu cầu đặt phòng của bạn. Vui lòng sử dụng email và số điện thoại để tra cứu đặt phòng.",
+          title: t.roomDetail.bookingSuccess,
+          description: result.message || t.roomDetail.bookingSuccessMessage,
           variant: "default",
         });
         // Redirect to lookup page as fallback
@@ -565,8 +566,8 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     } catch (error) {
       console.error('Error creating booking:', error);
       toast({
-        title: "Đặt phòng thất bại",
-        description: error instanceof Error ? error.message : "Đã xảy ra lỗi. Vui lòng thử lại sau hoặc liên hệ trực tiếp với khách sạn.",
+        title: t.roomDetail.bookingError,
+        description: error instanceof Error ? error.message : t.roomDetail.bookingErrorMessage,
         variant: "destructive",
       });
     } finally {
@@ -824,7 +825,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                         )}
                         <div className="flex items-center gap-1">
                           <Users className="w-3 h-3 md:w-4 md:h-4" />
-                          <span>{t.roomDetail.capacity} {room.guests} {t.roomDetail.guests}</span>
+                          <span>{t.roomDetail.capacity} {room.guests} {room.guests > 1 ? t.common.guests : t.common.guest}</span>
                         </div>
                       </div>
                     </div>
@@ -865,28 +866,34 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
 
                           {/* Tiện ích */}
                           <div className="pt-4 border-t">
-                            <h3 className="text-xl md:text-2xl font-display font-bold mb-3 text-foreground">
+                            <h3 className="text-xl md:text-2xl font-display font-bold mb-4 text-foreground">
                               {t.roomDetail.amenities}
                             </h3>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-                              {room.amenities && room.amenities.length > 0 ? (
-                                room.amenities.map((amenity, idx) => {
+                            {room.amenities && room.amenities.length > 0 ? (
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {room.amenities.map((amenity, idx) => {
                                   const amenityLabel = getAmenityLabel(amenity);
+                                  const AmenityIcon = getAmenityIcon(amenity);
                                   return (
                                     <div
                                       key={idx}
-                                      className="flex flex-col items-center gap-2 p-3 md:p-4 rounded-lg bg-muted border border-border/50 hover:bg-muted/80 hover:border-primary/20 transition-colors"
+                                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border border-border/30 hover:bg-muted hover:border-primary/30 transition-colors group"
                                     >
-                                      <span className="text-xs md:text-sm text-foreground text-center font-medium">
+                                      {AmenityIcon && (
+                                        <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                          <AmenityIcon className="w-5 h-5 text-primary" />
+                                        </div>
+                                      )}
+                                      <span className="text-sm md:text-base text-foreground font-medium">
                                         {amenityLabel}
                                       </span>
                                     </div>
                                   );
-                                })
-                              ) : (
-                                <p className="text-muted-foreground text-sm">{t.roomDetail.noAmenitiesInfo}</p>
-                              )}
-                            </div>
+                                })}
+                              </div>
+                            ) : (
+                              <p className="text-muted-foreground text-sm">{t.roomDetail.noAmenitiesInfo}</p>
+                            )}
                           </div>
                         </div>
                       </CardContent>
@@ -1199,7 +1206,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
               if (!room || allRooms.length === 0) {
                 return (
                   <div className="text-center py-12">
-                    <p className="text-muted-foreground">Chưa có phòng tương tự.</p>
+                    <p className="text-muted-foreground">{t.roomDetail.noSimilarRooms}</p>
                   </div>
                 );
               }
@@ -1218,7 +1225,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
               if (similarRooms.length === 0) {
                 return (
                   <div className="text-center py-12">
-                    <p className="text-muted-foreground">Chưa có phòng tương tự.</p>
+                    <p className="text-muted-foreground">{t.roomDetail.noSimilarRooms}</p>
                   </div>
                 );
               }
@@ -1304,7 +1311,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                 <span className="text-base sm:text-lg md:text-xl font-bold text-primary">
                                   {similarRoom.price}₫
                                 </span>
-                                <span className="text-[10px] sm:text-xs text-muted-foreground">/đêm</span>
+                                <span className="text-[10px] sm:text-xs text-muted-foreground">{t.common.perNight}</span>
                               </div>
                             </div>
 
@@ -1326,7 +1333,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                 window.location.href = `/rooms/${similarRoom.id}`;
                               }}
                             >
-                              Đặt Ngay
+                              {t.common.bookNow}
                             </ShimmerButton>
                           </CardContent>
                         </FloatingCard>
@@ -1425,7 +1432,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                     <span className="text-base sm:text-lg md:text-xl font-bold text-primary">
                                       {otherRoom.price}₫
                                     </span>
-                                    <span className="text-[10px] sm:text-xs text-muted-foreground">/đêm</span>
+                                    <span className="text-[10px] sm:text-xs text-muted-foreground">{t.common.perNight}</span>
                                   </div>
                                 </div>
 
@@ -1456,7 +1463,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                     window.location.href = `/rooms/${otherRoom.id}`;
                                   }}
                                 >
-                                  Đặt Ngay
+                                  {t.common.bookNow}
                                 </ShimmerButton>
                           </CardContent>
                         </FloatingCard>
@@ -1742,7 +1749,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                 <p className="text-foreground font-semibold">Y Hotel Cần Thơ</p>
                 <p className="text-muted-foreground">Địa chỉ: 60-62-64 Lý Hồng Thanh, Cái Khế, Cần Thơ</p>
                 <p className="text-muted-foreground">Điện thoại: +84 123 456 789</p>
-                <p className="text-muted-foreground">Email: info@yhotel.com</p>
+                <p className="text-muted-foreground">Email: hello@yhotel.vn</p>
               </div>
             </div>
           </div>

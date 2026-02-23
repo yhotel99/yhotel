@@ -63,6 +63,7 @@ export const MultiRoomBookingSection = () => {
     fullName: "",
     email: "",
     phone: "",
+    nationality: "",
     specialRequests: "",
     agreedToTerms: false
   });
@@ -73,7 +74,7 @@ export const MultiRoomBookingSection = () => {
   const [isPrivacyDialogOpen, setIsPrivacyDialogOpen] = useState(false);
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<any>(null);
 
-  // Fetch available rooms
+  // Fetch available rooms when dates are selected
   const { data: availableRooms = [], isLoading: loadingRooms } = useQuery({
     queryKey: ['available-rooms', formData.checkIn, formData.checkOut],
     queryFn: async () => {
@@ -93,6 +94,21 @@ export const MultiRoomBookingSection = () => {
     },
     enabled: !!formData.checkIn && !!formData.checkOut,
   });
+
+  // Fetch all rooms when no dates selected
+  const { data: allRooms = [], isLoading: loadingAllRooms } = useQuery({
+    queryKey: ['all-rooms'],
+    queryFn: async () => {
+      const response = await fetch('/api/rooms');
+      if (!response.ok) return [];
+      return response.json();
+    },
+    enabled: !formData.checkIn || !formData.checkOut,
+  });
+
+  // Use available rooms if dates selected, otherwise show all rooms
+  const roomsToDisplay = (formData.checkIn && formData.checkOut) ? availableRooms : allRooms;
+  const isLoadingRooms = (formData.checkIn && formData.checkOut) ? loadingRooms : loadingAllRooms;
 
   const calculateNights = () => {
     if (!formData.checkIn || !formData.checkOut) return 0;
@@ -173,8 +189,8 @@ export const MultiRoomBookingSection = () => {
 
     if (!formData.agreedToTerms) {
       toast({
-        title: t.multiBooking.agreeToTerms || "Vui lòng xác nhận điều khoản",
-        description: t.multiBooking.agreeToTermsDescription || "Bạn cần đồng ý với điều khoản và điều kiện để tiếp tục",
+        title: t.multiBooking.agreeToTerms,
+        description: t.multiBooking.agreeToTermsDescription,
         variant: "destructive",
       });
       return;
@@ -204,6 +220,7 @@ export const MultiRoomBookingSection = () => {
         customer_name: formData.fullName,
         customer_email: formData.email,
         customer_phone: formData.phone,
+        customer_nationality: formData.nationality || null,
         notes: formData.specialRequests || null,
         room_items: roomItems,
       };
@@ -361,26 +378,36 @@ export const MultiRoomBookingSection = () => {
                 </CardContent>
               </Card>
 
-              {/* Available Rooms */}
-              {formData.checkIn && formData.checkOut && (
-                <Card className="border-0 bg-background/60 backdrop-blur-sm">
-                  <CardHeader>
-                    <CardTitle className="text-xl font-display">{t.multiBooking.selectRooms}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {loadingRooms ? (
-                      <div className="space-y-3">
-                        {Array.from({ length: 3 }).map((_, index) => (
-                          <RoomCardSkeleton key={index} />
-                        ))}
-                      </div>
-                    ) : availableRooms.length === 0 ? (
-                      <p className="text-center text-muted-foreground py-8">
-                        {t.multiBooking.noRoomsAvailable}
-                      </p>
-                    ) : (
-                      <div className="space-y-3">
-                        {availableRooms.map((room: any) => {
+              {/* Available Rooms - Always show */}
+              <Card className="border-0 bg-background/60 backdrop-blur-sm">
+                <CardHeader>
+                  <CardTitle className="text-xl font-display">
+                    {formData.checkIn && formData.checkOut 
+                      ? t.multiBooking.selectRooms 
+                      : "Tất cả phòng"}
+                  </CardTitle>
+                  {!formData.checkIn || !formData.checkOut ? (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Chọn ngày để xem phòng trống và đặt phòng
+                    </p>
+                  ) : null}
+                </CardHeader>
+                <CardContent>
+                  {isLoadingRooms ? (
+                    <div className="space-y-3">
+                      {Array.from({ length: 3 }).map((_, index) => (
+                        <RoomCardSkeleton key={index} />
+                      ))}
+                    </div>
+                  ) : roomsToDisplay.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      {formData.checkIn && formData.checkOut 
+                        ? t.multiBooking.noRoomsAvailable
+                        : "Không có phòng nào"}
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {roomsToDisplay.map((room: any) => {
                           const selectedRoom = selectedRooms.find(r => r.room_id === room.id);
                           const isSelected = !!selectedRoom;
                           const pricePerNight = typeof room.price === 'string' 
@@ -424,7 +451,7 @@ export const MultiRoomBookingSection = () => {
                                             <p className="text-lg sm:text-xl font-bold text-primary">
                                               {pricePerNight.toLocaleString('vi-VN')}₫
                                             </p>
-                                            <p className="text-xs text-muted-foreground">/đêm</p>
+                                            <p className="text-xs text-muted-foreground">{t.common.perNight}</p>
                                           </div>
                                         </div>
                                       </div>
@@ -448,7 +475,7 @@ export const MultiRoomBookingSection = () => {
                                       {room.guests && (
                                         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                                           <Users className="w-4 h-4" />
-                                          <span>{room.guests} khách</span>
+                                          <span>{room.guests} {room.guests > 1 ? t.common.guests : t.common.guest}</span>
                                         </div>
                                       )}
                                       {room.size && (
@@ -530,7 +557,9 @@ export const MultiRoomBookingSection = () => {
                                         <Button
                                           type="button"
                                           onClick={() => addRoom(room)}
-                                          className="flex-1 bg-primary hover:bg-primary/90"
+                                          disabled={!formData.checkIn || !formData.checkOut}
+                                          className="flex-1 bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                                          title={!formData.checkIn || !formData.checkOut ? t.common.selectDateFirst : ""}
                                         >
                                           <Plus className="w-4 h-4 mr-2" />
                                           {t.multiBooking.addRoom}
@@ -558,7 +587,6 @@ export const MultiRoomBookingSection = () => {
                     )}
                   </CardContent>
                 </Card>
-              )}
             </div>
 
             {/* Right Column - Summary & Contact Info */}
@@ -670,6 +698,38 @@ export const MultiRoomBookingSection = () => {
                       />
                     </div>
                     <div>
+                      <Label htmlFor="nationality">{t.booking.nationalityLabel}</Label>
+                      <Select 
+                        value={formData.nationality} 
+                        onValueChange={(value) => setFormData(prev => ({ ...prev, nationality: value }))}
+                      >
+                        <SelectTrigger className="placeholder:text-muted-foreground/50">
+                          <SelectValue placeholder={t.booking.nationalityPlaceholder} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Vietnam">Việt Nam / Vietnam</SelectItem>
+                          <SelectItem value="USA">Hoa Kỳ / USA</SelectItem>
+                          <SelectItem value="Japan">Nhật Bản / Japan</SelectItem>
+                          <SelectItem value="South Korea">Hàn Quốc / South Korea</SelectItem>
+                          <SelectItem value="China">Trung Quốc / China</SelectItem>
+                          <SelectItem value="Thailand">Thái Lan / Thailand</SelectItem>
+                          <SelectItem value="Singapore">Singapore</SelectItem>
+                          <SelectItem value="Malaysia">Malaysia</SelectItem>
+                          <SelectItem value="Australia">Úc / Australia</SelectItem>
+                          <SelectItem value="UK">Anh / UK</SelectItem>
+                          <SelectItem value="France">Pháp / France</SelectItem>
+                          <SelectItem value="Germany">Đức / Germany</SelectItem>
+                          <SelectItem value="Canada">Canada</SelectItem>
+                          <SelectItem value="Taiwan">Đài Loan / Taiwan</SelectItem>
+                          <SelectItem value="Hong Kong">Hồng Kông / Hong Kong</SelectItem>
+                          <SelectItem value="India">Ấn Độ / India</SelectItem>
+                          <SelectItem value="Indonesia">Indonesia</SelectItem>
+                          <SelectItem value="Philippines">Philippines</SelectItem>
+                          <SelectItem value="Other">Khác / Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
                       <Label htmlFor="totalGuests" className="flex items-center gap-2 mb-2">
                         <Users className="w-4 h-4" />
                         {t.multiBooking.totalGuests}
@@ -679,7 +739,7 @@ export const MultiRoomBookingSection = () => {
                         onValueChange={(value) => setFormData(prev => ({ ...prev, totalGuests: value }))}
                       >
                         <SelectTrigger className="placeholder:text-muted-foreground/50">
-                          <SelectValue placeholder="Chọn số người" />
+                          <SelectValue placeholder={t.common.selectGuests} />
                         </SelectTrigger>
                         <SelectContent>
                           {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
@@ -714,23 +774,23 @@ export const MultiRoomBookingSection = () => {
                         htmlFor="agreedToTerms" 
                         className="text-sm font-normal leading-relaxed cursor-pointer"
                       >
-                        Tôi đồng ý với{" "}
+                        {t.multiBooking.agreeToTermsLabel}{" "}
                         <button
                           type="button"
                           onClick={() => setIsTermsDialogOpen(true)}
                           className="text-primary hover:underline"
                         >
-                          điều khoản và điều kiện
+                          {t.multiBooking.termsAndConditions}
                         </button>
-                        {" "}cũng như{" "}
+                        {" "}{t.multiBooking.andAlso}{" "}
                         <button
                           type="button"
                           onClick={() => setIsPrivacyDialogOpen(true)}
                           className="text-primary hover:underline"
                         >
-                          chính sách bảo mật
+                          {t.multiBooking.privacyPolicy}
                         </button>
-                        {" "}của khách sạn *
+                        {" "}{t.multiBooking.ofHotel} *
                       </Label>
                     </div>
 
@@ -792,7 +852,7 @@ export const MultiRoomBookingSection = () => {
                   <p className="text-3xl font-bold text-primary">
                     {formatPrice(selectedRoomDetail.price)}₫
                   </p>
-                  <p className="text-muted-foreground">/đêm</p>
+                  <p className="text-muted-foreground">{t.common.perNight}</p>
                 </div>
 
                 {/* Description */}
@@ -813,7 +873,7 @@ export const MultiRoomBookingSection = () => {
                     {selectedRoomDetail.guests && (
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Users className="w-5 h-5 text-primary" />
-                        <span>{selectedRoomDetail.guests} khách</span>
+                        <span>{selectedRoomDetail.guests} {selectedRoomDetail.guests > 1 ? t.common.guests : t.common.guest}</span>
                       </div>
                     )}
                     {selectedRoomDetail.size && (
@@ -877,8 +937,8 @@ export const MultiRoomBookingSection = () => {
                       addRoom(selectedRoomDetail);
                       setSelectedRoomDetail(null);
                       toast({
-                        title: "Đã thêm phòng",
-                        description: `${selectedRoomDetail.name} đã được thêm vào danh sách đặt phòng`,
+                        title: t.common.roomAdded,
+                        description: t.common.roomAddedDesc.replace('{roomName}', selectedRoomDetail.name),
                       });
                     }}
                     className="flex-1 bg-primary hover:bg-primary/90"
@@ -898,55 +958,49 @@ export const MultiRoomBookingSection = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogTitle className="flex items-center gap-3 text-2xl font-display font-bold mb-4">
             <FileText className="w-6 h-6 text-primary" />
-            Điều Khoản và Điều Kiện
+            {t.terms.title}
           </DialogTitle>
           <div className="space-y-6 text-sm md:text-base">
             <div>
               <p className="text-muted-foreground text-xs mb-4" suppressHydrationWarning>
-                Cập nhật lần cuối: {new Date().toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric" })}
+                {t.terms.lastUpdated} {new Date().toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
               </p>
             </div>
 
             <div>
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">1. Giới Thiệu</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.terms.section1.title}</h2>
               <p className="text-muted-foreground leading-relaxed">
-                Chào mừng bạn đến với Y Hotel Cần Thơ. Khi bạn sử dụng dịch vụ đặt phòng trực tuyến của chúng tôi,
-                bạn đồng ý tuân thủ các điều khoản và điều kiện được nêu trong tài liệu này. Vui lòng đọc kỹ các
-                điều khoản trước khi thực hiện đặt phòng.
+                {t.terms.section1.content}
               </p>
             </div>
 
             <div>
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">2. Điều Khoản Đặt Phòng</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.terms.section2.title}</h2>
               <div className="space-y-3">
                 <div className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">2.1. Xác Nhận Đặt Phòng</h3>
+                    <h3 className="font-semibold text-foreground mb-1">{t.terms.section2.item1Title}</h3>
                     <p className="text-muted-foreground leading-relaxed text-sm">
-                      Đặt phòng của bạn sẽ được xác nhận sau khi thanh toán thành công. Bạn sẽ nhận được email
-                      xác nhận chứa thông tin chi tiết về đặt phòng của mình.
+                      {t.terms.section2.item1Content}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">2.2. Thông Tin Khách Hàng</h3>
+                    <h3 className="font-semibold text-foreground mb-1">{t.terms.section2.item2Title}</h3>
                     <p className="text-muted-foreground leading-relaxed text-sm">
-                      Bạn có trách nhiệm cung cấp thông tin chính xác và đầy đủ khi đặt phòng. Y Hotel không chịu
-                      trách nhiệm về bất kỳ hậu quả nào phát sinh từ thông tin không chính xác.
+                      {t.terms.section2.item2Content}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <CheckCircle className="w-4 h-4 text-primary mt-1 flex-shrink-0" />
                   <div>
-                    <h3 className="font-semibold text-foreground mb-1">2.3. Giá Cả và Thanh Toán</h3>
+                    <h3 className="font-semibold text-foreground mb-1">{t.terms.section2.item3Title}</h3>
                     <p className="text-muted-foreground leading-relaxed text-sm">
-                      Tất cả giá được hiển thị bằng VNĐ và đã bao gồm thuế VAT. Giá có thể thay đổi tùy theo thời
-                      điểm đặt phòng. Thanh toán có thể được thực hiện qua thẻ tín dụng, chuyển khoản ngân hàng hoặc
-                      các phương thức thanh toán trực tuyến khác.
+                      {t.terms.section2.item3Content}
                     </p>
                   </div>
                 </div>
@@ -954,112 +1008,90 @@ export const MultiRoomBookingSection = () => {
             </div>
 
             <div>
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">3. Chính Sách Hủy Phòng</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.terms.section3.title}</h2>
               <div className="space-y-2">
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  <strong className="text-foreground">Hủy miễn phí:</strong> Bạn có thể hủy đặt phòng miễn phí
-                  trước 24 giờ so với thời gian check-in dự kiến.
+                  <strong className="text-foreground">{t.terms.section3.freeCancellation}</strong> {t.terms.section3.freeCancellationContent}
                 </p>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  <strong className="text-foreground">Hủy có phí:</strong> Nếu hủy trong vòng 24 giờ trước khi
-                  check-in, bạn sẽ bị tính phí hủy phòng tương đương 50% giá trị đặt phòng.
+                  <strong className="text-foreground">{t.terms.section3.paidCancellation}</strong> {t.terms.section3.paidCancellationContent}
                 </p>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  <strong className="text-foreground">Không đến (No-show):</strong> Nếu bạn không đến và không
-                  thông báo trước, toàn bộ số tiền đặt phòng sẽ không được hoàn lại.
+                  <strong className="text-foreground">{t.terms.section3.noShow}</strong> {t.terms.section3.noShowContent}
                 </p>
               </div>
             </div>
 
             <div>
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">4. Thời Gian Check-in và Check-out</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.terms.section4.title}</h2>
               <div className="space-y-2">
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  <strong className="text-foreground">Check-in:</strong> Từ 14:00 trở đi. Nếu bạn đến sớm hơn, chúng
-                  tôi sẽ cố gắng sắp xếp phòng sớm nếu có sẵn, nhưng không được đảm bảo.
+                  <strong className="text-foreground">{t.terms.section4.checkIn}</strong> {t.terms.section4.checkInContent}
                 </p>
                 <p className="text-muted-foreground leading-relaxed text-sm">
-                  <strong className="text-foreground">Check-out:</strong> Trước 12:00. Nếu bạn muốn check-out
-                  muộn hơn, vui lòng liên hệ với lễ tân để được sắp xếp (có thể phát sinh phí).
+                  <strong className="text-foreground">{t.terms.section4.checkOut}</strong> {t.terms.section4.checkOutContent}
                 </p>
               </div>
             </div>
 
             <div>
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">5. Trách Nhiệm Của Khách Hàng</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.terms.section5.title}</h2>
               <ul className="space-y-2 text-muted-foreground text-sm">
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>Khách hàng phải tuân thủ các quy định của khách sạn trong thời gian lưu trú.</span>
+                  <span>{t.terms.section5.item1}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>
-                    Khách hàng chịu trách nhiệm về mọi thiệt hại đối với tài sản của khách sạn do lỗi của mình gây ra.
-                  </span>
+                  <span>{t.terms.section5.item2}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>
-                    Không được hút thuốc trong phòng. Vi phạm sẽ bị tính phí làm sạch và có thể bị từ chối phục vụ.
-                  </span>
+                  <span>{t.terms.section5.item3}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>
-                    Không được mang thú cưng vào khách sạn (trừ khi có thỏa thuận trước).
-                  </span>
+                  <span>{t.terms.section5.item4}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>
-                    Khách hàng phải cung cấp giấy tờ tùy thân hợp lệ khi check-in theo quy định của pháp luật.
-                  </span>
+                  <span>{t.terms.section5.item5}</span>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">6. Trách Nhiệm Của Khách Sạn</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.terms.section6.title}</h2>
               <ul className="space-y-2 text-muted-foreground text-sm">
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>
-                    Y Hotel cam kết cung cấp dịch vụ chất lượng cao và đảm bảo phòng được chuẩn bị sẵn sàng khi bạn đến.
-                  </span>
+                  <span>{t.terms.section6.item1}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>
-                    Khách sạn sẽ bảo mật thông tin cá nhân của khách hàng theo chính sách bảo mật.
-                  </span>
+                  <span>{t.terms.section6.item2}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>
-                    Trong trường hợp không thể cung cấp phòng đã đặt, khách sạn sẽ sắp xếp phòng thay thế tương đương
-                    hoặc hoàn tiền.
-                  </span>
+                  <span>{t.terms.section6.item3}</span>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">7. Giới Hạn Trách Nhiệm</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.terms.section7.title}</h2>
               <p className="text-muted-foreground leading-relaxed text-sm">
-                Y Hotel không chịu trách nhiệm về bất kỳ tổn thất, thiệt hại nào phát sinh từ các sự kiện ngoài tầm
-                kiểm soát như thiên tai, hỏa hoạn, đình công, hoặc các sự kiện bất khả kháng khác. Khách sạn cũng
-                không chịu trách nhiệm về tài sản cá nhân của khách hàng bị mất hoặc hư hỏng trong khách sạn.
+                {t.terms.section7.content}
               </p>
             </div>
 
             <div className="pt-4 border-t">
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">8. Liên Hệ</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.terms.section8.title}</h2>
               <div className="space-y-1 text-sm">
-                <p className="text-foreground font-semibold">Y Hotel Cần Thơ</p>
-                <p className="text-muted-foreground">Địa chỉ: 60-62-64 Lý Hồng Thanh, Cái Khế, Cần Thơ</p>
-                <p className="text-muted-foreground">Điện thoại: +84 123 456 789</p>
-                <p className="text-muted-foreground">Email: info@yhotel.com</p>
+                <p className="text-foreground font-semibold">{t.terms.section8.hotelName}</p>
+                <p className="text-muted-foreground">{t.terms.section8.address}</p>
+                <p className="text-muted-foreground">{t.terms.section8.phone}</p>
+                <p className="text-muted-foreground">{t.terms.section8.email}</p>
               </div>
             </div>
           </div>
@@ -1071,24 +1103,22 @@ export const MultiRoomBookingSection = () => {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogTitle className="flex items-center gap-3 text-2xl font-display font-bold mb-4">
             <Shield className="w-6 h-6 text-primary" />
-            Chính Sách Bảo Mật
+            {t.privacy.title}
           </DialogTitle>
           <div className="space-y-6 text-sm md:text-base">
             <div>
               <p className="text-muted-foreground text-xs mb-4" suppressHydrationWarning>
-                Cập nhật lần cuối: {new Date().toLocaleDateString("vi-VN", { year: "numeric", month: "long", day: "numeric" })}
+                {t.privacy.lastUpdated} {new Date().toLocaleDateString(language === "vi" ? "vi-VN" : "en-US", { year: "numeric", month: "long", day: "numeric" })}
               </p>
             </div>
 
             <div>
               <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3 flex items-center gap-2">
                 <Lock className="w-5 h-5 text-primary" />
-                1. Cam Kết Bảo Mật
+                {t.privacy.section1.title}
               </h2>
               <p className="text-muted-foreground leading-relaxed text-sm">
-                Y Hotel Cần Thơ cam kết bảo vệ quyền riêng tư và thông tin cá nhân của khách hàng. Chính sách bảo
-                mật này giải thích cách chúng tôi thu thập, sử dụng, lưu trữ và bảo vệ thông tin của bạn khi sử dụng
-                dịch vụ của chúng tôi.
+                {t.privacy.section1.content}
               </p>
             </div>
 
@@ -1099,32 +1129,32 @@ export const MultiRoomBookingSection = () => {
               </h2>
               <div className="space-y-3">
                 <div>
-                  <h3 className="font-semibold text-foreground mb-2">2.1. Thông Tin Cá Nhân</h3>
+                  <h3 className="font-semibold text-foreground mb-2">{t.privacy.section2.subtitle1}</h3>
                   <ul className="space-y-1 text-muted-foreground text-sm ml-4">
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>Họ và tên, Email, Số điện thoại, Địa chỉ</span>
+                      <span>{t.privacy.section2.item1}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>Thông tin thanh toán (được mã hóa và bảo mật)</span>
+                      <span>{t.privacy.section2.item2}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>Thông tin giấy tờ tùy thân (khi check-in)</span>
+                      <span>{t.privacy.section2.item3}</span>
                     </li>
                   </ul>
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground mb-2">2.2. Thông Tin Kỹ Thuật</h3>
+                  <h3 className="font-semibold text-foreground mb-2">{t.privacy.section2.subtitle2}</h3>
                   <ul className="space-y-1 text-muted-foreground text-sm ml-4">
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>Địa chỉ IP, Loại trình duyệt, Thông tin thiết bị</span>
+                      <span>{t.privacy.section2.item4}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>Cookies và công nghệ theo dõi tương tự</span>
+                      <span>{t.privacy.section2.item5}</span>
                     </li>
                   </ul>
                 </div>
@@ -1134,114 +1164,112 @@ export const MultiRoomBookingSection = () => {
             <div>
               <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3 flex items-center gap-2">
                 <Eye className="w-5 h-5 text-primary" />
-                3. Cách Chúng Tôi Sử Dụng Thông Tin
+                {t.privacy.section3.title}
               </h2>
               <ul className="space-y-2 text-muted-foreground text-sm ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>Xử lý và xác nhận đặt phòng, gửi email xác nhận</span>
+                  <span>{t.privacy.section3.item1}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>Cải thiện dịch vụ và trải nghiệm khách hàng</span>
+                  <span>{t.privacy.section3.item2}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>Gửi thông tin khuyến mãi (nếu bạn đồng ý)</span>
+                  <span>{t.privacy.section3.item3}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>Xử lý thanh toán, tuân thủ pháp luật, phòng chống gian lận</span>
+                  <span>{t.privacy.section3.item4}</span>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">4. Chia Sẻ Thông Tin</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.privacy.section4.title}</h2>
               <p className="text-muted-foreground leading-relaxed text-sm mb-2">
-                Chúng tôi không bán, cho thuê hoặc chia sẻ thông tin cá nhân của bạn với bên thứ ba, ngoại trừ:
+                {t.privacy.section4.content}
               </p>
               <ul className="space-y-2 text-muted-foreground text-sm ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>Nhà cung cấp dịch vụ (thanh toán, email) để hỗ trợ hoạt động</span>
+                  <span>{t.privacy.section4.item1}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>Yêu cầu pháp lý hoặc cơ quan có thẩm quyền</span>
+                  <span>{t.privacy.section4.item2}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>Bảo vệ quyền lợi, tài sản hoặc an toàn của Y Hotel và khách hàng</span>
+                  <span>{t.privacy.section4.item3}</span>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">5. Bảo Mật Dữ Liệu</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.privacy.section5.title}</h2>
               <ul className="space-y-2 text-muted-foreground text-sm ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>Mã hóa SSL/TLS cho tất cả các giao dịch trực tuyến</span>
+                  <span>{t.privacy.section5.item1}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>Lưu trữ dữ liệu trên máy chủ an toàn với kiểm soát truy cập nghiêm ngặt</span>
+                  <span>{t.privacy.section5.item2}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>Thông tin thanh toán được xử lý bởi các nhà cung cấp thanh toán uy tín</span>
+                  <span>{t.privacy.section5.item3}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
-                  <span>Giám sát và cập nhật hệ thống bảo mật thường xuyên</span>
+                  <span>{t.privacy.section5.item4}</span>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">6. Quyền Của Bạn</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.privacy.section6.title}</h2>
               <ul className="space-y-2 text-muted-foreground text-sm ml-4">
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
                   <span>
-                    <strong className="text-foreground">Quyền truy cập:</strong> Xem thông tin cá nhân mà chúng tôi lưu trữ
+                    <strong className="text-foreground">{t.privacy.section6.right1}:</strong> {t.privacy.section6.right1Desc}
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
                   <span>
-                    <strong className="text-foreground">Quyền chỉnh sửa:</strong> Yêu cầu sửa đổi thông tin không chính xác
+                    <strong className="text-foreground">{t.privacy.section6.right2}:</strong> {t.privacy.section6.right2Desc}
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
                   <span>
-                    <strong className="text-foreground">Quyền xóa:</strong> Yêu cầu xóa thông tin cá nhân (trừ khi pháp luật yêu cầu giữ lại)
+                    <strong className="text-foreground">{t.privacy.section6.right3}:</strong> {t.privacy.section6.right3Desc}
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-primary">•</span>
                   <span>
-                    <strong className="text-foreground">Quyền từ chối:</strong> Từ chối nhận email marketing
+                    <strong className="text-foreground">{t.privacy.section6.right4}:</strong> {t.privacy.section6.right4Desc}
                   </span>
                 </li>
               </ul>
             </div>
 
             <div>
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">7. Cookies</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.privacy.section7.title}</h2>
               <p className="text-muted-foreground leading-relaxed text-sm">
-                Chúng tôi sử dụng cookies để cải thiện trải nghiệm người dùng, phân tích lưu lượng truy cập và cá nhân hóa
-                nội dung. Bạn có thể quản lý cookies thông qua cài đặt trình duyệt của mình.
+                {t.privacy.section7.content}
               </p>
             </div>
 
             <div>
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">8. Thay Đổi Chính Sách</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">{t.privacy.section8.title}</h2>
               <p className="text-muted-foreground leading-relaxed text-sm">
-                Chúng tôi có thể cập nhật chính sách bảo mật này theo thời gian. Mọi thay đổi sẽ được thông báo trên
-                trang web và có hiệu lực ngay khi được đăng tải.
+                {t.privacy.section8.content}
               </p>
             </div>
 

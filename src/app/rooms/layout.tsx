@@ -15,7 +15,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Phòng & Suites Y Hotel Cần Thơ",
     description:
-      "Đặt phòng khách sạn 5 sao tại Y Hotel Cần Thơ với các hạng phòng hiện đại, sang trọng.",
+      "Đặt phòng khách sạn tại Y Hotel Cần Thơ với các hạng phòng hiện đại, thoải mái.",
   },
 };
 

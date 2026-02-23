@@ -1,5 +1,6 @@
 import { Building2, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 interface BookingRoom {
   id: string;
@@ -18,6 +19,7 @@ interface BookingRoomsListProps {
 }
 
 export const BookingRoomsList = ({ bookingRooms, nights }: BookingRoomsListProps) => {
+  const { t } = useLanguage();
   const formatPrice = (price: number) => {
     return price.toLocaleString('vi-VN');
   };
@@ -72,8 +74,8 @@ export const BookingRoomsList = ({ bookingRooms, nights }: BookingRoomsListProps
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                {formatPrice(room.amount / nights)}đ/đêm × {nights} đêm
-                {room.quantity > 1 && ` × ${room.quantity} phòng`}
+                {formatPrice(room.amount / nights)}đ/{t.common.perNightShort} × {nights} {t.common.perNightShort}
+                {room.quantity > 1 && ` × ${room.quantity} ${t.common.roomsUnit}`}
               </p>
               <p className="text-sm font-semibold text-primary mt-1">
                 {formatPrice(room.totalAmount)}đ

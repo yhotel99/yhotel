@@ -74,7 +74,7 @@ const Navigation = memo(() => {
           <div className="hidden lg:flex items-center space-x-4">
             <div className="flex items-center space-x-2 text-sm text-background/70">
               <Phone className="w-4 h-4" />
-              <span>+84 123 456 789</span>
+              <span>+84 787 913 388</span>
             </div>
             <LanguageSwitcher />
             <Link href="/rooms">
@@ -161,7 +161,7 @@ const Navigation = memo(() => {
                 >
                     {/* Phone */}
                     <a
-                      href="tel:+84123456789"
+                      href="tel:+84787913388"
                       className="group flex items-center gap-3 px-4 py-3 rounded-lg bg-background/10 hover:bg-background/20 border border-background/20 hover:border-primary/30 transition-all duration-300"
                     >
                       <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
@@ -170,14 +170,14 @@ const Navigation = memo(() => {
                       <div className="flex-1">
                         <p className="text-xs text-background/60 uppercase tracking-wider mb-0.5">{t.nav.phone}</p>
                         <p className="text-background font-medium text-sm group-hover:text-primary transition-colors duration-300">
-                          +84 123 456 789
+                          0787 913 388
                         </p>
                       </div>
                     </a>
 
                     {/* Email */}
                     <a
-                      href="mailto:info@yhotel.com"
+                      href="mailto:hello@yhotel.vn"
                       className="group flex items-center gap-3 px-4 py-3 rounded-lg bg-background/10 hover:bg-background/20 border border-background/20 hover:border-primary/30 transition-all duration-300"
                     >
                       <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors duration-300">
@@ -186,7 +186,7 @@ const Navigation = memo(() => {
                       <div className="flex-1">
                         <p className="text-xs text-background/60 uppercase tracking-wider mb-0.5">{t.nav.email}</p>
                         <p className="text-background font-medium text-sm group-hover:text-primary transition-colors duration-300 break-all">
-                          info@yhotel.com
+                          hello@yhotel.vn
                         </p>
                       </div>
                     </a>
