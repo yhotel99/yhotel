@@ -95,13 +95,15 @@ const RoomsPageContent = () => {
       ];
     }
     
-    // Update labels with translations
-    return fetchedCategories.map(cat => {
-      if (cat.value === 'all') {
-        return { ...cat, label: t.roomsPage.allCategories };
-      }
-      return cat;
-    });
+    // Update labels with translations and ensure all have value
+    return fetchedCategories
+      .filter(cat => cat && cat.value) // Filter out invalid entries
+      .map(cat => {
+        if (cat.value === 'all') {
+          return { ...cat, label: t.roomsPage.allCategories };
+        }
+        return cat;
+      });
   }, [fetchedCategories, t.roomsPage.allCategories]);
 
   // Update URL when booking mode changes
@@ -118,14 +120,29 @@ const RoomsPageContent = () => {
   
   const error = queryError ? t.roomsPage.errorLoading : null;
 
-  // Fetch available rooms if check_in and check_out params exist
-  const { data: availableRooms = [], isLoading: isLoadingAvailable } = useQuery<RoomResponse[]>({
-    queryKey: ['available-rooms', checkInParam, checkOutParam],
+  // Fetch all room categories (always)
+  const { data: allCategories = [], isLoading: isLoadingCategories } = useQuery<any[]>({
+    queryKey: ['room-categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/rooms/categories');
+      
+      if (!response.ok) {
+        throw new Error('Không thể lấy danh sách loại phòng');
+      }
+      
+      return response.json();
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
+
+  // Fetch available room categories if check_in and check_out params exist
+  const { data: availableCategories = [], isLoading: isLoadingAvailable } = useQuery<any[]>({
+    queryKey: ['available-categories', checkInParam, checkOutParam],
     queryFn: async () => {
       if (!checkInParam || !checkOutParam) return [];
       
       const response = await fetch(
-        `/api/rooms/available?check_in=${encodeURIComponent(checkInParam)}&check_out=${encodeURIComponent(checkOutParam)}&skipFilters=true`
+        `/api/rooms/categories-available?check_in=${encodeURIComponent(checkInParam)}&check_out=${encodeURIComponent(checkOutParam)}`
       );
       
       if (!response.ok) {
@@ -138,11 +155,39 @@ const RoomsPageContent = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Use available rooms if we have date params, otherwise use all rooms
-  const roomsToDisplay = checkInParam && checkOutParam ? availableRooms : rooms;
+  // Transform categories to room format for display
+  const categoriesToUse = checkInParam && checkOutParam ? availableCategories : allCategories;
+  const categoriesAsRooms = categoriesToUse.map(cat => {
+    // Format price range
+    const minPrice = cat.min_price || cat.price_per_night;
+    const maxPrice = cat.max_price || cat.price_per_night;
+    const priceDisplay = minPrice === maxPrice 
+      ? minPrice.toLocaleString('vi-VN')
+      : `${minPrice.toLocaleString('vi-VN')} - ${maxPrice.toLocaleString('vi-VN')}`;
+    
+    return {
+      id: cat.category_code, // Use category_code as temporary ID for navigation
+      name: cat.name,
+      image: cat.image,
+      galleryImages: cat.gallery_images,
+      price: priceDisplay,
+      guests: cat.max_guests,
+      features: [],
+      amenities: cat.amenities || [],
+      popular: false,
+      category: cat.room_type,
+      description: cat.description,
+      status: 'available' as const,
+      available_count: cat.available_count, // Only available when filtering by date
+      total_count: cat.total_count,
+    };
+  });
+
+  // Always use categories
+  const roomsToDisplay = categoriesAsRooms;
   
   // Determine if we're currently loading
-  const isLoadingRooms = checkInParam && checkOutParam ? isLoadingAvailable : loading;
+  const isLoadingRooms = checkInParam && checkOutParam ? isLoadingAvailable : isLoadingCategories;
 
   // Handle date range selection
   const handleDateRangeSelect = (range: { from?: Date; to?: Date } | undefined) => {
@@ -510,8 +555,11 @@ const RoomsPageContent = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {filteredRooms.map((room) => {
                   const pricePerNight = typeof room.price === 'string' 
-                    ? parseFloat(room.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) 
+                    ? parseFloat(room.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "").replace(/-/g, "")) 
                     : 0;
+                  
+                  // All rooms are now categories (since we always show by category)
+                  const roomLink = `/rooms/category/${encodeURIComponent(room.id)}${checkInParam && checkOutParam ? `?check_in=${checkInParam}&check_out=${checkOutParam}` : ''}`;
                   
                   return (
                     <motion.div
@@ -521,9 +569,8 @@ const RoomsPageContent = () => {
                       transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                     >
                       <Link 
-                        href={`/rooms/${encodeURIComponent(room.id)}`} 
+                        href={roomLink}
                         className="block h-full"
-                        onMouseEnter={() => prefetchRoom(room.id, true)}
                       >
                         <div className="border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg bg-card h-full">
                           <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4">
@@ -582,12 +629,6 @@ const RoomsPageContent = () => {
                                       <span>{room.guests} {t.roomsPage.guestsUnit}</span>
                                     </div>
                                   )}
-                                  {room.size && (
-                                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                      <Building2 className="w-4 h-4" />
-                                      <span>{room.size}</span>
-                                    </div>
-                                  )}
                                 </div>
 
                                 {/* Amenities */}
@@ -630,7 +671,8 @@ const RoomsPageContent = () => {
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    window.location.href = `/rooms/${encodeURIComponent(room.id)}`;
+                                    const roomLink = `/rooms/category/${encodeURIComponent(room.id)}${checkInParam && checkOutParam ? `?check_in=${checkInParam}&check_out=${checkOutParam}` : ''}`;
+                                    window.location.href = roomLink;
                                   }}
                                 >
                                   <Plus className="w-4 h-4 mr-2" />

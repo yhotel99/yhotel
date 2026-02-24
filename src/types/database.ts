@@ -57,6 +57,7 @@ export interface RoomResponse {
   amenities: string[];
   popular: boolean;
   category: RoomType;
+  category_code?: string;
   description?: string;
   status: RoomStatus;
 }

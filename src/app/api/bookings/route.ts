@@ -312,12 +312,13 @@ async function createBookingFallback(
 }
 
 /**
- * Find available room by room_id or room_type
+ * Find available room by room_id, category_code, or room_type
  */
 async function findAvailableRoom(
   checkIn: string,
   checkOut: string,
   roomId?: string,
+  categoryCode?: string,
   roomType?: string
 ): Promise<{ id: string; price_per_night: number } | null> {
   try {
@@ -341,19 +342,18 @@ async function findAvailableRoom(
         // Still allow booking, admin can handle status
       }
 
-      // Check for booking conflicts
-      const { data: existingBookings } = await supabase
-        .from('bookings')
-        .select('id, check_in, check_out')
+      // Check for booking conflicts using booking_rooms table
+      const { data: existingBookingRooms } = await supabase
+        .from('booking_rooms')
+        .select('id, check_in, check_out, status')
         .eq('room_id', room.id)
-        .is('deleted_at', null)
         .in('status', ['pending', 'awaiting_payment', 'confirmed', 'checked_in']);
 
-      if (existingBookings && existingBookings.length > 0) {
+      if (existingBookingRooms && existingBookingRooms.length > 0) {
         // Check for conflicts
-        const hasConflict = existingBookings.some((booking) => {
-          const existingCheckIn = new Date(booking.check_in);
-          const existingCheckOut = new Date(booking.check_out);
+        const hasConflict = existingBookingRooms.some((br) => {
+          const existingCheckIn = new Date(br.check_in);
+          const existingCheckOut = new Date(br.check_out);
           const newCheckIn = new Date(checkIn);
           const newCheckOut = new Date(checkOut);
           
@@ -369,14 +369,16 @@ async function findAvailableRoom(
       return { id: room.id, price_per_night: room.price_per_night };
     }
 
-    // If no room_id, search by room_type
+    // If no room_id, search by category_code or room_type
     let query = supabase
       .from('rooms')
-      .select('id, price_per_night, max_guests, status')
+      .select('id, price_per_night, max_guests, status, category_code')
       .is('deleted_at', null)
       .in('status', ['available', 'clean']); // Allow both available and clean rooms
 
-    if (roomType) {
+    if (categoryCode) {
+      query = query.eq('category_code', categoryCode);
+    } else if (roomType) {
       query = query.eq('room_type', roomType);
     }
 
@@ -392,23 +394,22 @@ async function findAvailableRoom(
       return null;
     }
 
-    // Check for booking conflicts for each room
+    // Check for booking conflicts for each room using booking_rooms table
     for (const room of rooms) {
-      const { data: existingBookings } = await supabase
-        .from('bookings')
-        .select('id, check_in, check_out')
+      const { data: existingBookingRooms } = await supabase
+        .from('booking_rooms')
+        .select('id, check_in, check_out, status')
         .eq('room_id', room.id)
-        .is('deleted_at', null)
         .in('status', ['pending', 'awaiting_payment', 'confirmed', 'checked_in']);
 
-      if (!existingBookings || existingBookings.length === 0) {
+      if (!existingBookingRooms || existingBookingRooms.length === 0) {
         return { id: room.id, price_per_night: room.price_per_night };
       }
 
       // Check for conflicts: new booking overlaps if check_in < existing_check_out AND check_out > existing_check_in
-      const hasConflict = existingBookings.some((booking) => {
-        const existingCheckIn = new Date(booking.check_in);
-        const existingCheckOut = new Date(booking.check_out);
+      const hasConflict = existingBookingRooms.some((br) => {
+        const existingCheckIn = new Date(br.check_in);
+        const existingCheckOut = new Date(br.check_out);
         const newCheckIn = new Date(checkIn);
         const newCheckOut = new Date(checkOut);
         
@@ -421,9 +422,8 @@ async function findAvailableRoom(
       }
     }
 
-    // If all rooms have conflicts but we have room_id, still allow booking (admin handles conflicts)
-    // Otherwise return null
-    if (roomType && rooms.length > 0) {
+    // If all rooms have conflicts but we have category/type, still allow booking (admin handles conflicts)
+    if ((categoryCode || roomType) && rooms.length > 0) {
       console.log('All rooms have conflicts, but allowing booking anyway');
       return { id: rooms[0].id, price_per_night: rooms[0].price_per_night };
     }
@@ -448,6 +448,7 @@ export async function POST(request: Request) {
       customer_phone,
       total_guests,
       room_id,
+      category_code,
       roomType,
       notes,
     } = body;
@@ -505,20 +506,22 @@ export async function POST(request: Request) {
     }
 
     // Find available room
-    const room = await findAvailableRoom(check_in, check_out, room_id, roomType);
+    const room = await findAvailableRoom(check_in, check_out, room_id, category_code, roomType);
 
     if (!room) {
       // Provide more specific error message
       let errorMessage = 'Không tìm thấy phòng phù hợp';
       if (room_id) {
         errorMessage = `Không tìm thấy phòng với ID: ${room_id}. Phòng có thể đã bị xóa hoặc không tồn tại.`;
+      } else if (category_code) {
+        errorMessage = `Không tìm thấy phòng loại "${category_code}" còn trống trong khoảng thời gian đã chọn.`;
       } else if (roomType) {
         errorMessage = `Không tìm thấy phòng loại "${roomType}" còn trống trong khoảng thời gian đã chọn.`;
       } else {
         errorMessage = 'Vui lòng chọn phòng hoặc loại phòng để đặt.';
       }
       
-      console.error('Room not found:', { room_id, roomType, check_in, check_out });
+      console.error('Room not found:', { room_id, category_code, roomType, check_in, check_out });
       return NextResponse.json(
         { error: errorMessage },
         { status: 400 }

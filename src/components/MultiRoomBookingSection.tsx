@@ -51,9 +51,14 @@ export const MultiRoomBookingSection = () => {
   const { toast } = useToast();
   const { t, language } = useLanguage();
   
+  // Read URL params for check_in and check_out
+  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+  const checkInParam = searchParams.get('check_in');
+  const checkOutParam = searchParams.get('check_out');
+  
   const [formData, setFormData] = useState({
-    checkIn: undefined as Date | undefined,
-    checkOut: undefined as Date | undefined,
+    checkIn: checkInParam ? new Date(checkInParam) : undefined as Date | undefined,
+    checkOut: checkOutParam ? new Date(checkOutParam) : undefined as Date | undefined,
     totalGuests: "2",
     fullName: "",
     email: "",
@@ -69,9 +74,9 @@ export const MultiRoomBookingSection = () => {
   const [isPrivacyDialogOpen, setIsPrivacyDialogOpen] = useState(false);
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<any>(null);
 
-  // Fetch available rooms when dates are selected
-  const { data: availableRooms = [], isLoading: loadingRooms } = useQuery({
-    queryKey: ['available-rooms', formData.checkIn, formData.checkOut],
+  // Fetch available room categories when dates are selected
+  const { data: availableCategories = [], isLoading: loadingCategories } = useQuery({
+    queryKey: ['available-categories', formData.checkIn, formData.checkOut],
     queryFn: async () => {
       if (!formData.checkIn || !formData.checkOut) return [];
       
@@ -81,7 +86,7 @@ export const MultiRoomBookingSection = () => {
       checkOutDate.setHours(12, 0, 0, 0);
 
       const response = await fetch(
-        `/api/rooms/available?check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}&skipFilters=true`
+        `/api/rooms/categories-available?check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}`
       );
 
       if (!response.ok) return [];
@@ -90,20 +95,44 @@ export const MultiRoomBookingSection = () => {
     enabled: !!formData.checkIn && !!formData.checkOut,
   });
 
-  // Fetch all rooms when no dates selected
-  const { data: allRooms = [], isLoading: loadingAllRooms } = useQuery({
-    queryKey: ['all-rooms'],
+  // Fetch all room categories when no dates selected
+  const { data: allCategories = [], isLoading: loadingAllCategories } = useQuery({
+    queryKey: ['all-categories'],
     queryFn: async () => {
-      const response = await fetch('/api/rooms');
+      const response = await fetch('/api/rooms/categories');
       if (!response.ok) return [];
       return response.json();
     },
     enabled: !formData.checkIn || !formData.checkOut,
   });
 
-  // Use available rooms if dates selected, otherwise show all rooms
-  const roomsToDisplay = (formData.checkIn && formData.checkOut) ? availableRooms : allRooms;
-  const isLoadingRooms = (formData.checkIn && formData.checkOut) ? loadingRooms : loadingAllRooms;
+  // Transform categories to room format
+  const transformCategories = (categories: any[]) => {
+    return categories.map(cat => {
+      const minPrice = cat.min_price;
+      const maxPrice = cat.max_price;
+      const pricePerNight = minPrice; // Use min price for calculations
+      
+      return {
+        id: cat.category_code,
+        name: cat.name,
+        image: cat.image,
+        price_per_night: pricePerNight,
+        price: pricePerNight.toLocaleString('vi-VN'),
+        guests: cat.max_guests,
+        amenities: cat.amenities || [],
+        category: cat.room_type,
+        description: cat.description,
+        available_count: cat.available_count,
+        total_count: cat.total_count,
+      };
+    });
+  };
+
+  // Use available categories if dates selected, otherwise show all categories
+  const categoriesToDisplay = (formData.checkIn && formData.checkOut) ? availableCategories : allCategories;
+  const roomsToDisplay = transformCategories(categoriesToDisplay);
+  const isLoadingRooms = (formData.checkIn && formData.checkOut) ? loadingCategories : loadingAllCategories;
 
   const calculateNights = () => {
     if (!formData.checkIn || !formData.checkOut) return 0;

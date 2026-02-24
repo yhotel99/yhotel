@@ -6,12 +6,12 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
-import { useRooms, usePrefetchRoom } from "@/hooks/use-rooms";
 import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
 import { getAmenityLabel } from "@/lib/constants";
 import { getAmenityIcon } from "@/lib/amenity-icons";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 
 const categoryLabels: Record<string, string> = {
   standard: "Standard",
@@ -28,12 +28,47 @@ const getCategoryLabel = (category: string): string => {
 
 
 const RoomsSection = () => {
-  const { data: rooms = [], isLoading: loading } = useRooms(undefined, undefined, true);
-  const prefetchRoom = usePrefetchRoom();
   const { t } = useLanguage();
+  
+  // Fetch room categories
+  const { data: allCategories = [], isLoading: loading } = useQuery<any[]>({
+    queryKey: ['room-categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/rooms/categories');
+      
+      if (!response.ok) {
+        throw new Error('Không thể lấy danh sách loại phòng');
+      }
+      
+      return response.json();
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
 
-  // Show only first 4 rooms on homepage - memoized
-  const displayRooms = useMemo(() => rooms.slice(0, 4), [rooms]);
+  // Transform categories to room format and show only first 4
+  const displayRooms = useMemo(() => {
+    return allCategories.slice(0, 4).map(cat => {
+      // Format price range
+      const minPrice = cat.min_price;
+      const maxPrice = cat.max_price;
+      const priceDisplay = minPrice === maxPrice 
+        ? minPrice.toLocaleString('vi-VN')
+        : `${minPrice.toLocaleString('vi-VN')} - ${maxPrice.toLocaleString('vi-VN')}`;
+      
+      return {
+        id: cat.category_code,
+        name: cat.name,
+        image: cat.image,
+        price: priceDisplay,
+        guests: cat.max_guests,
+        amenities: cat.amenities || [],
+        popular: false,
+        category: cat.room_type,
+        description: cat.description,
+        total_count: cat.total_count,
+      };
+    });
+  }, [allCategories]);
 
   return (
     <section id="rooms" className="py-12 md:py-16 bg-gradient-subtle">
@@ -83,9 +118,8 @@ const RoomsSection = () => {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
                   <Link 
-                    href={`/rooms/${encodeURIComponent(room.id)}`} 
+                    href={`/rooms/category/${encodeURIComponent(room.id)}`}
                     className="block h-full"
-                    onMouseEnter={() => prefetchRoom(room.id, true)}
                   >
                     <div className="border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg bg-card h-full">
                       <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4">
@@ -144,12 +178,6 @@ const RoomsSection = () => {
                                   <span>{room.guests} {room.guests > 1 ? t.common.guests : t.common.guest}</span>
                                 </div>
                               )}
-                              {room.size && (
-                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                  <Building2 className="w-4 h-4" />
-                                  <span>{room.size}</span>
-                                </div>
-                              )}
                             </div>
 
                             {/* Amenities */}
@@ -192,7 +220,7 @@ const RoomsSection = () => {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                window.location.href = `/rooms/${encodeURIComponent(room.id)}`;
+                                window.location.href = `/rooms/category/${encodeURIComponent(room.id)}`;
                               }}
                             >
                               <Plus className="w-4 h-4 mr-2" />

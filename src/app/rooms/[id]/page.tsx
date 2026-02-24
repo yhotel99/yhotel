@@ -462,8 +462,9 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
       checkOutDate.setHours(12, 0, 0, 0); // Default check-out time 12:00
 
       // Prepare booking data
+      // If room has category_code, send it to let backend auto-assign a room
       const bookingData = {
-        room_id: room.id,
+        ...(room.category_code ? { category_code: room.category_code } : { room_id: room.id }),
         check_in: checkInDate.toISOString(),
         check_out: checkOutDate.toISOString(),
         total_guests: parseInt(formData.guests) || 1,

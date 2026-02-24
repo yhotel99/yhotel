@@ -52,6 +52,7 @@ function transformRoomToResponse(room: RoomWithImages): RoomResponse {
     amenities: room.amenities || [],
     popular: false, // You can add a popular field to the database if needed
     category: room.room_type,
+    category_code: (room as any).category_code,
     description: room.description || undefined,
     status: room.status,
   };
@@ -75,6 +76,7 @@ export async function GET(
         name,
         description,
         room_type,
+        category_code,
         price_per_night,
         max_guests,
         amenities,
