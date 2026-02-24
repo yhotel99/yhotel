@@ -323,6 +323,9 @@ export const homeTranslations = {
       checkOutAfterCheckIn: "Ngày trả phòng phải sau ngày nhận phòng",
       similarRooms: "Phòng Tương Tự",
       noSimilarRooms: "Không có phòng tương tự",
+      serviceOrigin: "Dịch vụ cung cấp tại Việt Nam",
+      priceIncludes: "Giá đã bao gồm thuế VAT và phí dịch vụ",
+      priceNote: "* Giá có thể thay đổi tùy theo thời điểm đặt phòng",
     },
 
     // Rooms Page
@@ -686,6 +689,9 @@ export const homeTranslations = {
       checkOutAfterCheckIn: "Check-out date must be after check-in date",
       similarRooms: "Similar Rooms",
       noSimilarRooms: "No similar rooms available",
+      serviceOrigin: "Service provided in Vietnam",
+      priceIncludes: "Price includes VAT and service charge",
+      priceNote: "* Prices may vary depending on booking time",
     },
 
     // Rooms Page
