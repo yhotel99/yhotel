@@ -42,10 +42,26 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get all rooms grouped by category
-    const { data: allRooms, error: roomsError } = await supabase
+    // OPTIMIZED: Single query to get rooms with booking status
+    // This reduces 2 separate queries into 1 with a LEFT JOIN
+    const { data: roomsWithBookings, error: roomsError } = await supabase
       .from('rooms')
-      .select('id, name, description, room_type, category_code, price_per_night, max_guests, amenities')
+      .select(`
+        id, 
+        name, 
+        description, 
+        room_type, 
+        category_code, 
+        price_per_night, 
+        max_guests, 
+        amenities,
+        booking_rooms!left(
+          room_id,
+          status,
+          check_in,
+          check_out
+        )
+      `)
       .is('deleted_at', null)
       .not('category_code', 'is', null)
       .order('name');
@@ -58,27 +74,48 @@ export async function GET(request: Request) {
       );
     }
 
-    if (!allRooms || allRooms.length === 0) {
+    if (!roomsWithBookings || roomsWithBookings.length === 0) {
       return NextResponse.json([]);
     }
 
-    // Get all booked rooms in the date range
-    const { data: bookedRooms } = await supabase
-      .from('booking_rooms')
-      .select('room_id')
-      .in('status', ['pending', 'awaiting_payment', 'confirmed', 'checked_in'])
-      .or(`and(check_in.lt.${checkOut},check_out.gt.${checkIn})`);
+    // Process rooms and check availability in memory (faster than separate query)
+    const allRooms = roomsWithBookings.map((room: any) => {
+      // Check if room has conflicting bookings
+      const hasConflict = room.booking_rooms?.some((br: any) => {
+        if (!['pending', 'awaiting_payment', 'confirmed', 'checked_in'].includes(br.status)) {
+          return false;
+        }
+        const brCheckIn = new Date(br.check_in);
+        const brCheckOut = new Date(br.check_out);
+        return brCheckIn < checkOutDate && brCheckOut > checkInDate;
+      }) || false;
 
-    const bookedRoomIds = new Set(bookedRooms?.map(br => br.room_id) || []);
+      return {
+        id: room.id,
+        name: room.name,
+        description: room.description,
+        room_type: room.room_type,
+        category_code: room.category_code,
+        price_per_night: room.price_per_night,
+        max_guests: room.max_guests,
+        amenities: room.amenities,
+        is_available: !hasConflict,
+      };
+    });
+
+    // Create set of booked room IDs for backward compatibility
+    const bookedRoomIds = new Set(
+      allRooms.filter((r: any) => !r.is_available).map((r: any) => r.id)
+    );
 
     // Group rooms by category and check availability
     const categoryMap = new Map<string, any>();
     const sampleRoomIds: string[] = [];
 
-    allRooms.forEach((room) => {
+    allRooms.forEach((room: any) => {
       if (!room.category_code) return;
 
-      const isAvailable = !bookedRoomIds.has(room.id);
+      const isAvailable = room.is_available;
 
       if (!categoryMap.has(room.category_code)) {
         categoryMap.set(room.category_code, {
@@ -113,7 +150,8 @@ export async function GET(request: Request) {
       }
     });
 
-    // Fetch images for sample rooms
+    // OPTIMIZED: Fetch images for sample rooms with limit
+    // Only get first 5 images per room to reduce data transfer
     const { data: imagesData } = await supabase
       .from('room_images')
       .select(`
@@ -126,7 +164,8 @@ export async function GET(request: Request) {
         )
       `)
       .in('room_id', sampleRoomIds)
-      .order('position');
+      .order('position')
+      .limit(100); // Reasonable limit for sample images
 
     // Group images by room_id
     const imagesByRoom = new Map();

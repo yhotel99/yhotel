@@ -146,6 +146,17 @@ const Footer = memo(() => {
         {/* Bottom Bar */}
         <div className="border-t border-background/20 py-6">
           <div className="flex flex-col items-center justify-center gap-4">
+            <div className="text-center space-y-2">
+              <p className="text-background/80 text-xs md:text-sm font-medium">
+                CÔNG TY CỔ PHẦN KHÁCH SẠN YQ
+              </p>
+              <p className="text-background/60 text-xs">
+                Mã số doanh nghiệp: 1801807326
+              </p>
+              <p className="text-background/60 text-xs">
+                Đăng ký lần đầu: ngày 06 tháng 10 năm 2025
+              </p>
+            </div>
             <p className="text-background/60 text-xs md:text-sm">
               {t.footer.copyright}
             </p>

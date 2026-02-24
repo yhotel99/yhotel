@@ -17,6 +17,8 @@ import {
   Lock,
   Database,
   Eye,
+  Building2,
+  Plus,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -42,12 +44,13 @@ import { useToast } from "@/hooks/use-toast";
 import { useScrollThreshold } from "@/hooks/use-scroll";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { useRoom, useRooms } from "@/hooks/use-rooms";
+import { useRoom } from "@/hooks/use-rooms";
 import { RoomDetailSkeleton } from "@/components/RoomDetailSkeleton";
 import { getAmenityLabel } from "@/lib/constants";
 import { getAmenityIcon } from "@/lib/amenity-icons";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import Script from "next/script";
+import { useQuery } from "@tanstack/react-query";
 
 interface RoomDetailPageProps {
   params: Promise<{ id: string }>;
@@ -126,7 +129,21 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   const [lightboxTouchEnd, setLightboxTouchEnd] = useState<{ x: number; y: number } | null>(null);
 
   const { data: room, isLoading: loading } = useRoom(id, true);
-  const { data: allRooms = [], isLoading: loadingSimilarRooms } = useRooms(undefined, undefined, true);
+  
+  // Fetch room categories for similar rooms
+  const { data: allCategories = [], isLoading: loadingSimilarRooms } = useQuery<any[]>({
+    queryKey: ['room-categories'],
+    queryFn: async () => {
+      const response = await fetch('/api/rooms/categories');
+      
+      if (!response.ok) {
+        throw new Error('Không thể lấy danh sách loại phòng');
+      }
+      
+      return response.json();
+    },
+    staleTime: 1000 * 60 * 10, // 10 minutes
+  });
 
   const images = room ? (room.galleryImages || [room.image]) : [];
 
@@ -1226,17 +1243,15 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
             </motion.div>
 
             {loadingSimilarRooms ? (
-              <div className="overflow-visible relative -mx-4 sm:-mx-6 lg:-mx-8">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <div key={index} className="animate-pulse">
-                      <div className="bg-muted rounded-xl h-64" />
-                    </div>
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="animate-pulse">
+                    <div className="bg-muted rounded-lg h-48" />
+                  </div>
+                ))}
               </div>
             ) : (() => {
-              if (!room || allRooms.length === 0) {
+              if (!room || allCategories.length === 0) {
                 return (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground">{t.roomDetail.noSimilarRooms}</p>
@@ -1244,18 +1259,31 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                 );
               }
               
-              // Filter similar rooms: same category first, then others
-              const similarRooms = allRooms
-                .filter((r) => r.id !== room.id)
-                .sort((a, b) => {
-                  // Prioritize same category
-                  if (a.category === room.category && b.category !== room.category) return -1;
-                  if (a.category !== room.category && b.category === room.category) return 1;
-                  return 0;
-                })
-                .slice(0, 8); // Limit to 8 similar rooms
+              // Filter similar categories: exclude current room's category, limit to 4
+              const similarCategories = allCategories
+                .filter((cat) => cat.category_code !== room.category_code)
+                .slice(0, 4)
+                .map(cat => {
+                  const minPrice = cat.min_price;
+                  const maxPrice = cat.max_price;
+                  const priceDisplay = minPrice === maxPrice 
+                    ? minPrice.toLocaleString('vi-VN')
+                    : `${minPrice.toLocaleString('vi-VN')} - ${maxPrice.toLocaleString('vi-VN')}`;
+                  
+                  return {
+                    id: cat.category_code,
+                    name: cat.name,
+                    image: cat.image,
+                    price: priceDisplay,
+                    guests: cat.max_guests,
+                    amenities: cat.amenities || [],
+                    category: cat.room_type,
+                    description: cat.description,
+                    total_count: cat.total_count,
+                  };
+                });
               
-              if (similarRooms.length === 0) {
+              if (similarCategories.length === 0) {
                 return (
                   <div className="text-center py-12">
                     <p className="text-muted-foreground">{t.roomDetail.noSimilarRooms}</p>
@@ -1264,263 +1292,137 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
               }
               
               return (
-                <div className="overflow-visible relative -mx-4 sm:-mx-6 lg:-mx-8">
-                  <Carousel
-                    opts={{
-                      align: "start",
-                      loop: true,
-                    }}
-                    className="w-full"
-                  >
-                    <CarouselContent className="ml-2 md:ml-4 pr-4 md:pr-8">
-                      {similarRooms.map((similarRoom) => (
-                      <CarouselItem
-                        key={similarRoom.id}
-                        className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4"
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {similarCategories.map((category) => {
+                    const pricePerNight = typeof category.price === 'string' 
+                      ? parseFloat(category.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "").replace(/-/g, "")) 
+                      : 0;
+                    
+                    return (
+                      <motion.div
+                        key={category.id}
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.3 }}
                       >
                         <Link 
-                          href={`/rooms/${similarRoom.id}`} 
+                          href={`/rooms/category/${encodeURIComponent(category.id)}`}
                           className="block h-full"
                         >
-                      <GradientBorder containerClassName="relative h-full">
-                        <FloatingCard
-                          className="group overflow-hidden h-full bg-card rounded-xl border border-border shadow-card hover:shadow-hover transition-shadow cursor-pointer"
-                          delay={0}
-                        >
-                          {/* Image */}
-                          <div className="relative overflow-hidden rounded-t-xl">
-                            <motion.img
-                              src={similarRoom.image}
-                              alt={`Phòng ${similarRoom.name} tại Y Hotel${similarRoom.size ? ` - ${similarRoom.size}` : ''} với view đẹp và tiện nghi cao cấp`}
-                              className="w-full h-36 sm:h-44 md:h-48 lg:h-52 object-cover group-hover:scale-110 transition-transform duration-300"
-                              whileHover={{ scale: 1.02 }}
-                              transition={{ duration: 0.1 }}
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                            
-                            {/* Badges */}
-                            <div className="absolute top-2 right-2 flex gap-1.5">
-                              {similarRoom.popular && (
-                                <Badge className="bg-primary/95 text-primary-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm shadow-sm">
-                                  ⭐ Phổ biến
-                                </Badge>
-                              )}
-                              <Badge variant="outline" className="bg-background/90 text-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm border-background/50">
-                                {getCategoryLabel(similarRoom.category)}
-                              </Badge>
-                            </div>
+                          <div className="border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg bg-card h-full">
+                            <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4">
+                              {/* Category Image */}
+                              <div className="relative h-40 md:h-full rounded-lg overflow-hidden flex-shrink-0">
+                                <img
+                                  src={category.image}
+                                  alt={category.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
 
-                            {/* Quick Info Overlay */}
-                            <div className="absolute bottom-2 left-2 right-2">
-                              <div className="flex items-center justify-between text-white text-xs sm:text-sm">
-                                <div className="flex items-center gap-2 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-md">
-                                  <div className="flex items-center gap-1">
-                                    <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                    <span className="font-medium">{similarRoom.guests}</span>
-                                  </div>
-                                  {similarRoom.size && (
-                                    <>
-                                      <span className="text-white/60">•</span>
-                                      <div className="flex items-center gap-1">
-                                        <Bed className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                        <span className="hidden sm:inline">{similarRoom.size}</span>
+                              {/* Category Info */}
+                              <div className="flex flex-col min-w-0">
+                                <div className="flex-1">
+                                  <div className="flex items-start justify-between mb-2 gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <Building2 className="w-4 h-4 text-primary flex-shrink-0" />
+                                        <h3 className="font-semibold text-base sm:text-lg truncate">{category.name}</h3>
                                       </div>
-                                    </>
+                                      <div className="mb-2">
+                                        <div className="flex items-baseline gap-1">
+                                          <p className="text-lg sm:text-xl font-bold text-primary">
+                                            {category.price}₫
+                                          </p>
+                                          <p className="text-xs text-muted-foreground">{t.common.perNight}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                    {category.category && (
+                                      <Badge variant="outline" className="text-xs flex-shrink-0">
+                                        {getCategoryLabel(category.category)}
+                                      </Badge>
+                                    )}
+                                  </div>
+
+                                  {/* Category Description */}
+                                  {category.description && (
+                                    <div 
+                                      className="text-sm text-muted-foreground mb-3 line-clamp-2"
+                                      dangerouslySetInnerHTML={{ __html: category.description }}
+                                    />
                                   )}
+
+                                  {/* Category Details */}
+                                  <div className="flex flex-wrap gap-3 mb-3">
+                                    {category.guests && (
+                                      <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                        <Users className="w-4 h-4" />
+                                        <span>{category.guests} {t.roomsPage.guestsUnit}</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Amenities */}
+                                  {category.amenities && category.amenities.length > 0 && (
+                                    <div className="flex flex-wrap gap-2 mb-3">
+                                      {category.amenities.slice(0, 4).map((amenity: string, idx: number) => {
+                                        const Icon = getAmenityIcon(amenity);
+                                        return Icon ? (
+                                          <div
+                                            key={idx}
+                                            className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded"
+                                            title={getAmenityLabel(amenity)}
+                                          >
+                                            <Icon className="w-3.5 h-3.5" />
+                                          </div>
+                                        ) : (
+                                          <Badge
+                                            key={idx}
+                                            variant="secondary"
+                                            className="text-xs"
+                                          >
+                                            {getAmenityLabel(amenity)}
+                                          </Badge>
+                                        );
+                                      })}
+                                      {category.amenities.length > 4 && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          +{category.amenities.length - 4}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Action Button */}
+                                <div className="pt-3 border-t mt-auto">
+                                  <Button
+                                    variant="default"
+                                    className="w-full bg-primary hover:bg-primary/90"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      window.location.href = `/rooms/category/${encodeURIComponent(category.id)}`;
+                                    }}
+                                  >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    {t.common.bookNow}
+                                  </Button>
                                 </div>
                               </div>
                             </div>
                           </div>
-
-                          <CardContent className="p-2 sm:p-2.5 md:p-3 flex flex-col flex-1">
-                            {/* Room Name */}
-                            <h3 className="text-sm sm:text-base md:text-lg font-display font-semibold text-foreground mb-1 line-clamp-1 group-hover:text-primary transition-colors">
-                              {similarRoom.name}
-                            </h3>
-
-                            {/* Price */}
-                            <div className="mb-1.5">
-                              <div className="flex items-baseline gap-1">
-                                <span className="text-base sm:text-lg md:text-xl font-bold text-primary">
-                                  {similarRoom.price}₫
-                                </span>
-                                <span className="text-[10px] sm:text-xs text-muted-foreground">{t.common.perNight}</span>
-                              </div>
-                            </div>
-
-                            {/* Features - Single line, compact */}
-                            <div className="mb-1.5 hidden sm:block">
-                              <p className="text-xs sm:text-sm text-muted-foreground line-clamp-1">
-                                {similarRoom.features.slice(0, 2).join(" • ")}
-                              </p>
-                            </div>
-
-                            {/* Action Button */}
-                            <ShimmerButton
-                              variant="luxury"
-                              size="sm"
-                              className="w-full text-xs sm:text-sm mt-auto py-1 sm:py-1.5"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                window.location.href = `/rooms/${similarRoom.id}`;
-                              }}
-                            >
-                              {t.common.bookNow}
-                            </ShimmerButton>
-                          </CardContent>
-                        </FloatingCard>
-                      </GradientBorder>
                         </Link>
-                      </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                  </Carousel>
-                  
-                  {/* Swipe indicator - Gradient fade */}
-                  <div className="absolute right-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-l from-background/60 via-background/30 to-transparent pointer-events-none" />
+                      </motion.div>
+                    );
+                  })}
                 </div>
               );
             })()}
 
-            {/* Fallback: Show other rooms if not enough similar rooms */}
-            {false && (
-              <div className="mt-4 md:mt-6 overflow-visible relative -mx-4 sm:-mx-6 lg:-mx-8">
-                <Carousel
-                  opts={{
-                    align: "start",
-                    loop: true,
-                  }}
-                  className="w-full"
-                >
-                  <CarouselContent className="ml-2 md:ml-4 pr-4 md:pr-8">
-                    {allRooms
-                      .filter((r) => r.id !== room.id && r.category !== room.category)
-                      .slice(0, 4 - allRooms.filter((r) => r.id !== room.id && r.category === room.category).length)
-                      .map((otherRoom) => {
-                        return (
-                          <CarouselItem
-                            key={otherRoom.id}
-                            className="pl-2 md:pl-4 basis-1/2 md:basis-1/3 lg:basis-1/4"
-                          >
-                            <Link 
-                              href={`/rooms/${otherRoom.id}`} 
-                              className="block h-full"
-                            >
-                          <GradientBorder containerClassName="relative h-full">
-                            <FloatingCard
-                              className="group overflow-hidden h-full bg-card rounded-xl border border-border shadow-card hover:shadow-hover transition-shadow cursor-pointer"
-                              delay={0}
-                            >
-                              {/* Image */}
-                              <div className="relative overflow-hidden rounded-t-xl">
-                                <motion.img
-                                  src={otherRoom.image}
-                                  alt={`Phòng ${otherRoom.name} tại Y Hotel - ${otherRoom.size} với view đẹp và tiện nghi cao cấp`}
-                                  className="w-full h-36 sm:h-44 md:h-48 lg:h-52 object-cover group-hover:scale-110 transition-transform duration-500"
-                                  whileHover={{ scale: 1.02 }}
-                                  transition={{ duration: 0.15 }}
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-                                
-                                {/* Badges */}
-                                <div className="absolute top-2 right-2 flex gap-1.5">
-                                  {otherRoom.popular && (
-                                    <Badge className="bg-primary/95 text-primary-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm shadow-sm">
-                                      ⭐ Phổ biến
-                                    </Badge>
-                                  )}
-                                  <Badge variant="outline" className="bg-background/90 text-foreground text-[10px] sm:text-xs px-2 py-0.5 backdrop-blur-sm border-background/50">
-                                    {getCategoryLabel(otherRoom.category)}
-                                  </Badge>
-                                </div>
 
-                                {/* Quick Info Overlay */}
-                                <div className="absolute bottom-2 left-2 right-2">
-                                  <div className="flex items-center justify-between text-white text-xs sm:text-sm">
-                                    <div className="flex items-center gap-2 bg-black/40 backdrop-blur-sm px-2 py-1 rounded-md">
-                                      <div className="flex items-center gap-1">
-                                        <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                        <span className="font-medium">{otherRoom.guests}</span>
-                                      </div>
-                                      <span className="text-white/60">•</span>
-                                      <div className="flex items-center gap-1">
-                                        <Bed className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                        <span className="hidden sm:inline">{otherRoom.size}</span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <CardContent className="p-2 sm:p-2.5 md:p-3 flex flex-col flex-1">
-                                {/* Room Name */}
-                                <h3 className="text-sm sm:text-base md:text-lg font-display font-semibold text-foreground mb-1 line-clamp-1 group-hover:text-primary transition-colors">
-                                  {otherRoom.name}
-                                </h3>
-
-                                {/* Price */}
-                                <div className="mb-1.5">
-                                  <div className="flex items-baseline gap-1">
-                                    <span className="text-base sm:text-lg md:text-xl font-bold text-primary">
-                                      {otherRoom.price}₫
-                                    </span>
-                                    <span className="text-[10px] sm:text-xs text-muted-foreground">{t.common.perNight}</span>
-                                  </div>
-                                </div>
-
-                                {/* Amenities - Chips */}
-                                <div className="mb-1.5 hidden sm:block relative">
-                                  <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-                                    {(otherRoom.amenities || []).map((amenity, idx) => (
-                                      <Badge
-                                        key={idx}
-                                        variant="outline"
-                                        className="text-[9px] sm:text-[10px] px-1.5 py-0.5 h-auto font-normal bg-muted/50 border-border/50 whitespace-nowrap flex-shrink-0"
-                                      >
-                                        {getAmenityLabel(amenity)}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-card to-transparent pointer-events-none" />
-                                </div>
-
-                                {/* Action Button */}
-                                <ShimmerButton
-                                  variant="luxury"
-                                  size="sm"
-                                  className="w-full text-xs sm:text-sm mt-auto py-1 sm:py-1.5"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    window.location.href = `/rooms/${otherRoom.id}`;
-                                  }}
-                                >
-                                  {t.common.bookNow}
-                                </ShimmerButton>
-                          </CardContent>
-                        </FloatingCard>
-                      </GradientBorder>
-                            </Link>
-                          </CarouselItem>
-                        );
-                      })}
-                  </CarouselContent>
-                </Carousel>
-                
-                {/* Swipe indicator - Gradient fade with arrow */}
-                <div className="absolute right-0 top-0 bottom-0 w-20 md:w-32 bg-gradient-to-l from-background via-background/80 to-transparent pointer-events-none flex items-center justify-end pr-2 md:pr-4">
-                  <motion.div
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="flex items-center gap-1 text-muted-foreground"
-                  >
-                    <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-primary animate-pulse" />
-                  </motion.div>
-                </div>
-              </div>
-            )}
           </div>
         </section>
       </main>

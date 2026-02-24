@@ -119,7 +119,8 @@ export async function GET() {
 
     return NextResponse.json(categories, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        // OPTIMIZED: Longer cache for categories (they don't change often)
+        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1800',
       },
     });
   } catch (error) {

@@ -17,6 +17,8 @@ export function useRooms(type?: string, status?: string, skipFilters?: boolean) 
     queryKey: roomKeys.list({ type, status, skipFilters }),
     queryFn: () => getRooms(type, status, skipFilters),
     staleTime: 1000 * 60 * 10, // 10 minutes (rooms don't change frequently)
+    gcTime: 1000 * 60 * 30, // OPTIMIZED: Keep in cache for 30 minutes
+    refetchOnWindowFocus: false, // OPTIMIZED: Don't refetch on window focus
   });
 }
 
@@ -27,6 +29,8 @@ export function useRoom(id: string, skipFilters?: boolean) {
     queryFn: () => getRoomById(id, skipFilters),
     enabled: !!id, // Only fetch if id exists
     staleTime: 1000 * 60 * 10, // 10 minutes (room details don't change frequently)
+    gcTime: 1000 * 60 * 30, // OPTIMIZED: Keep in cache for 30 minutes
+    refetchOnWindowFocus: false, // OPTIMIZED: Don't refetch on window focus
   });
 }
 

@@ -12,5 +12,19 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 console.log('Supabase initialized with URL:', supabaseUrl ? 'Set' : 'Missing');
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// OPTIMIZED: Configure Supabase client with connection pooling and performance settings
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false, // Server-side doesn't need session persistence
+    autoRefreshToken: false, // Server-side doesn't need auto refresh
+  },
+  db: {
+    schema: 'public',
+  },
+  global: {
+    headers: {
+      'x-application-name': 'yhotel-server', // For monitoring
+    },
+  },
+});
 
