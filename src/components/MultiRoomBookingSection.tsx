@@ -145,45 +145,96 @@ export const MultiRoomBookingSection = () => {
 
   const totalAmount = useMemo(() => {
     return selectedRooms.reduce((sum, room) => {
-      return sum + (room.price_per_night * room.quantity * nights);
+      return sum + (room.price_per_night * nights);
     }, 0);
   }, [selectedRooms, nights]);
 
-  const addRoom = (room: any) => {
-    const existing = selectedRooms.find(r => r.room_id === room.id);
-    // Try both price_per_night and price fields
-    const priceValue = room.price_per_night || room.price;
-    const pricePerNight = typeof priceValue === 'string'
-      ? parseFloat(priceValue.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, ""))
-      : (priceValue || 0);
-    
-    if (existing) {
-      setSelectedRooms(selectedRooms.map(r => 
-        r.room_id === room.id 
-          ? { ...r, quantity: r.quantity + 1 }
-          : r
-      ));
-    } else {
+  const addRoom = async (room: any) => {
+    if (!formData.checkIn || !formData.checkOut) {
+      toast({
+        title: "Lỗi",
+        description: "Vui lòng chọn ngày nhận và trả phòng trước",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Fetch available rooms for this category
+      const checkInDate = new Date(formData.checkIn);
+      checkInDate.setHours(14, 0, 0, 0);
+      const checkOutDate = new Date(formData.checkOut);
+      checkOutDate.setHours(12, 0, 0, 0);
+
+      const response = await fetch(
+        `/api/rooms/available-by-category?category_code=${encodeURIComponent(room.id)}&check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}&quantity=1`
+      );
+
+      if (!response.ok) {
+        throw new Error('Không thể kiểm tra phòng trống');
+      }
+
+      const { available_rooms } = await response.json();
+
+      if (!available_rooms || available_rooms.length === 0) {
+        toast({
+          title: t.multiBooking.noRoomsAvailable,
+          description: `Không còn phòng ${room.name} trống trong thời gian này`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get the first available room
+      const availableRoom = available_rooms[0];
+      
+      // Check if we already have rooms from this category
+      const existingCategoryRooms = selectedRooms.filter(r => r.room_name === room.name);
+      const alreadySelectedRoomIds = new Set(existingCategoryRooms.map(r => r.room_id));
+      
+      // Check if this specific room is already selected
+      const existing = selectedRooms.find(r => r.room_id === availableRoom.id);
+      
+      if (existing) {
+        // This shouldn't happen as we're getting available rooms, but just in case
+        toast({
+          title: "Lỗi",
+          description: 'Phòng này đã được chọn',
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Try both price_per_night and price fields
+      const priceValue = availableRoom.price_per_night || room.price_per_night || room.price;
+      const pricePerNight = typeof priceValue === 'string'
+        ? parseFloat(priceValue.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, ""))
+        : (priceValue || 0);
+
+      // Add the new room
       setSelectedRooms([...selectedRooms, {
-        room_id: room.id,
+        room_id: availableRoom.id,
         room_name: room.name,
         price_per_night: pricePerNight,
         quantity: 1
       }]);
+
+      toast({
+        title: "Thành công",
+        description: `Đã thêm ${room.name} (${availableRoom.name})`,
+      });
+    } catch (error) {
+      console.error('Error adding room:', error);
+      toast({
+        title: "Lỗi",
+        description: error instanceof Error ? error.message : 'Không thể thêm phòng',
+        variant: "destructive",
+      });
     }
   };
 
   const removeRoom = (roomId: string) => {
-    const existing = selectedRooms.find(r => r.room_id === roomId);
-    if (existing && existing.quantity > 1) {
-      setSelectedRooms(selectedRooms.map(r => 
-        r.room_id === roomId 
-          ? { ...r, quantity: r.quantity - 1 }
-          : r
-      ));
-    } else {
-      setSelectedRooms(selectedRooms.filter(r => r.room_id !== roomId));
-    }
+    setSelectedRooms(selectedRooms.filter(r => r.room_id !== roomId));
   };
 
   const deleteRoom = (roomId: string) => {
@@ -229,12 +280,10 @@ export const MultiRoomBookingSection = () => {
       checkOutDate.setHours(12, 0, 0, 0);
 
       // Prepare room items for multi-booking
-      const roomItems = selectedRooms.flatMap(room => 
-        Array(room.quantity).fill({
-          room_id: room.room_id,
-          amount: room.price_per_night * nights
-        })
-      );
+      const roomItems = selectedRooms.map(room => ({
+        room_id: room.room_id,
+        amount: room.price_per_night * nights
+      }));
 
       const bookingData = {
         check_in: checkInDate.toISOString(),
@@ -419,8 +468,9 @@ export const MultiRoomBookingSection = () => {
                   ) : (
                     <div className="space-y-3">
                       {roomsToDisplay.map((room: any) => {
-                          const selectedRoom = selectedRooms.find(r => r.room_id === room.id);
-                          const isSelected = !!selectedRoom;
+                          // Count how many rooms of this category are selected
+                          const selectedCategoryRooms = selectedRooms.filter(r => r.room_name === room.name);
+                          const isSelected = selectedCategoryRooms.length > 0;
                           const pricePerNight = typeof room.price === 'string' 
                             ? parseFloat(room.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) 
                             : 0;
@@ -534,9 +584,11 @@ export const MultiRoomBookingSection = () => {
                                     {isSelected ? (
                                       <div className="flex items-center justify-between gap-3">
                                         <div className="flex-1">
-                                          <p className="text-sm text-muted-foreground">Đã chọn</p>
+                                          <p className="text-sm text-muted-foreground">
+                                            Đã chọn {selectedCategoryRooms.length} phòng
+                                          </p>
                                           <p className="text-lg font-bold text-primary">
-                                            {formatPrice(selectedRoom.price_per_night * selectedRoom.quantity * nights)}đ
+                                            {formatPrice(selectedCategoryRooms.reduce((sum, r) => sum + r.price_per_night * nights, 0))}đ
                                           </p>
                                         </div>
                                         <div className="flex gap-2">
@@ -554,12 +606,11 @@ export const MultiRoomBookingSection = () => {
                                           </Button>
                                           <Button
                                             type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => deleteRoom(room.id)}
-                                            className="px-3 text-destructive hover:text-destructive"
+                                            onClick={() => addRoom(room)}
+                                            disabled={!formData.checkIn || !formData.checkOut}
+                                            className="px-3 bg-primary hover:bg-primary/90"
                                           >
-                                            <X className="w-4 h-4" />
+                                            <Plus className="w-4 h-4" />
                                           </Button>
                                         </div>
                                       </div>
@@ -612,8 +663,8 @@ export const MultiRoomBookingSection = () => {
                     {/* Selected Rooms */}
                     {selectedRooms.length > 0 ? (
                       <div className="space-y-3">
-                        {selectedRooms.map((room) => (
-                          <div key={room.room_id} className="p-3 bg-muted/30 rounded-lg">
+                        {selectedRooms.map((room, index) => (
+                          <div key={`${room.room_id}-${index}`} className="p-3 bg-muted/30 rounded-lg">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1">
                                 <p className="font-semibold text-sm">{room.room_name}</p>
@@ -621,7 +672,7 @@ export const MultiRoomBookingSection = () => {
                                   {formatPrice(room.price_per_night)}đ × {nights} đêm
                                 </p>
                                 <p className="text-sm font-semibold text-primary mt-1">
-                                  {formatPrice(room.price_per_night * room.quantity * nights)}đ
+                                  {formatPrice(room.price_per_night * nights)}đ
                                 </p>
                               </div>
                               <Button
@@ -654,7 +705,7 @@ export const MultiRoomBookingSection = () => {
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">{t.multiBooking.numberOfRooms}</span>
                         <span className="font-medium">
-                          {selectedRooms.reduce((sum, r) => sum + r.quantity, 0)} {t.common.rooms}
+                          {selectedRooms.length} {t.common.rooms}
                         </span>
                       </div>
                       <Separator />
@@ -929,13 +980,9 @@ export const MultiRoomBookingSection = () => {
                   </Button>
                   <Button
                     type="button"
-                    onClick={() => {
-                      addRoom(selectedRoomDetail);
+                    onClick={async () => {
+                      await addRoom(selectedRoomDetail);
                       setSelectedRoomDetail(null);
-                      toast({
-                        title: t.common.roomAdded,
-                        description: t.common.roomAddedDesc.replace('{roomName}', selectedRoomDetail.name),
-                      });
                     }}
                     className="flex-1 bg-primary hover:bg-primary/90"
                   >
