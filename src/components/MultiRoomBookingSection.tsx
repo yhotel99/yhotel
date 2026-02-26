@@ -150,6 +150,12 @@ export const MultiRoomBookingSection = () => {
   }, [selectedRooms, nights]);
 
   const addRoom = async (room: any) => {
+    console.log('[addRoom] Attempting to add room:', {
+      room_id: room.id,
+      room_name: room.name,
+      category_code: room.id, // room.id is actually category_code
+    });
+    
     if (!formData.checkIn || !formData.checkOut) {
       toast({
         title: "Lỗi",
@@ -166,9 +172,10 @@ export const MultiRoomBookingSection = () => {
       const checkOutDate = new Date(formData.checkOut);
       checkOutDate.setHours(12, 0, 0, 0);
 
-      const response = await fetch(
-        `/api/rooms/available-by-category?category_code=${encodeURIComponent(room.id)}&check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}&quantity=1`
-      );
+      const apiUrl = `/api/rooms/available-by-category?category_code=${encodeURIComponent(room.id)}&check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}&quantity=10`;
+      console.log('[addRoom] Calling API:', apiUrl);
+
+      const response = await fetch(apiUrl);
 
       if (!response.ok) {
         throw new Error('Không thể kiểm tra phòng trống');
@@ -185,21 +192,20 @@ export const MultiRoomBookingSection = () => {
         return;
       }
 
-      // Get the first available room
-      const availableRoom = available_rooms[0];
+      // Get already selected room IDs from this category
+      const alreadySelectedRoomIds = new Set(
+        selectedRooms
+          .filter(r => r.room_name === room.name)
+          .map(r => r.room_id)
+      );
       
-      // Check if we already have rooms from this category
-      const existingCategoryRooms = selectedRooms.filter(r => r.room_name === room.name);
-      const alreadySelectedRoomIds = new Set(existingCategoryRooms.map(r => r.room_id));
+      // Find first available room that hasn't been selected yet
+      const availableRoom = available_rooms.find((r: any) => !alreadySelectedRoomIds.has(r.id));
       
-      // Check if this specific room is already selected
-      const existing = selectedRooms.find(r => r.room_id === availableRoom.id);
-      
-      if (existing) {
-        // This shouldn't happen as we're getting available rooms, but just in case
+      if (!availableRoom) {
         toast({
-          title: "Lỗi",
-          description: 'Phòng này đã được chọn',
+          title: t.multiBooking.noRoomsAvailable,
+          description: `Không còn phòng ${room.name} trống trong thời gian này`,
           variant: "destructive",
         });
         return;
@@ -372,7 +378,9 @@ export const MultiRoomBookingSection = () => {
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {formData.checkIn ? (
-                              format(formData.checkIn, "dd/MM/yyyy", { locale: vi })
+                              <span suppressHydrationWarning>
+                                {format(formData.checkIn, "dd/MM/yyyy", { locale: vi })}
+                              </span>
                             ) : (
                               <span>{t.multiBooking.selectCheckIn}</span>
                             )}
@@ -411,7 +419,9 @@ export const MultiRoomBookingSection = () => {
                           >
                             <CalendarIcon className="mr-2 h-4 w-4" />
                             {formData.checkOut ? (
-                              format(formData.checkOut, "dd/MM/yyyy", { locale: vi })
+                              <span suppressHydrationWarning>
+                                {format(formData.checkOut, "dd/MM/yyyy", { locale: vi })}
+                              </span>
                             ) : (
                               <span>{t.multiBooking.selectCheckOut}</span>
                             )}
@@ -507,6 +517,20 @@ export const MultiRoomBookingSection = () => {
                                           <Building2 className="w-4 h-4 text-primary flex-shrink-0" />
                                           <h3 className="font-semibold text-base sm:text-lg truncate">{room.name}</h3>
                                         </div>
+                                        {/* Available rooms count */}
+                                        {formData.checkIn && formData.checkOut && room.available_count !== undefined && (
+                                          <p className="text-xs text-muted-foreground mb-1">
+                                            {room.available_count > 0 ? (
+                                              <span className="text-green-600 font-medium">
+                                                Còn {room.available_count} phòng trống
+                                              </span>
+                                            ) : (
+                                              <span className="text-red-600 font-medium">
+                                                Hết phòng
+                                              </span>
+                                            )}
+                                          </p>
+                                        )}
                                         <div className="mb-2">
                                           <div className="flex items-baseline gap-1">
                                             <p className="text-lg sm:text-xl font-bold text-primary">

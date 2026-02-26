@@ -206,8 +206,15 @@ const RoomsPageContent = () => {
     // If both dates are selected, update URL to filter available rooms
     if (range.from && range.to) {
       const params = new URLSearchParams(searchParams.toString());
-      params.set('check_in', range.from.toISOString().split('T')[0]);
-      params.set('check_out', range.to.toISOString().split('T')[0]);
+      // Format dates as YYYY-MM-DD in local timezone
+      const formatLocalDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      params.set('check_in', formatLocalDate(range.from));
+      params.set('check_out', formatLocalDate(range.to));
       router.push(`/rooms?${params.toString()}`);
       setIsDatePickerOpen(false);
     }

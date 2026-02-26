@@ -38,13 +38,19 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get all rooms of this category
+    // Get all rooms of this category (all statuses except maintenance)
     const { data: rooms, error: roomsError } = await supabase
       .from('rooms')
-      .select('id, name, price_per_night')
+      .select('id, name, price_per_night, status')
       .eq('category_code', categoryCode)
-      .eq('status', 'available')
+      .neq('status', 'maintenance') // Only exclude maintenance rooms
       .is('deleted_at', null);
+
+    console.log(`[${categoryCode}] Query result:`, {
+      total_rooms: rooms?.length || 0,
+      rooms: rooms?.map(r => ({ id: r.id, name: r.name, status: r.status })),
+      error: roomsError
+    });
 
     if (roomsError) {
       console.error('Error fetching rooms:', roomsError);
@@ -54,16 +60,19 @@ export async function GET(request: Request) {
       );
     }
 
+    console.log(`[${categoryCode}] Found ${rooms?.length || 0} total rooms`);
+
     if (!rooms || rooms.length === 0) {
+      console.log(`[${categoryCode}] No rooms found in database`);
       return NextResponse.json({ available_rooms: [] });
     }
 
     // Check which rooms are available (not booked) in the date range
     const { data: bookedRooms, error: bookedError } = await supabase
       .from('booking_rooms')
-      .select('room_id')
+      .select('room_id, status, check_in, check_out')
       .in('room_id', rooms.map(r => r.id))
-      .in('status', ['pending', 'confirmed', 'checked_in'])
+      .in('status', ['pending', 'awaiting_payment', 'confirmed', 'checked_in'])
       .or(`and(check_in.lt.${checkOut},check_out.gt.${checkIn})`);
 
     if (bookedError) {
@@ -74,8 +83,19 @@ export async function GET(request: Request) {
       );
     }
 
+    console.log(`[${categoryCode}] Found ${bookedRooms?.length || 0} conflicting bookings:`, 
+      bookedRooms?.map(br => ({
+        room_id: br.room_id,
+        status: br.status,
+        check_in: br.check_in,
+        check_out: br.check_out
+      }))
+    );
+
     const bookedRoomIds = new Set(bookedRooms?.map(br => br.room_id) || []);
     const availableRooms = rooms.filter(room => !bookedRoomIds.has(room.id));
+    
+    console.log(`[${categoryCode}] Available rooms: ${availableRooms.length}/${rooms.length}`);
 
     // Return requested quantity or all available
     const roomsToReturn = availableRooms.slice(0, quantity);

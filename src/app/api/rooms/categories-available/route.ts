@@ -55,6 +55,7 @@ export async function GET(request: Request) {
         price_per_night, 
         max_guests, 
         amenities,
+        status,
         booking_rooms!left(
           room_id,
           status,
@@ -63,8 +64,14 @@ export async function GET(request: Request) {
         )
       `)
       .is('deleted_at', null)
+      .neq('status', 'maintenance') // Only exclude maintenance rooms
       .not('category_code', 'is', null)
       .order('name');
+
+    console.log('[categories-available] Total rooms fetched:', roomsWithBookings?.length || 0);
+    console.log('[categories-available] Unique categories:', 
+      [...new Set(roomsWithBookings?.map(r => r.category_code))].join(', ')
+    );
 
     if (roomsError) {
       console.error('Error fetching rooms:', roomsError);
@@ -87,7 +94,20 @@ export async function GET(request: Request) {
         }
         const brCheckIn = new Date(br.check_in);
         const brCheckOut = new Date(br.check_out);
-        return brCheckIn < checkOutDate && brCheckOut > checkInDate;
+        const isConflict = brCheckIn < checkOutDate && brCheckOut > checkInDate;
+        
+        // Log conflicts for Executive Balcony Suite
+        if (room.category_code === 'executive-balcony-suite' && isConflict) {
+          console.log(`[categories-available] Conflict found for ${room.name}:`, {
+            booking_status: br.status,
+            booking_check_in: br.check_in,
+            booking_check_out: br.check_out,
+            requested_check_in: checkIn,
+            requested_check_out: checkOut
+          });
+        }
+        
+        return isConflict;
       }) || false;
 
       return {
