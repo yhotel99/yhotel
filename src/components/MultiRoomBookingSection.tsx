@@ -485,6 +485,11 @@ export const MultiRoomBookingSection = () => {
                             ? parseFloat(room.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) 
                             : 0;
                           
+                          // Calculate remaining available count (subtract selected rooms)
+                          const remainingAvailable = room.available_count !== undefined 
+                            ? Math.max(0, room.available_count - selectedCategoryRooms.length)
+                            : undefined;
+                          
                           return (
                             <div
                               key={room.id}
@@ -518,11 +523,15 @@ export const MultiRoomBookingSection = () => {
                                           <h3 className="font-semibold text-base sm:text-lg truncate">{room.name}</h3>
                                         </div>
                                         {/* Available rooms count */}
-                                        {formData.checkIn && formData.checkOut && room.available_count !== undefined && (
+                                        {formData.checkIn && formData.checkOut && remainingAvailable !== undefined && (
                                           <p className="text-xs text-muted-foreground mb-1">
-                                            {room.available_count > 0 ? (
+                                            {remainingAvailable > 0 ? (
                                               <span className="text-green-600 font-medium">
-                                                Còn {room.available_count} phòng trống
+                                                Còn {remainingAvailable} phòng trống
+                                              </span>
+                                            ) : selectedCategoryRooms.length > 0 ? (
+                                              <span className="text-orange-600 font-medium">
+                                                Đã chọn hết ({selectedCategoryRooms.length} phòng)
                                               </span>
                                             ) : (
                                               <span className="text-red-600 font-medium">
