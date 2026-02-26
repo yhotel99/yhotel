@@ -113,12 +113,19 @@ export const MultiRoomBookingSection = () => {
       const maxPrice = cat.max_price;
       const pricePerNight = minPrice; // Use min price for calculations
       
+      // Format price display: show range if min != max
+      const priceDisplay = minPrice === maxPrice
+        ? minPrice.toLocaleString('vi-VN')
+        : `${minPrice.toLocaleString('vi-VN')} - ${maxPrice.toLocaleString('vi-VN')}`;
+      
       return {
         id: cat.category_code,
         name: cat.name,
         image: cat.image,
         price_per_night: pricePerNight,
-        price: pricePerNight.toLocaleString('vi-VN'),
+        price: priceDisplay,
+        min_price: minPrice,
+        max_price: maxPrice,
         guests: cat.max_guests,
         amenities: cat.amenities || [],
         category: cat.room_type,
@@ -543,7 +550,7 @@ export const MultiRoomBookingSection = () => {
                                         <div className="mb-2">
                                           <div className="flex items-baseline gap-1">
                                             <p className="text-lg sm:text-xl font-bold text-primary">
-                                              {pricePerNight.toLocaleString('vi-VN')}₫
+                                              {typeof room.price === 'string' ? room.price : pricePerNight.toLocaleString('vi-VN')}₫
                                             </p>
                                             <p className="text-xs text-muted-foreground">{t.common.perNight}</p>
                                           </div>
