@@ -84,6 +84,9 @@ export async function POST(request: Request) {
     const customerEmail = customer?.email;
     const customerPhone = customer?.phone;
 
+    // Use ONEPAY_ENV to control sandbox vs production (defaults to sandbox)
+    const onePayEnv = process.env.ONEPAY_ENV === "production" ? "production" : "sandbox";
+    
     const url = createPaymentUrl({
       amount,
       orderInfo: orderInfo.replace(/[^\w\s\-_]/g, "").slice(0, 34),
@@ -93,7 +96,7 @@ export async function POST(request: Request) {
       callbackUrl,
       customerEmail: customerEmail || undefined,
       customerPhone: customerPhone ? customerPhone.replace(/\D/g, "").replace(/^0/, "84") : undefined,
-      env: process.env.NODE_ENV === "production" ? "production" : "sandbox",
+      env: onePayEnv,
     });
 
     return NextResponse.json({ url });
