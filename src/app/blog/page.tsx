@@ -91,7 +91,7 @@ const BlogListingPage = () => {
           <div className="container-luxury max-w-7xl">
             <div className="grid grid-cols-1 lg:grid-cols-[70%_30%] gap-8 lg:gap-10">
               {/* Left Column - Main Content */}
-              <div className="space-y-8">
+              <div className="space-y-12">
                 {/* Featured Section */}
                 {featuredPost && (
                   <div className="space-y-5">
@@ -146,7 +146,7 @@ const BlogListingPage = () => {
                 
 
                 {/* Blog Posts List */}
-                <div className="space-y-5">
+                <div className="space-y-8 mt-8">
                   {isLoading ? (
                     <div className="space-y-5">
                       {Array.from({ length: 5 }).map((_, i) => (
@@ -172,7 +172,7 @@ const BlogListingPage = () => {
                     </div>
                   ) : (
                     regularPosts.map((post) => (
-                      <Link key={post.id} href={`/blog/${post.slug}`}>
+                      <Link key={post.id} href={`/blog/${post.slug}`} className="block mb-6">
                         <div className="flex gap-5 bg-white rounded-xl p-5 hover:shadow-lg transition-all duration-300 cursor-pointer group shadow-sm">
                           {/* Thumbnail */}
                           <div className="relative w-28 h-28 md:w-36 md:h-36 flex-shrink-0 rounded-lg overflow-hidden">
@@ -258,52 +258,8 @@ const BlogListingPage = () => {
                   </div>
                 )}
 
-                {/* Quick Search Section */}
-                <div className="bg-[#1a1a1a] rounded-xl p-6 text-white shadow-lg">
-                  <h3 className="text-lg font-display font-bold mb-5">{t.blog.quickSearch}</h3>
-                  <div className="space-y-4">
-                    <Select>
-                      <SelectTrigger className="w-full bg-[#2a2a2a] border-[#2a2a2a] text-white h-11">
-                        <SelectValue placeholder={`${t.blog.roomType}: ${t.blog.allRoomTypes}`} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t.blog.allRoomTypes}</SelectItem>
-                        <SelectItem value="standard">{t.blog.standardRoom}</SelectItem>
-                        <SelectItem value="deluxe">{t.blog.deluxeRoom}</SelectItem>
-                        <SelectItem value="suite">{t.blog.suite}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select>
-                      <SelectTrigger className="w-full bg-[#2a2a2a] border-[#2a2a2a] text-white h-11">
-                        <SelectValue placeholder={`${t.blog.numberOfPeople}: ${t.blog.allPeople}`} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t.blog.allPeople}</SelectItem>
-                        <SelectItem value="1">{t.blog.onePerson}</SelectItem>
-                        <SelectItem value="2">{t.blog.twoPeople}</SelectItem>
-                        <SelectItem value="3">{t.blog.threePeople}</SelectItem>
-                        <SelectItem value="4+">{t.blog.fourPlusePeople}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select>
-                      <SelectTrigger className="w-full bg-[#2a2a2a] border-[#2a2a2a] text-white h-11">
-                        <SelectValue placeholder={t.blog.priceRange} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t.blog.allPrices}</SelectItem>
-                        <SelectItem value="low">{t.blog.underOneMillion}</SelectItem>
-                        <SelectItem value="mid">{t.blog.oneToThreeMillion}</SelectItem>
-                        <SelectItem value="high">{t.blog.overThreeMillion}</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Button className="w-full bg-primary hover:bg-primary-dark text-white font-bold py-6 rounded-lg mt-2">
-                      {t.blog.search.toUpperCase()}
-                    </Button>
-                  </div>
-                </div>
-
                 {/* Most Read Section */}
-                <div className="bg-white rounded-xl p-6 shadow-sm">
+                <div className="bg-white rounded-xl p-6 shadow-sm mt-8">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-1 h-6 bg-primary rounded-full"></div>
                     <h3 className="text-lg font-display font-bold text-[#1a1a1a]">

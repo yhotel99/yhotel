@@ -116,7 +116,7 @@ export const homeTranslations = {
       readMore: "Đọc Thêm",
       viewAllPosts: "Xem Tất Cả Bài Viết",
       backToHome: "Quay về trang chủ",
-      promotions: "Khuyến mãi",
+      promotions: "Mới nhất",
       news: "Tin tức",
       noPosts: "Chưa có bài viết nào",
       noMorePosts: "Không có bài viết nào khác",
