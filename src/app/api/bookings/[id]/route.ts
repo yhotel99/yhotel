@@ -187,6 +187,15 @@ export async function PATCH(
         .single();
 
       if (error) {
+        // When no rows are updated, PostgREST returns PGRST116 for .single()
+        // (JSON object requested, multiple (or no) rows returned).
+        // In this case we should return 404 instead of 500.
+        if (error.code === 'PGRST116') {
+          return NextResponse.json(
+            { error: 'Không tìm thấy đặt phòng để cập nhật' },
+            { status: 404 }
+          );
+        }
         console.error('Supabase error when updating booking:', error);
         return NextResponse.json(
           { error: error.message || 'Không thể cập nhật đặt phòng' },
