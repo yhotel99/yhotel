@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { RoomCardSkeleton } from "@/components/RoomCardSkeleton";
+import { setBookingDraft, type BookingDraftMulti } from "@/lib/booking-draft";
 import { getAmenityLabel } from "@/lib/constants";
 import { getAmenityIcon } from "@/lib/amenity-icons";
 
@@ -292,51 +293,40 @@ export const MultiRoomBookingSection = () => {
       const checkOutDate = new Date(formData.checkOut);
       checkOutDate.setHours(12, 0, 0, 0);
 
-      // Prepare room items for multi-booking
       const roomItems = selectedRooms.map(room => ({
         room_id: room.room_id,
-        amount: room.price_per_night * nights
+        amount: room.price_per_night * nights,
       }));
 
-      const bookingData = {
-        check_in: checkInDate.toISOString(),
-        check_out: checkOutDate.toISOString(),
-        number_of_nights: nights,
-        total_guests: parseInt(formData.totalGuests),
-        customer_name: formData.fullName,
-        customer_email: formData.email,
-        customer_phone: formData.phone,
-        customer_nationality: formData.nationality || null,
-        notes: formData.specialRequests || null,
-        room_items: roomItems,
+      const draft: BookingDraftMulti = {
+        type: 'multi',
+        payload: {
+          check_in: checkInDate.toISOString(),
+          check_out: checkOutDate.toISOString(),
+          number_of_nights: nights,
+          total_guests: parseInt(formData.totalGuests),
+          customer_name: formData.fullName,
+          customer_email: formData.email,
+          customer_phone: formData.phone,
+          customer_nationality: formData.nationality || null,
+          notes: formData.specialRequests || null,
+          room_items: roomItems,
+        },
+        display: {
+          room_items: selectedRooms.map(room => ({
+            room_id: room.room_id,
+            room_name: room.room_name,
+            price_per_night: room.price_per_night,
+            quantity: room.quantity,
+            amount: room.price_per_night * nights * room.quantity,
+          })),
+        },
       };
 
-      const response = await fetch('/api/bookings/multi', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookingData),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Không thể tạo booking');
-      }
-
-      const bookingId = result.booking_id;
-      if (bookingId) {
-        router.push(`/checkout?booking_id=${encodeURIComponent(bookingId)}`);
-      } else {
-        toast({
-          title: t.multiBooking.bookingSuccess,
-          description: t.multiBooking.bookingReceived,
-        });
-        setTimeout(() => router.push('/lookup'), 2000);
-      }
+      setBookingDraft(draft);
+      router.push('/checkout');
     } catch (error) {
-      console.error('Error creating multi-room booking:', error);
+      console.error('Error saving booking draft:', error);
       toast({
         title: t.multiBooking.bookingFailed,
         description: error instanceof Error ? error.message : t.multiBooking.errorOccurred,

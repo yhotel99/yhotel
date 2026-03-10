@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import type { RoomResponse } from "@/types/database";
+import { setBookingDraft, type BookingDraftSingle } from "@/lib/booking-draft";
 
 const BookingSectionContent = () => {
   const router = useRouter();
@@ -123,39 +124,50 @@ const BookingSectionContent = () => {
   
   const { data: allRooms = [] } = useRooms(undefined, undefined, true);
   
-  // Calculate average price per room type
+  // Build room types options with price-per-night.
+  // `/api/rooms/categories` returns items grouped by `category_code` and includes `room_type` + `min_price`.
+  // We prefer `min_price` as an upfront estimate for customers (and for draft totals on checkout).
   const roomTypes = useMemo(() => {
+    // New API shape (recommended)
+    if (Array.isArray(categories) && categories.length > 0 && 'room_type' in (categories[0] as any)) {
+      return (categories as any[])
+        .filter((c) => c?.room_type)
+        .map((c) => {
+          const pricePerNight = typeof c.min_price === 'number' ? c.min_price : 0;
+          const displayName = c.name || c.category_code || c.room_type;
+          return {
+            // keep value as `room_type` because backend expects `roomType` to match `rooms.room_type`
+            value: String(c.room_type),
+            label: `${t.booking.roomLabel} ${displayName} - ${pricePerNight.toLocaleString('vi-VN')}${t.booking.pricePerNight}`,
+            price: pricePerNight.toLocaleString('vi-VN'),
+            pricePerNight,
+          };
+        });
+    }
+
+    // Legacy/fallback: derive average price from /api/rooms (useRooms)
     const typesMap: Record<string, { price: number; count: number }> = {};
-    
     allRooms.forEach((room) => {
       const type = room.category || 'standard';
-      // Parse price from string format (e.g., "1,500,000")
-      const price = typeof room.price === 'string' 
-        ? parseInt(room.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) || 0
-        : 0;
-      
-      if (!typesMap[type]) {
-        typesMap[type] = { price: 0, count: 0 };
-      }
-      
+      const price =
+        typeof room.price === 'string'
+          ? parseInt(room.price.replace(/\./g, '').replace(/,/g, '').replace(/₫/g, '')) || 0
+          : 0;
+      if (!typesMap[type]) typesMap[type] = { price: 0, count: 0 };
       typesMap[type].price += price;
       typesMap[type].count += 1;
     });
-    
-    return categories
-      .filter((c: { value: string }) => c.value !== 'all')
-      .map((cat: { value: string; label?: string }) => {
-        const avgPrice = typesMap[cat.value]?.count > 0
-          ? Math.round(typesMap[cat.value].price / typesMap[cat.value].count)
-          : 0;
-        
-        return {
-          value: cat.value,
-          label: `${t.booking.roomLabel} ${cat.label} - ${avgPrice.toLocaleString('vi-VN')}${t.booking.pricePerNight}`,
-          price: avgPrice.toLocaleString('vi-VN'),
-        };
-      });
-  }, [categories, allRooms]);
+
+    return Object.entries(typesMap).map(([type, stats]) => {
+      const avgPrice = stats.count > 0 ? Math.round(stats.price / stats.count) : 0;
+      return {
+        value: type,
+        label: `${t.booking.roomLabel} ${type} - ${avgPrice.toLocaleString('vi-VN')}${t.booking.pricePerNight}`,
+        price: avgPrice.toLocaleString('vi-VN'),
+        pricePerNight: avgPrice,
+      };
+    });
+  }, [categories, allRooms, t.booking.pricePerNight, t.booking.roomLabel]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -305,137 +317,41 @@ const BookingSectionContent = () => {
     setIsSubmitting(true);
 
     try {
-      // Calculate total guests
       const totalGuests = parseInt(formData.adults) + parseInt(formData.children);
-
-      // Format dates as ISO timestamps according to SCHEMAS.md
       const checkInDate = new Date(formData.checkIn);
-      checkInDate.setHours(14, 0, 0, 0); // Default check-in time 14:00
+      checkInDate.setHours(14, 0, 0, 0);
       const checkOutDate = new Date(formData.checkOut);
-      checkOutDate.setHours(12, 0, 0, 0); // Default check-out time 12:00
+      checkOutDate.setHours(12, 0, 0, 0);
+      const number_of_nights = Math.ceil(
+        (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const selectedRoomType = roomTypes.find((r: { value: string; pricePerNight?: number }) => r.value === formData.roomType);
+      const pricePerNight = selectedRoomType && 'pricePerNight' in selectedRoomType ? (selectedRoomType as { pricePerNight: number }).pricePerNight : undefined;
 
-      // Prepare booking data
-      const bookingData = {
-        check_in: checkInDate.toISOString(),
-        check_out: checkOutDate.toISOString(),
-        total_guests: totalGuests,
-        customer_name: sanitizeInput(formData.fullName),
-        customer_email: sanitizeInput(formData.email),
-        customer_phone: sanitizeInput(formData.phone),
-        ...(formData.specialRequests && { notes: sanitizeInput(formData.specialRequests) }),
-        ...(formData.roomType && { roomType: formData.roomType }),
-        ...(roomIdFromUrl && { room_id: roomIdFromUrl }),
+      const draft: BookingDraftSingle = {
+        type: 'single',
+        payload: {
+          check_in: checkInDate.toISOString(),
+          check_out: checkOutDate.toISOString(),
+          total_guests: totalGuests,
+          customer_name: sanitizeInput(formData.fullName),
+          customer_email: sanitizeInput(formData.email),
+          customer_phone: sanitizeInput(formData.phone),
+          ...(formData.specialRequests && { notes: sanitizeInput(formData.specialRequests) }),
+          ...(formData.roomType && { roomType: formData.roomType }),
+          ...(roomIdFromUrl && { room_id: roomIdFromUrl }),
+        },
+        display: {
+          room_type: formData.roomType || undefined,
+          number_of_nights: number_of_nights,
+          ...(pricePerNight != null && { price_per_night: pricePerNight }),
+        },
       };
 
-      // Call API to create booking
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookingData),
-      });
-
-      const result = await response.json();
-
-      // Always log the full response for debugging
-      console.log('[Booking] Full API Response:', JSON.stringify(result, null, 2));
-
-      // Handle business error: room not available (from RPC)
-      if (!response.ok) {
-        const errorCode = result?.code;
-
-        if (response.status === 400 && errorCode === 'ROOM_NOT_AVAILABLE') {
-          toast({
-            title: t.booking.roomBookedTitle,
-            description: result.error || t.booking.roomBookedDesc,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        throw new Error(result.error || 'Không thể tạo booking');
-      }
-
-      // Success - redirect to checkout page
-      // Extract booking ID from response - try multiple possible locations
-      let bookingId: string | null = null;
-      
-      // Try booking_id first (most reliable)
-      if (result.booking_id !== undefined && result.booking_id !== null) {
-        const id = String(result.booking_id).trim();
-        if (id && id !== 'undefined' && id !== 'null' && id !== '[object Object]') {
-          bookingId = id;
-        }
-      }
-      
-      // Try booking.id if booking_id didn't work
-      if (!bookingId && result.booking) {
-        if (result.booking.id !== undefined && result.booking.id !== null) {
-          const id = String(result.booking.id).trim();
-          if (id && id !== 'undefined' && id !== 'null' && id !== '[object Object]') {
-            bookingId = id;
-          }
-        }
-      }
-      
-      // Try result.id directly
-      if (!bookingId && result.id !== undefined && result.id !== null) {
-        const id = String(result.id).trim();
-        if (id && id !== 'undefined' && id !== 'null' && id !== '[object Object]') {
-          bookingId = id;
-        }
-      }
-      
-      // Debug logging
-      console.log('[Booking] Extracted booking ID:', {
-        bookingId,
-        booking_id: result.booking_id,
-        booking_id_type: typeof result.booking_id,
-        booking: result.booking,
-        booking_id_from_booking: result.booking?.id,
-        result_id: result.id,
-      });
-      
-      // Validate booking ID
-      if (bookingId && bookingId.length > 0 && bookingId !== 'undefined' && bookingId !== 'null' && bookingId !== '[object Object]') {
-        router.push(`/checkout?booking_id=${encodeURIComponent(bookingId)}`);
-      } else {
-        console.error('[Booking] Invalid booking ID - Full response:', {
-          bookingId,
-          full_result: result,
-          response_status: response.status,
-          response_ok: response.ok,
-          booking_id_raw: result.booking_id,
-          booking_id_type: typeof result.booking_id,
-          booking_raw: result.booking,
-          booking_type: typeof result.booking,
-          result_keys: Object.keys(result || {}),
-        });
-        toast({
-          title: t.booking.bookingSuccessTitle,
-          description: result.message || t.booking.bookingSuccessDesc,
-          variant: "default",
-        });
-        // Redirect to lookup page as fallback
-        setTimeout(() => {
-          router.push('/lookup');
-        }, 2000);
-        // Reset form
-        setFormData({
-          checkIn: undefined,
-          checkOut: undefined,
-          adults: "1",
-          children: "0",
-          roomType: "",
-          fullName: "",
-          email: "",
-          phone: "",
-          specialRequests: ""
-        });
-      }
+      setBookingDraft(draft);
+      router.push('/checkout');
     } catch (error) {
-      console.error('Error creating booking:', error);
+      console.error('Error saving booking draft:', error);
       toast({
         title: t.booking.bookingFailedTitle,
         description: error instanceof Error ? error.message : t.booking.bookingFailedDesc,

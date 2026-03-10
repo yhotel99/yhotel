@@ -29,6 +29,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'rnuuftucapucuavqlgbx.supabase.co',
       },
+      {
+        protocol: 'https',
+        hostname: 'wqadavcddtdocdqxnony.supabase.co',
+      },
     ],
     formats: ['image/avif', 'image/webp'], // Enable modern image formats
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],

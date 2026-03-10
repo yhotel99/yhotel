@@ -51,6 +51,7 @@ import { getAmenityIcon } from "@/lib/amenity-icons";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import Script from "next/script";
 import { useQuery } from "@tanstack/react-query";
+import { setBookingDraft, type BookingDraftSingle } from "@/lib/booking-draft";
 
 interface RoomDetailPageProps {
   params: Promise<{ id: string }>;
@@ -478,117 +479,39 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
       const checkOutDate = new Date(formData.checkOut);
       checkOutDate.setHours(12, 0, 0, 0); // Default check-out time 12:00
 
-      // Prepare booking data
-      // If room has category_code, send it to let backend auto-assign a room
-      const bookingData = {
-        ...(room.category_code ? { category_code: room.category_code } : { room_id: room.id }),
-        check_in: checkInDate.toISOString(),
-        check_out: checkOutDate.toISOString(),
-        total_guests: parseInt(formData.guests) || 1,
-        customer_name: formData.fullName,
-        customer_email: formData.email,
-        customer_phone: formData.phone,
-        customer_nationality: formData.nationality || null,
-        ...(formData.specialRequests && { notes: formData.specialRequests }),
+      const number_of_nights = Math.ceil(
+        (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const pricePerNight =
+        typeof room.price === "string"
+          ? parseInt(room.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) || 0
+          : 0;
+
+      const draft: BookingDraftSingle = {
+        type: 'single',
+        payload: {
+          ...(room.category_code ? { category_code: room.category_code } : { room_id: room.id }),
+          check_in: checkInDate.toISOString(),
+          check_out: checkOutDate.toISOString(),
+          total_guests: parseInt(formData.guests) || 1,
+          customer_name: formData.fullName,
+          customer_email: formData.email,
+          customer_phone: formData.phone,
+          customer_nationality: formData.nationality || null,
+          ...(formData.specialRequests && { notes: formData.specialRequests }),
+        },
+        display: {
+          room_name: room.name,
+          room_type: ("room_type" in room ? (room as any).room_type : room.category) ?? undefined,
+          price_per_night: pricePerNight,
+          number_of_nights: number_of_nights,
+        },
       };
 
-      // Call API to create booking
-      const response = await fetch('/api/bookings', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(bookingData),
-      });
-
-      const result = await response.json();
-
-      // Always log the full response for debugging
-      console.log('[Booking] Full API Response:', JSON.stringify(result, null, 2));
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Không thể tạo booking');
-      }
-
-      // Success - redirect to checkout page
-      // Extract booking ID from response - try multiple possible locations
-      let bookingId: string | null = null;
-      
-      // Try booking_id first (most reliable)
-      if (result.booking_id !== undefined && result.booking_id !== null) {
-        const id = String(result.booking_id).trim();
-        if (id && id !== 'undefined' && id !== 'null' && id !== '[object Object]') {
-          bookingId = id;
-        }
-      }
-      
-      // Try booking.id if booking_id didn't work
-      if (!bookingId && result.booking) {
-        if (result.booking.id !== undefined && result.booking.id !== null) {
-          const id = String(result.booking.id).trim();
-          if (id && id !== 'undefined' && id !== 'null' && id !== '[object Object]') {
-            bookingId = id;
-          }
-        }
-      }
-      
-      // Try result.id directly
-      if (!bookingId && result.id !== undefined && result.id !== null) {
-        const id = String(result.id).trim();
-        if (id && id !== 'undefined' && id !== 'null' && id !== '[object Object]') {
-          bookingId = id;
-        }
-      }
-      
-      // Debug logging
-      console.log('[Booking] Extracted booking ID:', {
-        bookingId,
-        booking_id: result.booking_id,
-        booking_id_type: typeof result.booking_id,
-        booking: result.booking,
-        booking_id_from_booking: result.booking?.id,
-        result_id: result.id,
-      });
-      
-      // Validate booking ID
-      if (bookingId && bookingId.length > 0 && bookingId !== 'undefined' && bookingId !== 'null' && bookingId !== '[object Object]') {
-        router.push(`/checkout?booking_id=${encodeURIComponent(bookingId)}`);
-      } else {
-        console.error('[Booking] Invalid booking ID - Full response:', {
-          bookingId,
-          full_result: result,
-          response_status: response.status,
-          response_ok: response.ok,
-          booking_id_raw: result.booking_id,
-          booking_id_type: typeof result.booking_id,
-          booking_raw: result.booking,
-          booking_type: typeof result.booking,
-          result_keys: Object.keys(result || {}),
-        });
-        toast({
-          title: t.roomDetail.bookingSuccess,
-          description: result.message || t.roomDetail.bookingSuccessMessage,
-          variant: "default",
-        });
-        // Redirect to lookup page as fallback
-        setTimeout(() => {
-          router.push('/lookup');
-        }, 2000);
-        // Reset form
-        setFormData({
-          checkIn: undefined,
-          checkOut: undefined,
-          guests: "",
-          fullName: "",
-          email: "",
-          phone: "",
-          nationality: "",
-          specialRequests: "",
-          agreedToTerms: false,
-        });
-      }
+      setBookingDraft(draft);
+      router.push('/checkout');
     } catch (error) {
-      console.error('Error creating booking:', error);
+      console.error('Error saving booking draft:', error);
       toast({
         title: t.roomDetail.bookingError,
         description: error instanceof Error ? error.message : t.roomDetail.bookingErrorMessage,
