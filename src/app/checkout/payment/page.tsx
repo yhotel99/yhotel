@@ -770,6 +770,9 @@ const PaymentContent = () => {
                           <div>
                             <p className="text-sm text-muted-foreground mb-1">{t.payment.amountToPay}</p>
                             <p className="text-2xl font-bold text-primary">{formatPrice(booking.total_amount)}đ</p>
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                              {t.checkout.totalExcludesVatAndFees}
+                            </p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm text-muted-foreground mb-1">{t.payment.bookingCode}</p>
@@ -996,6 +999,9 @@ const PaymentContent = () => {
                               <span className="font-semibold text-lg">{t.payment.total}</span>
                               <span className="font-bold text-xl text-primary">{formatPrice(booking.total_amount)}đ</span>
                             </div>
+                            <p className="text-xs text-muted-foreground pt-1 leading-relaxed">
+                              {t.checkout.totalExcludesVatAndFees}
+                            </p>
                           </div>
                         </div>
 

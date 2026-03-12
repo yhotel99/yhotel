@@ -550,6 +550,9 @@ const CheckoutContent = () => {
                                   {totalFromDraft > 0 ? `${formatPrice(totalFromDraft)}đ` : "Sẽ tính khi xác nhận"}
                                 </span>
                               </div>
+                              <p className="text-xs text-muted-foreground pt-1 leading-relaxed">
+                                {t.checkout.totalExcludesVatAndFees}
+                              </p>
                             </div>
                           </div>
                           <Button
@@ -979,6 +982,9 @@ const CheckoutContent = () => {
                               <span className="font-semibold text-lg">{t.checkout.total}</span>
                               <span className="font-bold text-xl text-primary">{formatPrice(booking.total_amount)}đ</span>
                             </div>
+                            <p className="text-xs text-muted-foreground pt-1 leading-relaxed">
+                              {t.checkout.totalExcludesVatAndFees}
+                            </p>
                           </div>
                         </div>
 
