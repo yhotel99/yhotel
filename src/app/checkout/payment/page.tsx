@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { RoomDetailSkeleton } from "@/components/RoomDetailSkeleton";
+import { PaymentSkeleton } from "@/components/PaymentSkeleton";
 import { BookingStatusBadge } from "@/components/BookingStatusBadge";
 import { BOOKING_STATUS, bookingStatusLabels } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -441,6 +442,7 @@ const PaymentContent = () => {
   const [isCopied, setIsCopied] = useState(false);
   const [countdown, setCountdown] = useState(15 * 60); // 15 minutes
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isQrLoaded, setIsQrLoaded] = useState(false);
 
   // Handle timeout - cancel booking if not paid
   const handleTimeoutCancel = useCallback(async () => {
@@ -567,6 +569,11 @@ const PaymentContent = () => {
     return queryString ? `${baseUrl}?${queryString}` : baseUrl;
   })();
 
+  useEffect(() => {
+    // Reset QR loading state when URL changes (new booking / reload)
+    setIsQrLoaded(false);
+  }, [vietQRUrl]);
+
   const handleCopyAccountNumber = () => {
     navigator.clipboard.writeText(bankAccount.number);
     setIsCopied(true);
@@ -617,7 +624,7 @@ const PaymentContent = () => {
       <div className="min-h-screen bg-luxury-gradient flex flex-col">
         <Navigation />
         <main className="pt-14 lg:pt-16 flex-1">
-          <RoomDetailSkeleton />
+          <PaymentSkeleton />
         </main>
         <Footer />
       </div>
@@ -662,53 +669,65 @@ const PaymentContent = () => {
     <div className="min-h-screen bg-luxury-gradient flex flex-col">
       <Navigation />
       <main className="pt-14 lg:pt-16 flex-1">
-        <section className="py-20 bg-gradient-section">
+        <section className="py-10 sm:py-14 md:py-16 lg:py-20 bg-gradient-section">
           <div className="container-luxury">
             {/* Header */}
-            <div className="mb-12">
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                  <Banknote className="h-8 w-8 text-primary" />
+            <div className="mb-8 md:mb-12">
+              <div className="text-center mb-6 md:mb-8 px-1">
+                <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-primary/10 mb-3 md:mb-4">
+                  <Banknote className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
                 </div>
-                <h1 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-foreground mb-3 md:mb-4">
                   {t.payment.title}
                 </h1>
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+                <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
                   {t.payment.description}
                 </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
               {/* Left Column - Payment Info */}
               <div className="lg:col-span-2 space-y-6">
                 <GradientBorder>
                   <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
-                    <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
+                    <CardHeader className="p-4 sm:p-6 md:p-8 pb-0 space-y-0">
                       <div className="mb-4 md:mb-1">
-                        <CardTitle className="text-xl md:text-2xl font-display">
+                        <CardTitle className="text-lg sm:text-xl md:text-2xl font-display">
                           {t.payment.transferInfo}
                         </CardTitle>
                       </div>
                     </CardHeader>
-                    <CardContent className="p-6 md:p-8 pt-2 md:pt-1 space-y-6">
+                    <CardContent className="p-4 sm:p-6 md:p-8 pt-2 md:pt-1 space-y-4 sm:space-y-6">
                       {/* QR Code Section */}
-                      <div className="flex flex-col md:flex-row gap-6">
+                      <div className="flex flex-col md:flex-row gap-4 sm:gap-6">
                         {/* QR Code - Only QR */}
-                        <div className="flex items-center justify-center p-6 bg-white rounded-xl border-2 border-primary/30 shadow-lg">
-                          {vietQRUrl ? (
-                            <Image
-                              src={vietQRUrl}
-                              alt="VietQR Code"
-                              width={400}
-                              height={400}
-                              className="w-full max-w-[400px] h-auto aspect-square"
-                              unoptimized
-                              priority
-                            />
-                          ) : (
-                            <div className="w-full max-w-[400px] aspect-square flex items-center justify-center bg-gray-100 rounded-lg">
-                              <Loader2 className="h-12 w-12 animate-spin text-muted-foreground" />
+                        <div className="flex items-center justify-center p-4 sm:p-6 bg-white rounded-xl border-2 border-primary/30 shadow-lg relative w-full max-w-[360px] h-[min(280px,calc(100vw-2rem))] sm:h-[320px] md:h-[360px] mx-auto md:mx-0 shrink-0">
+                          {vietQRUrl && (
+                            <>
+                              {!isQrLoaded && (
+                                <div className="absolute inset-4 sm:inset-6 flex items-center justify-center">
+                                  <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-muted-foreground" />
+                                </div>
+                              )}
+                              <Image
+                                src={vietQRUrl}
+                                alt="VietQR Code"
+                                width={360}
+                                height={360}
+                                className={cn(
+                                  "w-full h-full object-contain rounded-lg transition-opacity duration-300",
+                                  !isQrLoaded && "opacity-0"
+                                )}
+                                unoptimized
+                                priority
+                                onLoadingComplete={() => setIsQrLoaded(true)}
+                              />
+                            </>
+                          )}
+                          {!vietQRUrl && (
+                            <div className="w-full max-w-[360px] min-h-[200px] flex items-center justify-center bg-gray-100 rounded-lg">
+                              <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-muted-foreground" />
                             </div>
                           )}
                         </div>
@@ -744,7 +763,7 @@ const PaymentContent = () => {
                             <div className="p-4 bg-primary/10 rounded-lg border-2 border-primary/30">
                               <p className="text-sm text-muted-foreground mb-2">{t.payment.transferContent}</p>
                               <div className="flex items-center justify-between gap-2">
-                                <span className="font-mono font-bold text-xl text-primary">{paymentContent}</span>
+                                <span className="font-mono font-bold text-base sm:text-xl text-primary break-all">{paymentContent}</span>
                                 <Button
                                   variant="outline"
                                   size="sm"
@@ -765,37 +784,37 @@ const PaymentContent = () => {
                       <Separator />
 
                       {/* Payment Amount */}
-                      <div className="p-6 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-lg border border-primary/20">
-                        <div className="flex items-center justify-between">
+                      <div className="p-4 sm:p-6 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-lg border border-primary/20">
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <p className="text-sm text-muted-foreground mb-1">{t.payment.amountToPay}</p>
-                            <p className="text-2xl font-bold text-primary">{formatPrice(booking.total_amount)}đ</p>
+                            <p className="text-xl sm:text-2xl font-bold text-primary">{formatPrice(booking.total_amount)}đ</p>
                             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                               {t.checkout.totalExcludesVatAndFees}
                             </p>
                           </div>
-                          <div className="text-right">
+                          <div className="text-left sm:text-right">
                             <p className="text-sm text-muted-foreground mb-1">{t.payment.bookingCode}</p>
-                            <p className="text-lg font-mono font-bold text-foreground">{paymentContent}</p>
+                            <p className="text-base sm:text-lg font-mono font-bold text-foreground break-all">{paymentContent}</p>
                           </div>
                         </div>
                       </div>
 
                       {/* Instructions */}
-                      <div className="p-4 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
-                        <p className="font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                      <div className="p-4 bg-primary/5 dark:bg-primary/10 border border-primary/20 rounded-lg">
+                        <p className="font-semibold text-foreground mb-2">
                           {t.payment.instructions}
                         </p>
-                        <ol className="list-decimal list-inside space-y-1 text-sm text-blue-700 dark:text-blue-300">
+                        <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
                           <li>{t.payment.step1}</li>
                           <li>{t.payment.step2}</li>
-                          <li>{t.payment.step3.replace('{amount}', formatPrice(booking.total_amount)).replace('{content}', paymentContent)}</li>
-                          <li>{t.payment.step4}</li>
+                          <li>{t.payment.step3.replace('{amount}', formatPrice(booking.total_amount))}</li>
+                          <li>{t.payment.step4.replace('{content}', paymentContent)}</li>
                           <li>{t.payment.step5}</li>
                           <li>{t.payment.step6}</li>
                         </ol>
-                        <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-700">
-                          <p className="text-xs text-blue-600 dark:text-blue-400">
+                        <div className="mt-3 pt-3 border-t border-primary/20">
+                          <p className="text-xs text-muted-foreground">
                             {t.payment.qrNote}
                           </p>
                         </div>
@@ -830,12 +849,12 @@ const PaymentContent = () => {
 
               {/* Right Column - Booking Summary */}
               <div className="lg:col-span-1">
-                <div className="sticky top-24 space-y-6">
+                <div className="lg:sticky lg:top-24 space-y-6">
                   <GradientBorder>
                     <FloatingCard className="bg-card rounded-xl border border-border shadow-card">
-                      <CardHeader className="p-6 md:p-8 pb-0 space-y-0">
+                      <CardHeader className="p-4 sm:p-6 md:p-8 pb-0 space-y-0">
                         <div className="mb-4">
-                          <CardTitle className="text-xl md:text-2xl font-display">
+                          <CardTitle className="text-lg sm:text-xl md:text-2xl font-display">
                             {t.payment.bookingInfo}
                           </CardTitle>
                         </div>
@@ -845,10 +864,10 @@ const PaymentContent = () => {
                             <BookingStatusBadge status={booking.status} useCheckoutLabel={false} />
                           </div>
                           <p className="text-xs text-muted-foreground mb-1">{t.payment.bookingCode}</p>
-                          <p className="font-mono font-bold text-xl text-primary pr-24">{booking?.booking_code || paymentContent}</p>
+                          <p className="font-mono font-bold text-base sm:text-xl text-primary pr-20 sm:pr-24 break-all">{booking?.booking_code || paymentContent}</p>
                         </div>
                       </CardHeader>
-                      <CardContent className="px-6 md:px-8 pb-6 md:pb-8 pt-4 md:pt-0 space-y-4">
+                      <CardContent className="px-4 sm:px-6 md:px-8 pb-6 md:pb-8 pt-4 md:pt-0 space-y-4">
                         {/* Booking Details Grid */}
                         <div className="grid grid-cols-2 gap-3">
                           {/* Check-in */}
@@ -890,8 +909,6 @@ const PaymentContent = () => {
                           </div>
                         </div>
 
-                        <Separator className="my-4" />
-
                         {/* Customer Information Section */}
                         {booking.customer && (
                           <div>
@@ -904,9 +921,9 @@ const PaymentContent = () => {
                                 <div className="p-2 bg-primary/10 rounded-lg">
                                   <User className="h-4 w-4 text-primary" />
                                 </div>
-                                <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-1">{t.payment.fullName}</p>
-                                  <p className="font-semibold text-foreground">{booking.customer.full_name}</p>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-muted-foreground mb-1">{t.payment.fullName}</p>
+                                    <p className="font-semibold text-foreground break-words">{booking.customer.full_name}</p>
                                 </div>
                               </div>
                               
@@ -915,9 +932,9 @@ const PaymentContent = () => {
                                   <div className="p-2 bg-primary/10 rounded-lg">
                                     <Mail className="h-4 w-4 text-primary" />
                                   </div>
-                                  <div className="flex-1">
+                                  <div className="flex-1 min-w-0">
                                     <p className="text-xs text-muted-foreground mb-1">{t.payment.email}</p>
-                                    <p className="font-medium text-foreground">{booking.customer.email}</p>
+                                    <p className="font-medium text-foreground break-all">{booking.customer.email}</p>
                                   </div>
                                 </div>
                               )}
@@ -927,9 +944,9 @@ const PaymentContent = () => {
                                   <div className="p-2 bg-primary/10 rounded-lg">
                                     <Phone className="h-4 w-4 text-primary" />
                                   </div>
-                                  <div className="flex-1">
+                                  <div className="flex-1 min-w-0">
                                     <p className="text-xs text-muted-foreground mb-1">{t.payment.phone}</p>
-                                    <p className="font-medium text-foreground">{booking.customer.phone}</p>
+                                    <p className="font-medium text-foreground break-all">{booking.customer.phone}</p>
                                   </div>
                                 </div>
                               )}
@@ -937,48 +954,40 @@ const PaymentContent = () => {
                           </div>
                         )}
 
-                        <Separator className="my-4" />
-
-                        {/* Booking Details Section */}
-                        <div>
-                          <h3 className="text-lg font-display font-semibold mb-3 flex items-center gap-2">
-                            <FileText className="h-5 w-5 text-primary" />
-                            {t.payment.bookingDetails}
-                          </h3>
-                          <div className="space-y-2">
-                            {booking.room && (
-                              <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
-                                <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-primary/10 rounded-lg">
-                                    <Building2 className="h-4 w-4 text-primary" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="text-xs text-muted-foreground mb-0.5">{t.payment.roomBooked}</p>
-                                    <p className="font-semibold text-foreground">{booking.room.name}</p>
-                                    {booking.room.room_type && (
-                                      <p className="text-xs text-muted-foreground mt-0.5">
-                                        {t.payment.roomType} {booking.room.room_type}
-                                      </p>
-                                    )}
-                                  </div>
+                        {/* Booking Details Section (no title) */}
+                        <div className="space-y-2">
+                          {booking.room && (
+                            <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                  <Building2 className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-xs text-muted-foreground mb-0.5">{t.payment.roomBooked}</p>
+                                  <p className="font-semibold text-foreground">{booking.room.name}</p>
+                                  {booking.room.room_type && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      {t.payment.roomType} {booking.room.room_type}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
-                            )}
-                            
-                            {booking.notes && (
-                              <div className="p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800/50">
-                                <div className="flex items-start gap-3">
-                                  <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
-                                    <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                  </div>
-                                  <div className="flex-1">
-                                    <p className="text-xs text-blue-700 dark:text-blue-300 mb-1">{t.payment.specialNotes}</p>
-                                    <p className="text-sm text-blue-900 dark:text-blue-100">{booking.notes}</p>
-                                  </div>
+                            </div>
+                          )}
+                          
+                          {booking.notes && (
+                            <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
+                              <div className="flex items-start gap-3">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                  <FileText className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-xs text-muted-foreground mb-1">{t.payment.specialNotes}</p>
+                                  <p className="text-sm text-foreground whitespace-pre-wrap">{booking.notes}</p>
                                 </div>
                               </div>
-                            )}
-                          </div>
+                            </div>
+                          )}
                         </div>
 
                         <Separator className="my-4" />
@@ -1053,7 +1062,7 @@ const PaymentPage = () => {
       <div className="min-h-screen bg-luxury-gradient">
         <Navigation />
         <main className="pt-14 lg:pt-16">
-          <RoomDetailSkeleton />
+          <PaymentSkeleton />
         </main>
         <Footer />
       </div>

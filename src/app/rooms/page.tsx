@@ -467,20 +467,6 @@ const RoomsPageContent = () => {
                   </PopoverContent>
                 </Popover>
 
-                {/* Category Filter */}
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-full sm:w-[180px] h-11 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 hover:bg-accent hover:text-accent-foreground hover:border-primary/50 transition-colors">
-                    <SelectValue placeholder={t.roomsPage.allCategories} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categories.map((category) => (
-                      <SelectItem key={category.value} value={category.value}>
-                        {category.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
                 {/* Sort */}
                 <Select value={sortBy} onValueChange={setSortBy}>
                   <SelectTrigger className="w-full sm:w-[160px] h-11 bg-background/50 backdrop-blur-sm border-border/50 focus:border-primary/50 hover:bg-accent hover:text-accent-foreground hover:border-primary/50 transition-colors">
