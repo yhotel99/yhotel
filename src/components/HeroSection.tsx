@@ -35,17 +35,43 @@ const HeroSection = () => {
   const [isGuestsOpen, setIsGuestsOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(true);
+  const [isPaused, setIsPaused] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState<number | null>(null);
 
   const dateLocale = language === "vi" ? vi : enUS;
 
-  // Auto-scroll images every 5 seconds with infinite loop
+  // Auto-scroll images every 10 seconds with infinite loop
   useEffect(() => {
+    if (isPaused || isDragging) return;
+    
     const interval = setInterval(() => {
       setCurrentImageIndex((prevIndex) => prevIndex + 1);
-    }, 5000);
+      setProgress(0); // Reset progress when changing slide
+    }, 10000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [isPaused, isDragging]);
+
+  // Progress bar animation
+  useEffect(() => {
+    if (isPaused || isDragging) return;
+    
+    setProgress(0);
+    const progressInterval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          return 0;
+        }
+        return prev + (100 / 100); // 10000ms / 100ms = 100 steps
+      });
+    }, 100);
+
+    return () => clearInterval(progressInterval);
+  }, [currentImageIndex, isPaused, isDragging]);
 
   // Reset to start when reaching the end (seamless loop)
   useEffect(() => {
@@ -62,6 +88,137 @@ const HeroSection = () => {
       }, 850);
     }
   }, [currentImageIndex]);
+
+  // Navigation functions
+  const goToSlide = (index: number) => {
+    setCurrentImageIndex(index);
+    setProgress(0);
+  };
+
+  const goToPrevious = () => {
+    setCurrentImageIndex((prevIndex) => 
+      prevIndex === 0 ? bannerImages.length - 1 : prevIndex - 1
+    );
+    setProgress(0);
+  };
+
+  const goToNext = () => {
+    setCurrentImageIndex((prevIndex) => prevIndex + 1);
+    setProgress(0);
+  };
+
+  // Touch handlers for mobile swipe
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+    setIsPaused(true);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) {
+      setIsPaused(false);
+      return;
+    }
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) {
+      goToNext();
+    } else if (isRightSwipe) {
+      goToPrevious();
+    }
+    
+    setIsPaused(false);
+  };
+
+  // Mouse drag handlers for desktop
+  const onMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setDragStart(e.clientX);
+    setIsPaused(true);
+    e.preventDefault();
+  };
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !dragStart) return;
+    e.preventDefault();
+  };
+
+  const onMouseUp = (e: React.MouseEvent) => {
+    if (!isDragging || !dragStart) return;
+    
+    const distance = dragStart - e.clientX;
+    const isLeftDrag = distance > minSwipeDistance;
+    const isRightDrag = distance < -minSwipeDistance;
+
+    if (isLeftDrag) {
+      goToNext();
+    } else if (isRightDrag) {
+      goToPrevious();
+    }
+    
+    setIsDragging(false);
+    setDragStart(null);
+    setIsPaused(false);
+  };
+
+  const onMouseLeave = () => {
+    if (isDragging) {
+      setIsDragging(false);
+      setDragStart(null);
+    }
+    setIsPaused(false);
+  };
+
+  // Global mouse event handlers for better drag experience
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !dragStart) return;
+      e.preventDefault();
+    };
+
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      if (!isDragging || !dragStart) return;
+      
+      const distance = dragStart - e.clientX;
+      const isLeftDrag = distance > minSwipeDistance;
+      const isRightDrag = distance < -minSwipeDistance;
+
+      if (isLeftDrag) {
+        setCurrentImageIndex((prevIndex) => prevIndex + 1);
+        setProgress(0);
+      } else if (isRightDrag) {
+        setCurrentImageIndex((prevIndex) => 
+          prevIndex === 0 ? bannerImages.length - 1 : prevIndex - 1
+        );
+        setProgress(0);
+      }
+      
+      setIsDragging(false);
+      setDragStart(null);
+      setIsPaused(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+      document.body.style.userSelect = '';
+    };
+  }, [isDragging, dragStart, minSwipeDistance]);
 
   const handleCheckAvailable = () => {
     if (!checkIn || !checkOut) {
@@ -84,14 +241,26 @@ const HeroSection = () => {
   };
 
   return (
-    <section id="home" className="relative min-h-[70vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden">
+    <section 
+      id="home" 
+      className="relative min-h-[70vh] md:min-h-[80vh] flex items-center justify-center overflow-hidden group select-none"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={onMouseLeave}
+    >
       {/* Background Images with Horizontal Slide - Infinite Loop */}
       <div
-        className="absolute inset-0 flex will-change-transform"
+        className={cn(
+          "absolute inset-0 flex will-change-transform",
+          isDragging ? "cursor-grabbing" : "cursor-grab"
+        )}
         style={{
           transform: `translateX(-${currentImageIndex * 100}%)`,
           transition: isTransitioning ? 'transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1)' : 'none',
         }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onMouseDown={onMouseDown}
       >
         {/* Render original images */}
         {bannerImages.map((imageUrl, index) => (
@@ -131,6 +300,33 @@ const HeroSection = () => {
       {/* Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-overlay" />
       <div className="absolute inset-0 bg-gradient-aurora animate-aurora opacity-20" />
+
+      {/* Dots Indicator */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+        {bannerImages.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => goToSlide(index)}
+            className={cn(
+              "relative w-3 h-3 rounded-full transition-all duration-300",
+              currentImageIndex % bannerImages.length === index
+                ? "bg-white scale-110"
+                : "bg-white/50 hover:bg-white/75"
+            )}
+            aria-label={`Go to slide ${index + 1}`}
+          >
+            {/* Progress ring for active dot */}
+            {currentImageIndex % bannerImages.length === index && !isPaused && !isDragging && (
+              <div 
+                className="absolute inset-0 rounded-full border-2 border-white/30"
+                style={{
+                  background: `conic-gradient(white ${progress * 3.6}deg, transparent ${progress * 3.6}deg)`
+                }}
+              />
+            )}
+          </button>
+        ))}
+      </div>
 
       {/* Content */}
       <div className="relative z-10 container-luxury text-center text-white">
