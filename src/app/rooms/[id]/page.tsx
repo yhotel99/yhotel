@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useRef, useEffect, useCallback } from "react";
+import { use, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import {
@@ -52,6 +52,11 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import Script from "next/script";
 import { useQuery } from "@tanstack/react-query";
 import { setBookingDraft, type BookingDraftSingle } from "@/lib/booking-draft";
+import {
+  calculateTotalWithWeekdayRates,
+  normalizeWeekdayRates,
+  type DailyPricingBreakdownItem,
+} from "@/lib/pricing";
 
 interface RoomDetailPageProps {
   params: Promise<{ id: string }>;
@@ -272,6 +277,108 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isLightboxOpen, images.length, prevLightboxImage, nextLightboxImage, closeLightbox]);
+
+  const nights = useMemo(() => {
+    if (!formData.checkIn || !formData.checkOut) return 0;
+    const diffTime = formData.checkOut.getTime() - formData.checkIn.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  }, [formData.checkIn, formData.checkOut]);
+
+  const roomPrice = useMemo(() => {
+    if (!room?.price || typeof room.price !== "string") return 0;
+    return (
+      parseFloat(room.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) || 0
+    );
+  }, [room?.price]);
+
+  const [weekdayRates, setWeekdayRates] = useState<
+    [number, number, number, number, number, number, number] | null
+  >(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function fetchSettingsWeekdayRates() {
+      try {
+        const res = await fetch("/api/settings");
+        if (!res.ok) {
+          if (isMounted) setWeekdayRates(normalizeWeekdayRates(null));
+          return;
+        }
+        const data = await res.json();
+        if (isMounted) {
+          if (data && "pricing_weekday_rates" in data) {
+            setWeekdayRates(normalizeWeekdayRates(data.pricing_weekday_rates));
+          } else {
+            setWeekdayRates(normalizeWeekdayRates(null));
+          }
+        }
+      } catch (e) {
+        console.error("[RoomDetail] Failed to load pricing_weekday_rates:", e);
+        if (isMounted) setWeekdayRates(normalizeWeekdayRates(null));
+      }
+    }
+
+    fetchSettingsWeekdayRates();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const { subtotal, totalPrice, nightlyBreakdown, baseNightsTotal } = useMemo(() => {
+    const base = roomPrice * nights;
+    if (
+      roomPrice <= 0 ||
+      !formData.checkIn ||
+      !formData.checkOut ||
+      nights <= 0
+    ) {
+      return {
+        subtotal: 0,
+        totalPrice: 0,
+        nightlyBreakdown: [] as DailyPricingBreakdownItem[],
+        baseNightsTotal: 0,
+      };
+    }
+    if (!weekdayRates) {
+      return {
+        subtotal: base,
+        totalPrice: base,
+        nightlyBreakdown: [] as DailyPricingBreakdownItem[],
+        baseNightsTotal: base,
+      };
+    }
+    const checkInDate = new Date(formData.checkIn);
+    checkInDate.setHours(0, 0, 0, 0);
+    const checkOutDate = new Date(formData.checkOut);
+    checkOutDate.setHours(0, 0, 0, 0);
+
+    const toYMD = (d: Date) => {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    };
+
+    const { total, breakdown } = calculateTotalWithWeekdayRates({
+      basePrice: roomPrice,
+      checkInDate: toYMD(checkInDate),
+      checkOutDate: toYMD(checkOutDate),
+      weekdayRates,
+    });
+    return {
+      subtotal: total,
+      totalPrice: total,
+      nightlyBreakdown: breakdown,
+      baseNightsTotal: base,
+    };
+  }, [roomPrice, nights, formData.checkIn, formData.checkOut, weekdayRates]);
+
+  const surchargeAmount = useMemo(() => {
+    if (nightlyBreakdown.length === 0) return 0;
+    return Math.max(0, Math.round(subtotal - baseNightsTotal));
+  }, [nightlyBreakdown.length, subtotal, baseNightsTotal]);
 
   const validateFormFields = () => {
     const errors: {
@@ -521,20 +628,6 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
       setIsSubmitting(false);
     }
   };
-
-  // Calculate nights and total price
-  const calculateNights = () => {
-    if (!formData.checkIn || !formData.checkOut) return 0;
-    const diffTime = formData.checkOut.getTime() - formData.checkIn.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
-  };
-
-  const nights = calculateNights();
-  // Parse price correctly - Vietnamese format uses dots as thousand separators
-  const roomPrice = parseFloat(room.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) || 0;
-  const subtotal = roomPrice * nights;
-  const totalPrice = subtotal;
 
   const formatPrice = (price: number) => {
     return price.toLocaleString("vi-VN");
@@ -938,18 +1031,93 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
 
                           {/* Nights & Price Summary */}
                           {formData.checkIn && formData.checkOut && nights > 0 && (
-                            <div className="pt-4 border-t space-y-2.5">
+                            <div className="pt-4 border-t space-y-3">
                               <div className="flex justify-between items-center text-xs md:text-sm">
                                 <span className="text-muted-foreground">{t.lookup.nights}:</span>
                                 <span className="font-medium">{nights} {t.lookup.nightsUnit}</span>
                               </div>
-                              <div className="flex justify-between items-center text-xs md:text-sm">
-                                <span className="text-muted-foreground">{t.lookup.roomPrice} ({nights} {t.lookup.nightsUnit}):</span>
-                                <span className="font-medium">{formatPrice(subtotal)}₫</span>
-                              </div>
+
+                              {nightlyBreakdown.length > 0 && (
+                                <>
+                                  <div>
+                                    <p className="text-xs font-semibold text-foreground mb-2">
+                                      {t.roomDetail.pricingBreakdownTitle}
+                                    </p>
+                                    <ul className="space-y-1.5 rounded-lg border border-border/70 bg-background/80 p-2.5">
+                                      {nightlyBreakdown.map((row) => {
+                                        const d = new Date(`${row.date}T12:00:00`);
+                                        const label = format(d, "EEEE, dd/MM/yyyy", {
+                                          locale: dateLocale,
+                                        });
+                                        return (
+                                          <li
+                                            key={row.date}
+                                            className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-[11px] md:text-xs"
+                                          >
+                                            <span className="text-muted-foreground min-w-0 flex-1">
+                                              {label}
+                                              {row.percent > 0 ? (
+                                                <span className="ml-1 text-amber-700 dark:text-amber-400 font-medium">
+                                                  (
+                                                  {t.roomDetail.perNightSurcharge.replace(
+                                                    "{percent}",
+                                                    String(row.percent)
+                                                  )}
+                                                  )
+                                                </span>
+                                              ) : (
+                                                <span className="ml-1 text-muted-foreground/80">
+                                                  ({t.roomDetail.perNightBase})
+                                                </span>
+                                              )}
+                                            </span>
+                                            <span className="font-semibold tabular-nums shrink-0">
+                                              {formatPrice(Math.round(row.price))}₫
+                                            </span>
+                                          </li>
+                                        );
+                                      })}
+                                    </ul>
+                                  </div>
+                                  <div className="flex justify-between items-center text-xs md:text-sm">
+                                    <span className="text-muted-foreground">
+                                      {t.roomDetail.baseTotalNights
+                                        .replace("{nights}", String(nights))
+                                        .replace("{price}", formatPrice(roomPrice))}
+                                    </span>
+                                    <span className="font-medium tabular-nums">
+                                      {formatPrice(baseNightsTotal)}₫
+                                    </span>
+                                  </div>
+                                  {surchargeAmount > 0 && (
+                                    <div className="flex justify-between items-center text-xs md:text-sm text-amber-800 dark:text-amber-300">
+                                      <span>{t.roomDetail.surchargeLine}</span>
+                                      <span className="font-semibold tabular-nums">
+                                        +{formatPrice(surchargeAmount)}₫
+                                      </span>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+
+                              {nightlyBreakdown.length === 0 && (
+                                <div className="flex justify-between items-center text-xs md:text-sm">
+                                  <span className="text-muted-foreground">
+                                    {t.lookup.roomPrice} ({nights} {t.lookup.nightsUnit}):
+                                  </span>
+                                  <span className="font-medium tabular-nums">
+                                    {formatPrice(subtotal)}₫
+                                  </span>
+                                </div>
+                              )}
+
                               <div className="flex justify-between items-center pt-2 border-t">
-                                <span className="text-sm md:text-base font-semibold">{t.lookup.total}:</span>
-                                <span className="text-base md:text-lg font-bold text-primary">{formatPrice(totalPrice)}₫</span>
+                                <span className="text-sm md:text-base font-semibold">
+                                  {t.lookup.total}:
+                                </span>
+                                <span className="text-base md:text-lg font-bold text-primary tabular-nums">
+                                  {formatPrice(totalPrice)}₫
+                                </span>
                               </div>
                             </div>
                           )}

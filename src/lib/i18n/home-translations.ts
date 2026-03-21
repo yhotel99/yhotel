@@ -326,6 +326,13 @@ export const homeTranslations = {
       serviceOrigin: "Dịch vụ cung cấp tại Việt Nam",
       priceIncludes: "Giá đã bao gồm thuế VAT và phí dịch vụ",
       priceNote: "* Giá có thể thay đổi tùy theo thời điểm đặt phòng",
+      pricingBreakdownTitle: "Chi tiết giá từng đêm",
+      pricingBreakdownHint:
+        "Giá trên là giá gốc/đêm. Một số ngày (ví dụ cuối tuần) có thể áp dụng phụ thu — bảng dưới giúp bạn thấy rõ từng đêm.",
+      baseTotalNights: "Theo giá niêm yết ({nights} đêm × {price}/đêm)",
+      surchargeLine: "Phụ thu theo ngày trong tuần",
+      perNightSurcharge: "+{percent}% so với giá gốc",
+      perNightBase: "Giá gốc",
     },
 
     // Rooms Page
@@ -692,6 +699,13 @@ export const homeTranslations = {
       serviceOrigin: "Service provided in Vietnam",
       priceIncludes: "Price includes VAT and service charge",
       priceNote: "* Prices may vary depending on booking time",
+      pricingBreakdownTitle: "Nightly price breakdown",
+      pricingBreakdownHint:
+        "The rate shown is the base price per night. Some nights (e.g. weekends) may include a surcharge — see each night below.",
+      baseTotalNights: "At listed rate ({nights} nights × {price}/night)",
+      surchargeLine: "Weekday/weekend adjustment",
+      perNightSurcharge: "+{percent}% vs base",
+      perNightBase: "Base rate",
     },
 
     // Rooms Page

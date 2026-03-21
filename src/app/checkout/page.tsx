@@ -303,6 +303,7 @@ const CheckoutContent = () => {
     const quoteTotal = typeof quote?.total_amount === "number" ? quote.total_amount : 0;
     const quotePricePerNight =
       typeof quote?.price_per_night === "number" ? quote.price_per_night : undefined;
+    const quoteBreakdown = Array.isArray(quote?.breakdown) ? (quote.breakdown as any[]) : [];
     const totalFromDraft = quoteTotal;
     const nightsDraft = quoteNights || (draft.type === "multi" ? draft.payload.number_of_nights : 0);
 
@@ -521,10 +522,80 @@ const CheckoutContent = () => {
                                     <span className="text-muted-foreground">{t.checkout.roomPricePerNight}</span>
                                     <span className="font-medium">{formatPrice(quotePricePerNight)}đ</span>
                                   </div>
-                                  <div className="flex justify-between items-center text-xs text-muted-foreground pl-2">
-                                    <span>{nightsDraft} {t.checkout.nightsUnit} × {formatPrice(quotePricePerNight)}đ</span>
-                                    <span className="font-medium">{formatPrice(totalFromDraft)}đ</span>
-                                  </div>
+                                  {quoteBreakdown.length > 0 ? (
+                                    <div className="mt-2 space-y-2">
+                                      <div className="rounded-lg border border-border/70 bg-background/80 p-2.5">
+                                        <div className="text-xs font-semibold text-foreground mb-2">
+                                          {t.roomDetail.pricingBreakdownTitle}
+                                        </div>
+                                        <ul className="space-y-1.5">
+                                          {quoteBreakdown.map((row) => {
+                                            const dateStr = typeof row?.date === "string" ? row.date : "";
+                                            const percent = typeof row?.percent === "number" ? row.percent : 0;
+                                            const price = typeof row?.price === "number" ? row.price : 0;
+                                            const d = dateStr ? new Date(`${dateStr}T12:00:00`) : null;
+                                            const label = d
+                                              ? format(d, "EEE, dd/MM", { locale: dateLocale })
+                                              : dateStr;
+
+                                            return (
+                                              <li
+                                                key={dateStr || `${price}-${percent}`}
+                                                className="flex items-baseline justify-between gap-2 text-[11px] text-muted-foreground"
+                                              >
+                                                <span className="min-w-0 flex-1">
+                                                  {label}
+                                                  {percent > 0 ? (
+                                                    <span className="ml-1 text-amber-700 dark:text-amber-400 font-medium">
+                                                      (
+                                                      {t.roomDetail.perNightSurcharge.replace(
+                                                        "{percent}",
+                                                        String(percent)
+                                                      )}
+                                                      )
+                                                    </span>
+                                                  ) : null}
+                                                </span>
+                                                <span className="font-semibold text-foreground tabular-nums shrink-0">
+                                                  {formatPrice(Math.round(price))}đ
+                                                </span>
+                                              </li>
+                                            );
+                                          })}
+                                        </ul>
+                                      </div>
+                                      <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                        <span>
+                                          {t.roomDetail.baseTotalNights
+                                            .replace("{nights}", String(nightsDraft))
+                                            .replace("{price}", formatPrice(quotePricePerNight))}
+                                        </span>
+                                        <span className="font-medium tabular-nums">
+                                          {formatPrice(nightsDraft * quotePricePerNight)}đ
+                                        </span>
+                                      </div>
+                                      {totalFromDraft > nightsDraft * quotePricePerNight && (
+                                        <div className="flex justify-between items-center text-xs text-amber-800 dark:text-amber-300">
+                                          <span>{t.roomDetail.surchargeLine}</span>
+                                          <span className="font-semibold tabular-nums">
+                                            +
+                                            {formatPrice(
+                                              totalFromDraft - nightsDraft * quotePricePerNight
+                                            )}
+                                            đ
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="flex justify-between items-center text-xs text-muted-foreground pl-2">
+                                      <span>
+                                        {nightsDraft} {t.checkout.nightsUnit} ×{" "}
+                                        {formatPrice(quotePricePerNight)}đ
+                                      </span>
+                                      <span className="font-medium">{formatPrice(totalFromDraft)}đ</span>
+                                    </div>
+                                  )}
                                 </>
                               )}
                               {!isSingle && draft.display?.room_items && draft.display.room_items.length > 0 && (
