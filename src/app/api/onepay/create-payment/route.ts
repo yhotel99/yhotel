@@ -26,6 +26,7 @@ export async function POST(request: Request) {
         id,
         booking_code,
         total_amount,
+        final_amount,
         status,
         customers (
           id,
@@ -53,7 +54,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const amount = Number(booking.total_amount);
+    const amount = Number(
+      booking.final_amount != null && booking.final_amount !== ""
+        ? booking.final_amount
+        : booking.total_amount
+    );
     if (!amount || amount <= 0) {
       return NextResponse.json(
         { error: "Số tiền không hợp lệ" },

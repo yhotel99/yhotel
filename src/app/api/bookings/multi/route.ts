@@ -105,6 +105,7 @@ export async function POST(request: Request) {
       total_guests,
       room_items, // Array of { room_id, amount }
       notes,
+      voucher_code,
     } = body;
 
     if (!check_in || !check_out || !customer_name || !customer_email || !customer_phone) {
@@ -157,6 +158,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const voucherCodeTrimmed =
+      typeof voucher_code === 'string' && voucher_code.trim() !== ''
+        ? voucher_code.trim()
+        : null;
+
     // Call create_multi_booking_secure RPC function
     const { data: rpcResult, error: rpcError } = await supabase.rpc(
       'create_multi_booking_secure',
@@ -170,6 +176,7 @@ export async function POST(request: Request) {
         p_notes: notes || null,
         p_payment_method: PAYMENT_METHOD.PAY_AT_HOTEL,
         p_advance_payment: 0,
+        p_voucher_code: voucherCodeTrimmed,
       }
     );
 
@@ -211,6 +218,16 @@ export async function POST(request: Request) {
           {
             error: 'Một hoặc nhiều phòng đã được đặt trong khoảng thời gian này. Vui lòng chọn phòng hoặc thời gian khác.',
             code: 'ROOM_NOT_AVAILABLE',
+          },
+          { status: 400 }
+        );
+      }
+
+      if (result.error_code === 'INVALID_VOUCHER') {
+        return NextResponse.json(
+          {
+            error: 'Mã voucher không hợp lệ hoặc đã hết hạn.',
+            code: 'INVALID_VOUCHER',
           },
           { status: 400 }
         );

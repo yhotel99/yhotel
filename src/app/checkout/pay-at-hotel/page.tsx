@@ -116,6 +116,16 @@ const PayAtHotelContent = () => {
     );
   }
 
+  const bookingGross = Number(booking.total_amount) || 0;
+  const bookingPayable =
+    booking.final_amount != null && booking.final_amount !== ""
+      ? Number(booking.final_amount)
+      : bookingGross;
+  const bookingVoucherDiscount =
+    booking.voucher_discount != null && Number(booking.voucher_discount) > 0
+      ? Number(booking.voucher_discount)
+      : 0;
+
   return (
     <div className="min-h-screen bg-luxury-gradient flex flex-col">
       <Navigation />
@@ -254,15 +264,32 @@ const PayAtHotelContent = () => {
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground">{t.payAtHotel.roomPrice}</span>
-                              <span className="font-medium">{formatPrice(booking.total_amount)}đ</span>
+                              <span className="font-medium">{formatPrice(bookingGross)}đ</span>
                             </div>
                             <div className="flex justify-between items-center text-xs text-muted-foreground">
-                              <span>{booking.number_of_nights} {t.payAtHotel.nightsUnit} × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
+                              <span>
+                                {booking.number_of_nights} {t.payAtHotel.nightsUnit} ×{" "}
+                                {formatPrice(
+                                  booking.number_of_nights > 0
+                                    ? bookingGross / booking.number_of_nights
+                                    : 0
+                                )}
+                                đ
+                              </span>
                             </div>
+                            {bookingVoucherDiscount > 0 && (
+                              <div className="flex justify-between items-center text-sm text-emerald-700 dark:text-emerald-400">
+                                <span>
+                                  {t.checkout.discount}
+                                  {booking.voucher_code ? ` (${booking.voucher_code})` : ""}
+                                </span>
+                                <span className="font-medium">−{formatPrice(bookingVoucherDiscount)}đ</span>
+                              </div>
+                            )}
                             <Separator />
                             <div className="flex justify-between items-center pt-2">
                               <span className="font-semibold text-lg">{t.payAtHotel.total}</span>
-                              <span className="font-bold text-xl text-primary">{formatPrice(booking.total_amount)}đ</span>
+                              <span className="font-bold text-xl text-primary">{formatPrice(bookingPayable)}đ</span>
                             </div>
                           </div>
                           <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">

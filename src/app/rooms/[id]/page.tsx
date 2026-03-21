@@ -19,6 +19,8 @@ import {
   Eye,
   Building2,
   Plus,
+  Tag,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -127,6 +129,15 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     specialRequests?: string;
   }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [voucherInput, setVoucherInput] = useState("");
+  const [appliedVoucher, setAppliedVoucher] = useState<{
+    code: string;
+    discount: number;
+    final_amount: number;
+  } | null>(null);
+  const [voucherBusy, setVoucherBusy] = useState(false);
+  const prevDatesKeyForVoucherRef = useRef<string>("");
 
   const dateLocale = language === "vi" ? vi : enUS;
 
@@ -380,6 +391,107 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     return Math.max(0, Math.round(subtotal - baseNightsTotal));
   }, [nightlyBreakdown.length, subtotal, baseNightsTotal]);
 
+  const payableTotal = useMemo(
+    () =>
+      appliedVoucher && appliedVoucher.final_amount >= 0
+        ? appliedVoucher.final_amount
+        : totalPrice,
+    [appliedVoucher, totalPrice]
+  );
+
+  // Đổi ngày nhận/trả → voucher không còn khớp tổng tiền
+  useEffect(() => {
+    const key =
+      formData.checkIn && formData.checkOut
+        ? `${formData.checkIn.toISOString()}_${formData.checkOut.toISOString()}`
+        : "";
+    if (
+      prevDatesKeyForVoucherRef.current &&
+      key &&
+      prevDatesKeyForVoucherRef.current !== key
+    ) {
+      setAppliedVoucher(null);
+      setVoucherInput("");
+    }
+    prevDatesKeyForVoucherRef.current = key;
+  }, [formData.checkIn, formData.checkOut]);
+
+  const applyRoomVoucher = async () => {
+    const code = voucherInput.trim();
+    if (!code) {
+      toast({
+        title: t.checkout.updatePaymentError,
+        description:
+          language === "vi"
+            ? "Vui lòng nhập mã voucher."
+            : "Please enter a voucher code.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (totalPrice <= 0) {
+      toast({
+        title: t.checkout.updatePaymentError,
+        description:
+          language === "vi"
+            ? "Chọn ngày để có tổng tiền trước khi áp dụng voucher."
+            : "Select dates to get a total before applying a voucher.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setVoucherBusy(true);
+    try {
+      const res = await fetch("/api/vouchers/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, total_amount: totalPrice }),
+      });
+      const j = await res.json();
+      if (!j.ok) {
+        toast({
+          title: t.checkout.updatePaymentError,
+          description:
+            typeof j.error === "string"
+              ? j.error
+              : language === "vi"
+                ? "Voucher không hợp lệ."
+                : "Invalid voucher.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setAppliedVoucher({
+        code: j.data.voucher.code,
+        discount: j.data.discount,
+        final_amount: j.data.final_amount,
+      });
+      toast({
+        title: t.checkout.voucherApplied,
+        description:
+          language === "vi"
+            ? `Giảm ${j.data.discount.toLocaleString("vi-VN")}₫`
+            : `Discount ${j.data.discount.toLocaleString("en-US")}`,
+      });
+    } catch {
+      toast({
+        title: t.checkout.updatePaymentError,
+        description:
+          language === "vi"
+            ? "Không thể kiểm tra voucher."
+            : "Could not validate voucher.",
+        variant: "destructive",
+      });
+    } finally {
+      setVoucherBusy(false);
+    }
+  };
+
+  const removeRoomVoucher = () => {
+    setAppliedVoucher(null);
+    setVoucherInput("");
+  };
+
   const validateFormFields = () => {
     const errors: {
       fullName?: string;
@@ -606,6 +718,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
           customer_phone: formData.phone,
           customer_nationality: formData.nationality || null,
           ...(formData.specialRequests && { notes: formData.specialRequests }),
+          ...(appliedVoucher && { voucher_code: appliedVoucher.code }),
         },
         display: {
           room_name: room.name,
@@ -1111,12 +1224,84 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                 </div>
                               )}
 
+                              <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 space-y-2">
+                                <div className="flex items-center gap-2 text-xs md:text-sm font-medium text-foreground">
+                                  <Tag className="h-3.5 w-3.5 text-primary shrink-0" />
+                                  {t.checkout.voucherOptional}
+                                </div>
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                  <Input
+                                    value={voucherInput}
+                                    onChange={(e) => setVoucherInput(e.target.value)}
+                                    placeholder={t.checkout.voucherPlaceholder}
+                                    disabled={!!appliedVoucher || voucherBusy}
+                                    className="h-9 text-xs md:text-sm flex-1"
+                                    autoCapitalize="characters"
+                                  />
+                                  {appliedVoucher ? (
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      className="shrink-0 h-9"
+                                      onClick={removeRoomVoucher}
+                                      disabled={voucherBusy}
+                                    >
+                                      {t.checkout.voucherRemove}
+                                    </Button>
+                                  ) : (
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      className="shrink-0 h-9"
+                                      onClick={() => void applyRoomVoucher()}
+                                      disabled={
+                                        voucherBusy ||
+                                        !voucherInput.trim() ||
+                                        totalPrice <= 0
+                                      }
+                                    >
+                                      {voucherBusy ? (
+                                        <>
+                                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                                          {t.checkout.voucherChecking}
+                                        </>
+                                      ) : (
+                                        t.checkout.voucherApply
+                                      )}
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+
+                              {appliedVoucher && totalPrice > 0 && (
+                                <>
+                                  <div className="flex justify-between items-center text-xs md:text-sm">
+                                    <span className="text-muted-foreground">
+                                      {t.checkout.subtotal}
+                                    </span>
+                                    <span className="font-medium tabular-nums">
+                                      {formatPrice(totalPrice)}₫
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between items-center text-xs md:text-sm text-emerald-700 dark:text-emerald-400">
+                                    <span>
+                                      {t.checkout.discount} ({appliedVoucher.code})
+                                    </span>
+                                    <span className="font-medium tabular-nums">
+                                      −{formatPrice(appliedVoucher.discount)}₫
+                                    </span>
+                                  </div>
+                                </>
+                              )}
+
                               <div className="flex justify-between items-center pt-2 border-t">
                                 <span className="text-sm md:text-base font-semibold">
                                   {t.lookup.total}:
                                 </span>
                                 <span className="text-base md:text-lg font-bold text-primary tabular-nums">
-                                  {formatPrice(totalPrice)}₫
+                                  {formatPrice(payableTotal)}₫
                                 </span>
                               </div>
                             </div>

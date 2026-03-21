@@ -10,6 +10,7 @@ export interface BookingInput {
   advance_payment?: number;
   total_guests: number;
   notes?: string;
+  voucher_code?: string | null;
 }
 
 export interface BookingRecord {
@@ -20,9 +21,12 @@ export interface BookingRecord {
   check_out: string;
   number_of_nights: number;
   total_amount: number;
+  final_amount?: number | null;
   advance_payment: number;
   total_guests: number;
   notes: string | null;
+  voucher_code?: string | null;
+  voucher_discount?: number | null;
   status: 'pending' | 'awaiting_payment' | 'confirmed' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled' | 'no_show' | 'refunded';
   booking_code: string | null;
   created_at: string;

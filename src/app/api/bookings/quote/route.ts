@@ -4,6 +4,7 @@ import type { BookingDraft } from '@/lib/booking-draft';
 import {
   calculateTotalWithWeekdayRates,
   normalizeWeekdayRates,
+  type WeekdayRates,
 } from '@/lib/pricing';
 
 function calculateNights(checkIn: string, checkOut: string): number {
@@ -44,7 +45,7 @@ async function quoteSingle(draft: Extract<BookingDraft, { type: 'single' }>) {
 
   // Weekday-based pricing using settings.pricing_weekday_rates (always from DB)
   // If không lấy được từ DB, coi như 0% cho tất cả ngày
-  let weekdayRates = [0, 0, 0, 0, 0, 0, 0] as const;
+  let weekdayRates: WeekdayRates = [0, 0, 0, 0, 0, 0, 0];
   try {
     const { data: settings } = await supabase
       .from('settings')

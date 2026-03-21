@@ -143,8 +143,14 @@ export const bookingTranslations = {
       paid: "Đã thanh toán",
       unpaid: "Chưa thanh toán",
       pending: "Đang xử lý",
+      voucherOptional: "Mã giảm giá (tuỳ chọn)",
+      voucherPlaceholder: "Nhập mã voucher",
+      voucherApply: "Áp dụng",
+      voucherRemove: "Xóa mã",
+      voucherChecking: "Đang kiểm tra...",
+      voucherApplied: "Đã áp dụng voucher",
     },
-    
+
     payAtHotel: {
       title: "Thanh toán tại khách sạn",
       description: "Đặt phòng của bạn đã được xác nhận. Vui lòng thanh toán khi nhận phòng.",
@@ -506,8 +512,14 @@ export const bookingTranslations = {
       paid: "Paid",
       unpaid: "Unpaid",
       pending: "Pending",
+      voucherOptional: "Promo code (optional)",
+      voucherPlaceholder: "Enter voucher code",
+      voucherApply: "Apply",
+      voucherRemove: "Remove",
+      voucherChecking: "Checking...",
+      voucherApplied: "Voucher applied",
     },
-    
+
     payAtHotel: {
       title: "Pay at Hotel",
       description: "Your booking has been confirmed. Please pay at check-in.",

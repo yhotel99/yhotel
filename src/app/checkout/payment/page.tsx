@@ -530,6 +530,21 @@ const PaymentContent = () => {
   // Use booking_code from database (format: YH20251230000001)
   // Fallback to booking ID if booking_code is not available
   const paymentContent = booking?.booking_code || (bookingId ? bookingId.slice(0, 8).toUpperCase() : "");
+
+  const grossAmount = booking ? Number(booking.total_amount) || 0 : 0;
+  const amountPayable = booking
+    ? Number(
+        booking.final_amount != null && booking.final_amount !== ""
+          ? booking.final_amount
+          : booking.total_amount
+      ) || 0
+    : 0;
+  const voucherDiscount =
+    booking &&
+    booking.voucher_discount != null &&
+    Number(booking.voucher_discount) > 0
+      ? Number(booking.voucher_discount)
+      : 0;
   
   // Generate VietQR API URL
   // Format: https://img.vietqr.io/image/{acqId}-{accountNo}-{template}.png
@@ -541,9 +556,9 @@ const PaymentContent = () => {
     const baseUrl = `https://img.vietqr.io/image/${bankAccount.bankBin}-${bankAccount.number}-qr_only.png`;
     const params = new URLSearchParams();
     
-    // Amount in VND
-    if (booking.total_amount) {
-      params.append('amount', booking.total_amount.toString());
+    // Amount in VND (sau giảm giá voucher nếu có)
+    if (amountPayable > 0) {
+      params.append('amount', String(Math.round(amountPayable)));
     }
     
     // Payment content (booking ID)
@@ -788,7 +803,7 @@ const PaymentContent = () => {
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <p className="text-sm text-muted-foreground mb-1">{t.payment.amountToPay}</p>
-                            <p className="text-xl sm:text-2xl font-bold text-primary">{formatPrice(booking.total_amount)}đ</p>
+                            <p className="text-xl sm:text-2xl font-bold text-primary">{formatPrice(amountPayable)}đ</p>
                             <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                               {t.checkout.totalExcludesVatAndFees}
                             </p>
@@ -808,7 +823,7 @@ const PaymentContent = () => {
                         <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
                           <li>{t.payment.step1}</li>
                           <li>{t.payment.step2}</li>
-                          <li>{t.payment.step3.replace('{amount}', formatPrice(booking.total_amount))}</li>
+                          <li>{t.payment.step3.replace('{amount}', formatPrice(amountPayable))}</li>
                           <li>{t.payment.step4.replace('{content}', paymentContent)}</li>
                           <li>{t.payment.step5}</li>
                           <li>{t.payment.step6}</li>
@@ -998,15 +1013,32 @@ const PaymentContent = () => {
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground">{t.payment.roomPrice}</span>
-                              <span className="font-medium">{formatPrice(booking.total_amount)}đ</span>
+                              <span className="font-medium">{formatPrice(grossAmount)}đ</span>
                             </div>
                             <div className="flex justify-between items-center text-xs text-muted-foreground">
-                              <span>{booking.number_of_nights} {t.payment.nightsUnit} × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
+                              <span>
+                                {booking.number_of_nights} {t.payment.nightsUnit} ×{" "}
+                                {formatPrice(
+                                  booking.number_of_nights > 0
+                                    ? grossAmount / booking.number_of_nights
+                                    : 0
+                                )}
+                                đ
+                              </span>
                             </div>
+                            {voucherDiscount > 0 && (
+                              <div className="flex justify-between items-center text-sm text-emerald-700 dark:text-emerald-400">
+                                <span>
+                                  {t.checkout.discount}
+                                  {booking.voucher_code ? ` (${booking.voucher_code})` : ""}
+                                </span>
+                                <span className="font-medium">−{formatPrice(voucherDiscount)}đ</span>
+                              </div>
+                            )}
                             <Separator />
                             <div className="flex justify-between items-center pt-2">
                               <span className="font-semibold text-lg">{t.payment.total}</span>
-                              <span className="font-bold text-xl text-primary">{formatPrice(booking.total_amount)}đ</span>
+                              <span className="font-bold text-xl text-primary">{formatPrice(amountPayable)}đ</span>
                             </div>
                             <p className="text-xs text-muted-foreground pt-1 leading-relaxed">
                               {t.checkout.totalExcludesVatAndFees}
