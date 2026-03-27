@@ -2,10 +2,10 @@ import { homeTranslations } from "./home-translations";
 import { bookingTranslations } from "./booking-translations";
 import { legalTranslations } from "./legal-translations";
 
-export type Language = "vi" | "en";
+export type Language = "vi" | "en" | "zh";
 
 // Deep merge function for common sections
-const mergeCommon = (lang: "vi" | "en") => ({
+const mergeCommon = (lang: "vi" | "en" | "zh") => ({
   ...homeTranslations[lang].common,
   ...bookingTranslations[lang].common,
 });
@@ -67,6 +67,35 @@ export const translations = {
     notFound: bookingTranslations.en.notFound,
     terms: legalTranslations.en.terms,
     privacy: legalTranslations.en.privacy,
+  },
+  zh: {
+    nav: homeTranslations.zh.nav,
+    common: mergeCommon("zh"),
+    hero: homeTranslations.zh.hero,
+    about: homeTranslations.zh.about,
+    rooms: homeTranslations.zh.rooms,
+    services: homeTranslations.zh.services,
+    gallery: homeTranslations.zh.gallery,
+    blog: homeTranslations.zh.blog,
+    blogDetail: homeTranslations.zh.blogDetail,
+    contact: homeTranslations.zh.contact,
+    multiBooking: homeTranslations.zh.multiBooking,
+    multiBookingPromo: homeTranslations.zh.multiBookingPromo,
+    footer: homeTranslations.zh.footer,
+    roomDetail: homeTranslations.zh.roomDetail,
+    roomsPage: homeTranslations.zh.roomsPage,
+
+    booking: bookingTranslations.zh.booking,
+    onepayRedirect: bookingTranslations.zh.onepayRedirect,
+    onepayReturn: bookingTranslations.zh.onepayReturn,
+    checkout: bookingTranslations.zh.checkout,
+    payAtHotel: bookingTranslations.zh.payAtHotel,
+    payment: bookingTranslations.zh.payment,
+    success: bookingTranslations.zh.success,
+    lookup: bookingTranslations.zh.lookup,
+    notFound: bookingTranslations.zh.notFound,
+    terms: legalTranslations.zh.terms,
+    privacy: legalTranslations.zh.privacy,
   },
 } as const;
 

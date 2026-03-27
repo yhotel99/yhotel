@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { Cabin } from "next/font/google";
+import { cookies } from "next/headers";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Providers from "./providers";
+import type { Language } from "@/lib/i18n/translations";
 import "@/index.css";
 
 const cabin = Cabin({
@@ -55,11 +57,18 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://yhotel.lovable.app"),
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const cookieLanguage = cookieStore.get("language")?.value;
+  const initialLanguage: Language =
+    cookieLanguage === "vi" || cookieLanguage === "en" || cookieLanguage === "zh"
+      ? cookieLanguage
+      : "vi";
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Hotel",
@@ -195,7 +204,7 @@ export default function RootLayout({
             __html: JSON.stringify(faqStructuredData)
           }}
         />
-        <Providers>
+        <Providers initialLanguage={initialLanguage}>
           <TooltipProvider>
             <Toaster />
             <Sonner />

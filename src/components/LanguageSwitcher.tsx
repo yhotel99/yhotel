@@ -40,6 +40,13 @@ export const LanguageSwitcher = () => {
           <span className="mr-2">🇬🇧</span>
           English
         </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setLanguage("zh")}
+          className={language === "zh" ? "bg-accent" : ""}
+        >
+          <span className="mr-2">🇨🇳</span>
+          中文
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

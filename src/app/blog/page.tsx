@@ -12,7 +12,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useBlogs } from "@/hooks/use-blogs";
 import { format } from "date-fns";
-import { vi, enUS } from "date-fns/locale";
+import { vi, enUS, zhCN } from "date-fns/locale";
 import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -32,7 +32,7 @@ const BlogListingPage = () => {
   const formatDate = (dateString: string) => {
     try {
       const date = new Date(dateString);
-      const locale = language === "vi" ? vi : enUS;
+      const locale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
       return format(date, "dd/MM/yyyy", { locale });
     } catch {
       return dateString;

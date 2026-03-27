@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useRooms } from "@/hooks/use-rooms";
 import { format } from "date-fns";
-import { vi, enUS } from "date-fns/locale";
+import { vi, enUS, zhCN } from "date-fns/locale";
 import { Calendar as CalendarIcon, Users, MapPin, Phone, Search, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +30,7 @@ const BookingSectionContent = () => {
   const { t, language } = useLanguage();
   
   // Date locale based on language
-  const dateLocale = language === "vi" ? vi : enUS;
+  const dateLocale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
   
   // Get roomId from URL if available
   const roomIdFromUrl = searchParams.get("roomId");
@@ -479,12 +479,12 @@ const BookingSectionContent = () => {
                         {isCheckingAvailable ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Đang kiểm tra...
+                        {language === "vi" ? "Đang kiểm tra..." : "Checking..."}
                           </>
                         ) : (
                           <>
                             <Search className="mr-2 h-4 w-4" />
-                            Kiểm tra phòng trống
+                        {t.booking.checkAvailabilityTitle}
                           </>
                         )}
                       </Button>
@@ -496,7 +496,7 @@ const BookingSectionContent = () => {
                     <div>
                       <Label htmlFor="adults" className="flex items-center gap-2 mb-2">
                         <Users className="w-4 h-4" />
-                        Người lớn
+                        {language === "vi" ? "Người lớn" : "Adults"}
                       </Label>
                       <Select value={formData.adults} onValueChange={(value) => handleInputChange("adults", value)}>
                         <SelectTrigger>
@@ -504,7 +504,9 @@ const BookingSectionContent = () => {
                         </SelectTrigger>
                         <SelectContent>
                           {[1,2,3,4,5,6].map(num => (
-                            <SelectItem key={num} value={num.toString()}>{num} người</SelectItem>
+                            <SelectItem key={num} value={num.toString()}>
+                              {num} {language === "vi" ? "người" : num === 1 ? "adult" : "adults"}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -512,7 +514,7 @@ const BookingSectionContent = () => {
                     <div>
                       <Label htmlFor="children" className="flex items-center gap-2 mb-2">
                         <Users className="w-4 h-4" />
-                        Trẻ em
+                        {language === "vi" ? "Trẻ em" : "Children"}
                       </Label>
                       <Select value={formData.children} onValueChange={(value) => handleInputChange("children", value)}>
                         <SelectTrigger>
@@ -520,7 +522,9 @@ const BookingSectionContent = () => {
                         </SelectTrigger>
                         <SelectContent>
                           {[0,1,2,3,4].map(num => (
-                            <SelectItem key={num} value={num.toString()}>{num} trẻ</SelectItem>
+                            <SelectItem key={num} value={num.toString()}>
+                              {num} {language === "vi" ? "trẻ" : num === 1 ? "child" : "children"}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -578,7 +582,7 @@ const BookingSectionContent = () => {
                   <div>
                     <Label htmlFor="phone" className="flex items-center gap-2 mb-2">
                       <Phone className="w-4 h-4" />
-                      Số điện thoại *
+                      {language === "vi" ? "Số điện thoại *" : "Phone *"}
                     </Label>
                     <Input
                       id="phone"
@@ -642,12 +646,12 @@ const BookingSectionContent = () => {
                 <div className="flex items-center gap-3">
                   <MapPin className="w-5 h-5 text-primary" />
                   <div>
-                    <p className="font-medium">Địa chỉ</p>
+                    <p className="font-medium">{language === "vi" ? "Địa chỉ" : "Address"}</p>
                     <p className="text-muted-foreground text-sm">123 Đường ABC, Quận 1, TP.HCM</p>
                   </div>
                 </div>
                 <Button variant="outline" className="w-full">
-                  Gọi Ngay
+                  {language === "vi" ? "Gọi Ngay" : "Call Now"}
                 </Button>
               </CardContent>
             </Card>
@@ -659,16 +663,22 @@ const BookingSectionContent = () => {
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 <div>
-                  <p className="font-medium">Thời gian nhận/trả phòng:</p>
-                  <p className="text-muted-foreground">Nhận phòng: 14:00 | Trả phòng: 12:00</p>
+                  <p className="font-medium">{language === "vi" ? "Thời gian nhận/trả phòng:" : "Check-in / Check-out time:"}</p>
+                  <p className="text-muted-foreground">
+                    {language === "vi" ? "Nhận phòng: 14:00 | Trả phòng: 12:00" : "Check-in: 14:00 | Check-out: 12:00"}
+                  </p>
                 </div>
                 <div>
-                  <p className="font-medium">Chính sách hủy:</p>
-                  <p className="text-muted-foreground">Miễn phí hủy trước 24h</p>
+                  <p className="font-medium">{language === "vi" ? "Chính sách hủy:" : "Cancellation policy:"}</p>
+                  <p className="text-muted-foreground">
+                    {language === "vi" ? "Miễn phí hủy trước 24h" : "Free cancellation up to 24h before check-in"}
+                  </p>
                 </div>
                 <div>
-                  <p className="font-medium">Thanh toán:</p>
-                  <p className="text-muted-foreground">Tiền mặt, thẻ tín dụng, chuyển khoản</p>
+                  <p className="font-medium">{language === "vi" ? "Thanh toán:" : "Payment:"}</p>
+                  <p className="text-muted-foreground">
+                    {language === "vi" ? "Tiền mặt, thẻ tín dụng, chuyển khoản" : "Cash, credit card, bank transfer"}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -722,14 +732,14 @@ const BookingSectionContent = () => {
             ) : availableRooms.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">
-                  Không có phòng trống trong khoảng thời gian này
+                  {t.booking.noRoomsDesc}
                 </p>
               </div>
             ) : (
               <>
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold">
-                    Kết quả tìm kiếm ({availableRooms.length} phòng)
+                    {t.booking.foundRoomsTitle} ({availableRooms.length})
                   </h3>
                 </div>
                 <div className="space-y-3">
@@ -747,7 +757,7 @@ const BookingSectionContent = () => {
                             </p>
                           </div>
                           <div className="text-sm">
-                            <span className="text-muted-foreground">Giá: </span>
+                          <span className="text-muted-foreground">{language === "vi" ? "Giá: " : "Price: "}</span>
                             <span className="font-semibold text-primary">
                               {room.price}₫{t.common.perNight}
                             </span>
@@ -757,7 +767,7 @@ const BookingSectionContent = () => {
                               variant="outline"
                               className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800"
                             >
-                              Trống
+                            {language === "vi" ? "Trống" : "Available"}
                             </Badge>
                           </div>
                         </div>
@@ -771,7 +781,7 @@ const BookingSectionContent = () => {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCheckAvailableOpen(false)}>
-              Đóng
+              {t.roomDetail.close}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -787,7 +797,7 @@ const BookingSection = () => {
         <div className="container-luxury">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Đang tải...</p>
+            <p className="text-muted-foreground">Loading...</p>
           </div>
         </div>
       </section>

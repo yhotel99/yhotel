@@ -10,7 +10,13 @@ import hotelExterior from "@/assets/hotel-exterior.jpg";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 const AboutSection = () => {
-  const { t } = useLanguage();
+  const { t, isHydrated } = useLanguage();
+
+  // Keep first SSR/client render deterministic to avoid hydration mismatch
+  // when user language preference is restored on the client.
+  if (!isHydrated) {
+    return <section id="about" className="py-12 md:py-16 bg-gradient-section" />;
+  }
 
   const features = [
     {

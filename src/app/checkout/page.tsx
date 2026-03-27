@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { vi, enUS } from "date-fns/locale";
+import { vi, enUS, zhCN } from "date-fns/locale";
 import { 
   Calendar, 
   Users, 
@@ -209,7 +209,7 @@ const CheckoutContent = () => {
   const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "pay_at_hotel" | "onepay">("bank_transfer");
 
   // Date locale based on language
-  const dateLocale = language === "vi" ? vi : enUS;
+  const dateLocale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
 
   const applyVoucher = async () => {
     const code = voucherInput.trim();

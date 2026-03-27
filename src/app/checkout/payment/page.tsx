@@ -4,7 +4,7 @@ import { Suspense, useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { vi, enUS } from "date-fns/locale";
+import { vi, enUS, zhCN } from "date-fns/locale";
 import { 
   Calendar, 
   Users, 
@@ -54,7 +54,7 @@ const PaymentContent = () => {
   const { t, language } = useLanguage();
 
   // Date locale based on language
-  const dateLocale = language === "vi" ? vi : enUS;
+  const dateLocale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],

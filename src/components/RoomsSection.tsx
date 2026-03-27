@@ -189,7 +189,11 @@ const RoomsSection = () => {
                                     <div
                                       key={idx}
                                       className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded"
-                                      title={getAmenityLabel(amenity)}
+                                      title={
+                                        t.services?.amenities?.[
+                                          amenity as keyof typeof t.services.amenities
+                                        ] || getAmenityLabel(amenity)
+                                      }
                                     >
                                       <Icon className="w-3.5 h-3.5" />
                                     </div>
@@ -199,7 +203,9 @@ const RoomsSection = () => {
                                       variant="secondary"
                                       className="text-xs"
                                     >
-                                      {getAmenityLabel(amenity)}
+                                      {t.services?.amenities?.[
+                                        amenity as keyof typeof t.services.amenities
+                                      ] || getAmenityLabel(amenity)}
                                     </Badge>
                                   );
                                 })}

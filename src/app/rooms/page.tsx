@@ -25,7 +25,7 @@ import { getCategories, type Category } from "@/lib/api/categories";
 import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
 import { MultiRoomBookingSection } from "@/components/MultiRoomBookingSection";
 import { format } from "date-fns";
-import { vi, enUS } from "date-fns/locale";
+import { vi, enUS, zhCN } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
 import type { RoomResponse } from "@/types/database";
 import { getAmenityLabel } from "@/lib/constants";
@@ -73,7 +73,7 @@ const RoomsPageContent = () => {
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const isScrolled = useScrollThreshold(100);
 
-  const dateLocale = language === "vi" ? vi : enUS;
+  const dateLocale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
 
   // Fetch categories with React Query
   const { data: fetchedCategories = [] } = useQuery<Category[]>({
@@ -633,7 +633,11 @@ const RoomsPageContent = () => {
                                         <div
                                           key={idx}
                                           className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded"
-                                          title={getAmenityLabel(amenity)}
+                                          title={
+                                            t.services?.amenities?.[
+                                              amenity as keyof typeof t.services.amenities
+                                            ] || getAmenityLabel(amenity)
+                                          }
                                         >
                                           <Icon className="w-3.5 h-3.5" />
                                         </div>
@@ -643,7 +647,9 @@ const RoomsPageContent = () => {
                                           variant="secondary"
                                           className="text-xs"
                                         >
-                                          {getAmenityLabel(amenity)}
+                                          {t.services?.amenities?.[
+                                            amenity as keyof typeof t.services.amenities
+                                          ] || getAmenityLabel(amenity)}
                                         </Badge>
                                       );
                                     })}

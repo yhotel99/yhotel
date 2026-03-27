@@ -166,8 +166,8 @@ export const MultiRoomBookingSection = () => {
     
     if (!formData.checkIn || !formData.checkOut) {
       toast({
-        title: "Lỗi",
-        description: "Vui lòng chọn ngày nhận và trả phòng trước",
+        title: t.multiBooking.errorTitle,
+        description: t.multiBooking.selectDatesRequiredDesc,
         variant: "destructive",
       });
       return;
@@ -186,15 +186,22 @@ export const MultiRoomBookingSection = () => {
       const response = await fetch(apiUrl);
 
       if (!response.ok) {
-        throw new Error('Không thể kiểm tra phòng trống');
+        toast({
+          title: t.multiBooking.errorTitle,
+          description: t.multiBooking.roomCheckUnavailable,
+          variant: "destructive",
+        });
+        return;
       }
 
       const { available_rooms } = await response.json();
 
       if (!available_rooms || available_rooms.length === 0) {
+        const desc = t.multiBooking.noRoomsForRoomDescription
+          .replace("{roomName}", room.name);
         toast({
           title: t.multiBooking.noRoomsAvailable,
-          description: `Không còn phòng ${room.name} trống trong thời gian này`,
+          description: desc,
           variant: "destructive",
         });
         return;
@@ -211,9 +218,11 @@ export const MultiRoomBookingSection = () => {
       const availableRoom = available_rooms.find((r: any) => !alreadySelectedRoomIds.has(r.id));
       
       if (!availableRoom) {
+        const desc = t.multiBooking.noRoomsForRoomDescription
+          .replace("{roomName}", room.name);
         toast({
           title: t.multiBooking.noRoomsAvailable,
-          description: `Không còn phòng ${room.name} trống trong thời gian này`,
+          description: desc,
           variant: "destructive",
         });
         return;
@@ -234,14 +243,16 @@ export const MultiRoomBookingSection = () => {
       }]);
 
       toast({
-        title: "Thành công",
-        description: `Đã thêm ${room.name} (${availableRoom.name})`,
+        title: t.multiBooking.successTitle,
+        description: t.multiBooking.addRoomSuccessDescription
+          .replace("{roomName}", room.name)
+          .replace("{availableRoomName}", availableRoom.name),
       });
     } catch (error) {
       console.error('Error adding room:', error);
       toast({
-        title: "Lỗi",
-        description: error instanceof Error ? error.message : 'Không thể thêm phòng',
+        title: t.multiBooking.errorTitle,
+        description: t.multiBooking.addRoomErrorDescription,
         variant: "destructive",
       });
     }
@@ -451,11 +462,11 @@ export const MultiRoomBookingSection = () => {
                   <CardTitle className="text-xl font-display">
                     {formData.checkIn && formData.checkOut 
                       ? t.multiBooking.selectRooms 
-                      : "Tất cả phòng"}
+                        : t.multiBooking.allRoomsTitle}
                   </CardTitle>
                   {!formData.checkIn || !formData.checkOut ? (
                     <p className="text-sm text-muted-foreground mt-2">
-                      Chọn ngày để xem phòng trống và đặt phòng
+                        {t.multiBooking.chooseDatesToViewRooms}
                     </p>
                   ) : null}
                 </CardHeader>
@@ -470,7 +481,7 @@ export const MultiRoomBookingSection = () => {
                     <p className="text-center text-muted-foreground py-8">
                       {formData.checkIn && formData.checkOut 
                         ? t.multiBooking.noRoomsAvailable
-                        : "Không có phòng nào"}
+                        : t.multiBooking.noRoomsWhenNoDates}
                     </p>
                   ) : (
                     <div className="space-y-3">
@@ -524,15 +535,15 @@ export const MultiRoomBookingSection = () => {
                                           <p className="text-xs text-muted-foreground mb-1">
                                             {remainingAvailable > 0 ? (
                                               <span className="text-green-600 font-medium">
-                                                Còn {remainingAvailable} phòng trống
+                                                {t.multiBooking.remainingRoomsText.replace("{count}", String(remainingAvailable))}
                                               </span>
                                             ) : selectedCategoryRooms.length > 0 ? (
                                               <span className="text-orange-600 font-medium">
-                                                Đã chọn hết ({selectedCategoryRooms.length} phòng)
+                                                {t.multiBooking.allSelectedText.replace("{count}", String(selectedCategoryRooms.length))}
                                               </span>
                                             ) : (
                                               <span className="text-red-600 font-medium">
-                                                Hết phòng
+                                                {t.multiBooking.noRoomsLeftText}
                                               </span>
                                             )}
                                           </p>
@@ -586,7 +597,11 @@ export const MultiRoomBookingSection = () => {
                                             <div
                                               key={idx}
                                               className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded"
-                                              title={getAmenityLabel(amenity)}
+                                              title={
+                                                t.services?.amenities?.[
+                                                  amenity as keyof typeof t.services.amenities
+                                                ] || getAmenityLabel(amenity)
+                                              }
                                             >
                                               <Icon className="w-3.5 h-3.5" />
                                             </div>
@@ -596,7 +611,9 @@ export const MultiRoomBookingSection = () => {
                                               variant="secondary"
                                               className="text-xs"
                                             >
-                                              {getAmenityLabel(amenity)}
+                                              {t.services?.amenities?.[
+                                                amenity as keyof typeof t.services.amenities
+                                              ] || getAmenityLabel(amenity)}
                                             </Badge>
                                           );
                                         })}
@@ -615,7 +632,7 @@ export const MultiRoomBookingSection = () => {
                                       <div className="flex items-center justify-between gap-3">
                                         <div className="flex-1">
                                           <p className="text-sm text-muted-foreground">
-                                            Đã chọn {selectedCategoryRooms.length} phòng
+                                            {t.multiBooking.selectedRoomsCountText.replace("{count}", String(selectedCategoryRooms.length))}
                                           </p>
                                           <p className="text-lg font-bold text-primary">
                                             {formatPrice(selectedCategoryRooms.reduce((sum, r) => sum + r.price_per_night * nights, 0))}đ
@@ -699,7 +716,7 @@ export const MultiRoomBookingSection = () => {
                               <div className="flex-1">
                                 <p className="font-semibold text-sm">{room.room_name}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {formatPrice(room.price_per_night)}đ × {nights} đêm
+                                  {formatPrice(room.price_per_night)}đ × {nights} {t.common.nights}
                                 </p>
                                 <p className="text-sm font-semibold text-primary mt-1">
                                   {formatPrice(room.price_per_night * nights)}đ
@@ -950,7 +967,7 @@ export const MultiRoomBookingSection = () => {
                 {/* Description */}
                 {selectedRoomDetail.description && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">Mô tả</h3>
+                    <h3 className="text-lg font-semibold mb-2">{t.roomDetail.description}</h3>
                     <div 
                       className="text-muted-foreground leading-relaxed"
                       dangerouslySetInnerHTML={{ __html: selectedRoomDetail.description }}
@@ -960,7 +977,7 @@ export const MultiRoomBookingSection = () => {
 
                 {/* Room Details */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-3">Thông tin phòng</h3>
+                  <h3 className="text-lg font-semibold mb-3">{t.roomDetail.roomInfoTitle}</h3>
                   <div className="grid grid-cols-2 gap-4">
                     {selectedRoomDetail.guests && (
                       <div className="flex items-center gap-2 text-muted-foreground">
@@ -980,7 +997,7 @@ export const MultiRoomBookingSection = () => {
                 {/* Amenities */}
                 {selectedRoomDetail.amenities && selectedRoomDetail.amenities.length > 0 && (
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Tiện nghi</h3>
+                    <h3 className="text-lg font-semibold mb-3">{t.roomDetail.amenities}</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                       {selectedRoomDetail.amenities.map((amenity: string, idx: number) => {
                         const Icon = getAmenityIcon(amenity);
@@ -990,7 +1007,11 @@ export const MultiRoomBookingSection = () => {
                             className="flex items-center gap-2 text-sm text-muted-foreground"
                           >
                             {Icon && <Icon className="w-4 h-4 text-primary" />}
-                            <span>{getAmenityLabel(amenity)}</span>
+                            <span>
+                              {t.services?.amenities?.[
+                                amenity as keyof typeof t.services.amenities
+                              ] || getAmenityLabel(amenity)}
+                            </span>
                           </div>
                         );
                       })}
@@ -1006,7 +1027,7 @@ export const MultiRoomBookingSection = () => {
                     onClick={() => setSelectedRoomDetail(null)}
                     className="flex-1"
                   >
-                    Đóng
+                    {t.roomDetail.close}
                   </Button>
                   <Button
                     type="button"
@@ -1017,7 +1038,7 @@ export const MultiRoomBookingSection = () => {
                     className="flex-1 bg-primary hover:bg-primary/90"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Thêm phòng
+                    {t.multiBooking.addRoom}
                   </Button>
                 </div>
               </div>
@@ -1198,7 +1219,7 @@ export const MultiRoomBookingSection = () => {
             <div>
               <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3 flex items-center gap-2">
                 <Database className="w-5 h-5 text-primary" />
-                2. Thông Tin Chúng Tôi Thu Thập
+                {t.privacy.section2.title}
               </h2>
               <div className="space-y-3">
                 <div>
@@ -1347,15 +1368,17 @@ export const MultiRoomBookingSection = () => {
             </div>
 
             <div className="pt-4 border-t">
-              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">9. Liên Hệ</h2>
+              <h2 className="text-lg md:text-xl font-display font-bold text-foreground mb-3">
+                {t.privacy.section9.title}
+              </h2>
               <p className="text-muted-foreground leading-relaxed text-sm mb-3">
-                Nếu bạn có bất kỳ câu hỏi nào về chính sách bảo mật này, vui lòng liên hệ:
+                {t.privacy.section9.content}
               </p>
               <div className="space-y-1 text-sm">
-                <p className="text-foreground font-semibold">Y Hotel Cần Thơ</p>
-                <p className="text-muted-foreground">Địa chỉ: 60-62-64 Lý Hồng Thanh, Cái Khế, Cần Thơ</p>
-                <p className="text-muted-foreground">Điện thoại: +84 123 456 789</p>
-                <p className="text-muted-foreground">Email: privacy@yhotel.com</p>
+                <p className="text-foreground font-semibold">{t.privacy.section9.hotelName}</p>
+                <p className="text-muted-foreground">{t.privacy.section9.address}</p>
+                <p className="text-muted-foreground">{t.privacy.section9.phone}</p>
+                <p className="text-muted-foreground">{t.privacy.section9.email}</p>
               </div>
             </div>
           </div>
