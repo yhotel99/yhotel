@@ -4,6 +4,7 @@ import { Cabin } from "next/font/google";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import Providers from "./providers";
 import "@/index.css";
 
@@ -181,6 +182,7 @@ export default function RootLayout({
         <meta name="ICBM" content="10.034149, 105.722198" />
       </head>
       <body className="antialiased" suppressHydrationWarning>
+        <GoogleAnalytics />
         <Script
           id="structured-data-hotel"
           type="application/ld+json"
