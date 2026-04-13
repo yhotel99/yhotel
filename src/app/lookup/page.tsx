@@ -12,7 +12,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { BookingStatusBadge } from "@/components/BookingStatusBadge";
 import { format } from "date-fns";
-import { vi, enUS } from "date-fns/locale";
+import { vi, enUS, zhCN } from "date-fns/locale";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { motion } from "framer-motion";
@@ -119,12 +119,12 @@ export default function LookupPage() {
   };
 
   const formatDate = (dateString: string) => {
-    const locale = language === "vi" ? vi : enUS;
+    const locale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
     return format(new Date(dateString), "dd/MM/yyyy", { locale });
   };
 
   const formatTime = (dateString: string) => {
-    const locale = language === "vi" ? vi : enUS;
+    const locale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
     return format(new Date(dateString), "HH:mm", { locale });
   };
 

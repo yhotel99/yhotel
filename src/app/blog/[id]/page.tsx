@@ -10,7 +10,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useBlog, useBlogs } from "@/hooks/use-blogs";
 import { format } from "date-fns";
-import { vi, enUS } from "date-fns/locale";
+import { vi, enUS, zhCN } from "date-fns/locale";
 import Script from "next/script";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -60,7 +60,7 @@ const BlogDetailPage = ({ params }: BlogDetailPageProps) => {
     .slice(0, 8);
 
   // Date locale based on language
-  const dateLocale = language === "vi" ? vi : enUS;
+  const dateLocale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
 
   // Format date
   const formatDate = (dateString: string) => {

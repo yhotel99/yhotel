@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 import type { BookingDraft } from '@/lib/booking-draft';
+import {
+  calculateTotalWithWeekdayRates,
+  normalizeWeekdayRates,
+  type WeekdayRates,
+} from '@/lib/pricing';
 
 function calculateNights(checkIn: string, checkOut: string): number {
   const inDate = new Date(checkIn);
@@ -37,7 +42,33 @@ async function quoteSingle(draft: Extract<BookingDraft, { type: 'single' }>) {
   }
 
   const pricePerNight = room?.price_per_night ?? draft.display?.price_per_night ?? 0;
-  const totalAmount = pricePerNight > 0 ? pricePerNight * nights : 0;
+
+  // Weekday-based pricing using settings.pricing_weekday_rates (always from DB)
+  // If không lấy được từ DB, coi như 0% cho tất cả ngày
+  let weekdayRates: WeekdayRates = [0, 0, 0, 0, 0, 0, 0];
+  try {
+    const { data: settings } = await supabase
+      .from('settings')
+      .select('pricing_weekday_rates')
+      .limit(1)
+      .maybeSingle();
+
+    if (settings && 'pricing_weekday_rates' in settings && (settings as any).pricing_weekday_rates) {
+      weekdayRates = normalizeWeekdayRates((settings as any).pricing_weekday_rates);
+    }
+  } catch (e) {
+    console.error('[quote] failed to load pricing_weekday_rates from settings, using 0% rates', e);
+  }
+
+  const checkInDate = draft.payload.check_in?.slice(0, 10) ?? "";
+  const checkOutDate = draft.payload.check_out?.slice(0, 10) ?? "";
+
+  const { total: totalAmount, breakdown } = calculateTotalWithWeekdayRates({
+    basePrice: pricePerNight,
+    checkInDate,
+    checkOutDate,
+    weekdayRates,
+  });
 
   return NextResponse.json({
     ok: true,
@@ -45,6 +76,7 @@ async function quoteSingle(draft: Extract<BookingDraft, { type: 'single' }>) {
     nights,
     price_per_night: pricePerNight,
     total_amount: totalAmount,
+    breakdown,
     room: room
       ? {
           id: room.id,

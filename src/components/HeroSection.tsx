@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { vi, enUS } from "date-fns/locale";
+import { vi, enUS, zhCN } from "date-fns/locale";
 
 // Banner images - Sử dụng ảnh thực tế của Y Hotel
 const bannerImages = [
@@ -42,7 +42,7 @@ const HeroSection = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState<number | null>(null);
 
-  const dateLocale = language === "vi" ? vi : enUS;
+  const dateLocale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
 
   // Auto-scroll images every 10 seconds with infinite loop
   useEffect(() => {

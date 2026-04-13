@@ -18,6 +18,8 @@ export interface BookingDraftSinglePayload {
   room_id?: string;
   category_code?: string;
   roomType?: string;
+  /** Optional; applied server-side via create_*_booking_secure */
+  voucher_code?: string | null;
 }
 
 /** Display info for single booking (room name, price) */
@@ -52,6 +54,7 @@ export interface BookingDraftMultiPayload {
   customer_nationality?: string | null;
   notes?: string | null;
   room_items: BookingDraftMultiRoomItem[];
+  voucher_code?: string | null;
 }
 
 export interface BookingDraftMultiItemDisplay {

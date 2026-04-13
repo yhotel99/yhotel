@@ -111,6 +111,10 @@ export async function createBookingSecure(input: BookingInput): Promise<string> 
         p_total_guests: input.total_guests ?? 1,
         p_notes: input.notes || null,
         p_advance_payment: input.advance_payment ?? 0,
+        p_voucher_code:
+          typeof input.voucher_code === 'string' && input.voucher_code.trim() !== ''
+            ? input.voucher_code.trim()
+            : null,
       }
     );
 

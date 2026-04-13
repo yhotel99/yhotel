@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { vi, enUS } from "date-fns/locale";
+import { vi, enUS, zhCN } from "date-fns/locale";
 import { 
   CheckCircle, 
   Calendar, 
@@ -36,7 +36,7 @@ const SuccessContent = () => {
   const { t, language } = useLanguage();
 
   // Date locale based on language
-  const dateLocale = language === "vi" ? vi : enUS;
+  const dateLocale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
 
   const { data: booking, isLoading, error } = useQuery({
     queryKey: ['booking', bookingId],
@@ -116,6 +116,16 @@ const SuccessContent = () => {
       </div>
     );
   }
+
+  const bookingGross = Number(booking.total_amount) || 0;
+  const bookingPayable =
+    booking.final_amount != null && booking.final_amount !== ""
+      ? Number(booking.final_amount)
+      : bookingGross;
+  const bookingVoucherDiscount =
+    booking.voucher_discount != null && Number(booking.voucher_discount) > 0
+      ? Number(booking.voucher_discount)
+      : 0;
 
   return (
     <div className="min-h-screen bg-luxury-gradient flex flex-col">
@@ -269,15 +279,32 @@ const SuccessContent = () => {
                           <div className="space-y-2">
                             <div className="flex justify-between items-center">
                               <span className="text-muted-foreground">{t.success.roomPrice}</span>
-                              <span className="font-medium">{formatPrice(booking.total_amount)}đ</span>
+                              <span className="font-medium">{formatPrice(bookingGross)}đ</span>
                             </div>
                             <div className="flex justify-between items-center text-xs text-muted-foreground">
-                              <span>{booking.number_of_nights} {t.success.nightsUnit} × {formatPrice(booking.total_amount / booking.number_of_nights)}đ</span>
+                              <span>
+                                {booking.number_of_nights} {t.success.nightsUnit} ×{" "}
+                                {formatPrice(
+                                  booking.number_of_nights > 0
+                                    ? bookingGross / booking.number_of_nights
+                                    : 0
+                                )}
+                                đ
+                              </span>
                             </div>
+                            {bookingVoucherDiscount > 0 && (
+                              <div className="flex justify-between items-center text-sm text-emerald-700 dark:text-emerald-400">
+                                <span>
+                                  {t.checkout.discount}
+                                  {booking.voucher_code ? ` (${booking.voucher_code})` : ""}
+                                </span>
+                                <span className="font-medium">−{formatPrice(bookingVoucherDiscount)}đ</span>
+                              </div>
+                            )}
                             <Separator />
                             <div className="flex justify-between items-center pt-2">
                               <span className="font-semibold text-lg">{t.success.total}</span>
-                              <span className="font-bold text-xl text-primary">{formatPrice(booking.total_amount)}đ</span>
+                              <span className="font-bold text-xl text-primary">{formatPrice(bookingPayable)}đ</span>
                             </div>
                           </div>
                         </div>

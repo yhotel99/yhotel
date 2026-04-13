@@ -518,4 +518,288 @@ export const legalTranslations = {
       backToHome: "Back to Home",
     },
   },
+  zh: {
+    terms: {
+      title: "条款与条件",
+      lastUpdated: "最后更新：",
+
+      section1: {
+        title: "1. 简介",
+        content:
+          "欢迎来到芹苴 Y 酒店。使用我们的在线预订服务，即表示您同意遵守本文件所列明的条款与条件。请在完成预订前仔细阅读条款内容。",
+      },
+
+      section2: {
+        title: "2. 预订条款",
+        item1Title: "2.1 预订确认",
+        item1Content:
+          "您的预订将在成功付款后得到确认。您将收到一封确认邮件，其中包含预订详细信息。",
+        item2Title: "2.2 客户信息",
+        item2Content:
+          "您有责任在预订时提供准确且完整的信息。若因所提供信息不准确而产生任何后果，Y 酒店不承担责任。",
+        item3Title: "2.3 价格与支付",
+        item3Content:
+          "所有价格以越南盾（VND）展示，并包含增值税（VAT）。价格可能会随预订时间而有所变化。您可通过信用卡、银行转账或其他在线支付方式完成付款。",
+      },
+
+      section3: {
+        title: "3. 取消政策",
+        freeCancellation: "免费取消：",
+        freeCancellationContent:
+          "您可在预计入住时间前 24 小时内免费取消预订，无需支付取消费用。",
+        paidCancellation: "有偿取消：",
+        paidCancellationContent:
+          "若您在预计入住时间前 24 小时内取消预订，将收取相当于预订价值 50% 的取消费用。",
+        noShow: "未到（No-show）：",
+        noShowContent:
+          "若您未到且未提前通知，预订的全部金额将不予退还。",
+      },
+
+      section4: {
+        title: "4. 入住与退房时间",
+        checkIn: "入住：",
+        checkInContent:
+          "14:00 起办理入住。如您提前到达，我们将尽力安排可用的提前入住房间，但不作保证。",
+        checkOut: "退房：",
+        checkOutContent:
+          "12:00 前办理退房。如需晚退，请联系前台咨询与安排（可能产生费用）。",
+      },
+
+      section5: {
+        title: "5. 客人责任",
+        item1: "客人需在入住期间遵守酒店的各项规定。",
+        item2: "客人应对其过错导致的酒店财产损坏承担责任。",
+        item3: "客房内禁止吸烟。若违反规定，将收取清洁费用，并可能导致拒绝提供服务。",
+        item4: "酒店内不允许携带宠物（除非事先达成一致）。",
+        item5: "客人需在入住登记时按法律要求提供有效身份证明文件。",
+      },
+
+      section6: {
+        title: "6. 酒店责任",
+        item1: "Y 酒店承诺提供高质量服务，并确保客房在您到达时已做好准备。",
+        item2: "酒店将根据隐私政策对客户的个人信息进行保密。",
+        item3: "如无法提供已预订的客房，酒店将安排等值替代房间或退款。",
+      },
+
+      section7: {
+        title: "7. 责任限制",
+        content:
+          "对于超出酒店控制范围的事件造成的任何损失或损害（如自然灾害、火灾、罢工或其他不可抗力事件），Y 酒店不承担责任。酒店亦不对客人在酒店内丢失或损坏的个人财产承担责任。",
+      },
+
+      section8: {
+        title: "8. 联系方式",
+        hotelName: "Y 酒店芹苴",
+        address: "地址：60-62-64 Ly Hong Thanh, Cai Khe, Can Tho",
+        phone: "电话：+84 123 456 789",
+        email: "邮箱：hello@yhotel.vn",
+      },
+
+      // Flat keys for terms page
+      section1Title: "1. 简介",
+      section1Content:
+        "欢迎来到芹苴 Y 酒店。使用我们的在线预订服务，即表示您同意遵守本文件所列明的条款与条件。请在完成预订前仔细阅读条款内容。",
+
+      section2Title: "2. 预订条款",
+      section2_1Title: "2.1 预订确认",
+      section2_1Content:
+        "您的预订将在成功付款后得到确认。您将收到一封确认邮件，其中包含预订详细信息。",
+      section2_2Title: "2.2 客户信息",
+      section2_2Content:
+        "您有责任在预订时提供准确且完整的信息。若因所提供信息不准确而产生任何后果，Y 酒店不承担责任。",
+      section2_3Title: "2.3 价格与支付",
+      section2_3Content:
+        "所有价格以越南盾（VND）展示，并包含增值税（VAT）。价格可能会随预订时间而有所变化。您可通过信用卡、银行转账或其他在线支付方式完成付款。",
+
+      section3Title: "3. 取消政策",
+      section3FreeCancellation: "免费取消：",
+      section3FreeCancellationContent:
+        "您可在预计入住时间前 24 小时内免费取消预订，无需支付取消费用。",
+      section3PaidCancellation: "有偿取消：",
+      section3PaidCancellationContent:
+        "若您在预计入住时间前 24 小时内取消预订，将收取相当于预订价值 50% 的取消费用。",
+      section3NoShow: "未到（No-show）：",
+      section3NoShowContent:
+        "若您未到且未提前通知，预订的全部金额将不予退还。",
+
+      section4Title: "4. 入住与退房时间",
+      section4CheckIn: "入住：",
+      section4CheckInContent:
+        "14:00 起办理入住。如您提前到达，我们将尽力安排可用的提前入住房间，但不作保证。",
+      section4CheckOut: "退房：",
+      section4CheckOutContent:
+        "12:00 前办理退房。如需晚退，请联系前台咨询与安排（可能产生费用）。",
+
+      section5Title: "5. 客人责任",
+      section5Item1: "客人需在入住期间遵守酒店的各项规定。",
+      section5Item2: "客人应对其过错导致的酒店财产损坏承担责任。",
+      section5Item3: "客房内禁止吸烟。违反规定将收取清洁费用，并可能导致拒绝提供服务。",
+      section5Item4: "酒店内不允许携带宠物（除非事先达成一致）。",
+      section5Item5: "客人需在入住登记时按法律要求提供有效身份证明文件。",
+
+      section6Title: "6. 酒店责任",
+      section6Item1: "Y 酒店承诺提供高质量服务，并确保客房在您到达时已做好准备。",
+      section6Item2: "酒店将根据隐私政策对客户的个人信息进行保密。",
+      section6Item3: "如无法提供已预订的客房，酒店将安排等值替代房间或退款。",
+
+      section7Title: "7. 责任限制",
+      section7Content:
+        "对于超出酒店控制范围的事件造成的任何损失或损害（如自然灾害、火灾、罢工或其他不可抗力事件），Y 酒店不承担责任。酒店亦不对客人在酒店内丢失或损坏的个人财产承担责任。",
+
+      section8Title: "8. 联系方式",
+      section8Content: "如对本条款有任何疑问，请联系我们。",
+      section9Title: "9. 联系方式",
+      section9Content: "如对本条款有任何疑问，请联系我们。",
+      hotelName: "Y 酒店芹苴",
+      address: "地址：60-62-64 Ly Hong Thanh, Cai Khe, Can Tho",
+      phone: "电话：+84 123 456 789",
+      email: "邮箱：hello@yhotel.vn",
+
+      backToHome: "返回首页",
+    },
+
+    privacy: {
+      title: "隐私政策",
+      subtitle: "我们致力于保护您的隐私与个人信息",
+      lastUpdated: "最后更新：",
+
+      section1: {
+        title: "1. 隐私承诺",
+        content:
+          "芹苴 Y 酒店致力于保护客户的隐私与个人信息。本隐私政策说明我们在您使用服务时，如何收集、使用、存储与保护您的信息。",
+      },
+
+      // Flat keys for privacy page
+      section1Title: "1. 我们收集哪些信息",
+      section1Intro:
+        "我们收集以下类型的信息，以便为您提供最佳服务：",
+
+      section1_1Title: "个人信息",
+      section1_1_1: "姓名：",
+      section1_1_1Content: "用于识别客户身份",
+      section1_1_2: "邮箱：",
+      section1_1_2Content: "用于发送预订确认及相关信息",
+      section1_1_3: "电话号码：",
+      section1_1_3Content: "在必要时用于联系您",
+      section1_1_4: "地址：",
+      section1_1_4Content: "用于发送发票与相关文件",
+
+      section1_2Title: "预订信息",
+      section1_2_1: "入住与退房日期",
+      section1_2_2: "房型与入住人数",
+      section1_2_3: "特殊需求",
+
+      section1_3Title: "支付信息",
+      section1_3_1: "信用卡信息（已加密）",
+      section1_3_2: "交易记录",
+
+      section2: {
+        title: "2. 我们如何使用信息",
+        subtitle: "我们可能收集以下类型的信息：",
+        subtitle1: "个人信息",
+        subtitle2: "预订信息",
+        item1: "个人信息：姓名、邮箱、电话号码、地址",
+        item2: "预订信息：入住/退房日期、房型、特殊需求",
+        item3: "支付信息：信用卡信息、交易记录",
+        item4: "技术信息：IP 地址、浏览器类型、操作系统",
+        item5: "支付信息：信用卡详情、交易记录",
+      },
+
+      section2Title: "2. 我们如何使用信息",
+      section2_1: "处理与管理您的预订",
+      section2_2: "发送预订确认与相关信息",
+      section2_3: "改进服务与客户体验",
+      section2_4: "在您同意的情况下发送推广信息",
+      section2_5: "遵守法律要求",
+
+      section3: {
+        title: "3. 我们如何使用信息",
+        subtitle: "您的信息将用于：",
+        item1: "处理与管理您的预订",
+        item2: "发送预订确认及相关信息",
+        item3: "改进服务与客户体验",
+        item4: "在您同意的情况下发送推广信息",
+        item5: "遵守法律要求",
+      },
+
+      section3Title: "3. 信息共享",
+      section3_1: "当您提出要求时，我们将与您配合执行",
+      section3_2: "为遵守法律或配合主管机关的要求",
+      section3_3: "为保护酒店与客户的权利与安全",
+      section3_4: "与服务提供商合作（例如支付处理）",
+      section3_5: "在企业合并或收购的情形下",
+
+      section4: {
+        title: "4. 信息共享",
+        content: "除非：",
+        item1: "您已授权",
+        item2: "为通过支付合作伙伴处理付款",
+        item3: "依法要求",
+        item4: "为保护 Y 酒店与客户的权利、财产或安全",
+      },
+
+      section4Title: "4. 信息安全",
+      section4Intro: "我们采取安全措施以保护您的信息：",
+      section4_1: "对敏感数据进行加密（SSL/TLS）",
+      section4_2: "严格的访问控制",
+      section4_3: "定期安全更新",
+      section4_4: "对员工进行信息安全培训",
+
+      section5: {
+        title: "5. 信息安全",
+        content:
+          "我们使用适当的技术与组织性安全措施，保护您的信息免受未经授权的访问、丢失或泄露。然而，任何通过互联网进行的数据传输方式都无法保证 100% 安全。",
+        item1: "对敏感数据进行加密（SSL/TLS）",
+        item2: "严格的访问控制",
+        item3: "定期安全更新",
+        item4: "对员工进行信息安全培训",
+      },
+
+      section5Title: "5. 您的权利",
+      section5_1: "访问并查看您的个人信息",
+      section5_2: "请求更正不准确的信息",
+      section5_3: "请求删除个人信息",
+
+      section6: {
+        title: "6. 您的权利",
+        subtitle: "您有权：",
+        item1: "访问并查看您的个人信息",
+        item2: "请求更正不准确的信息",
+        item3: "请求删除个人信息",
+        item4: "拒绝接收营销邮件",
+        item5: "撤回对数据处理的同意",
+        right1: "访问权",
+        right1Desc: "查看并访问您的个人信息",
+        right2: "更正权",
+        right2Desc: "请求更正不准确的信息",
+        right3: "删除权",
+        right3Desc: "请求删除您的个人信息",
+        right4: "反对权",
+        right4Desc: "拒绝营销邮件并撤回同意",
+      },
+
+      section7: {
+        title: "7. Cookies",
+        content:
+          "我们的网站使用 cookies 以提升用户体验。您可以在浏览器设置中禁用 cookies，但这可能会影响网站功能。",
+      },
+
+      section8: {
+        title: "8. 政策变更",
+        content:
+          "我们可能会不时更新本隐私政策。任何变更将在网站上发布，并在发布时立即生效。",
+      },
+
+      section9: {
+        title: "9. 联系方式",
+        content: "如果您对本隐私政策有任何疑问，请联系我们：",
+        hotelName: "Y 酒店芹苴",
+        address: "地址：60-62-64 Ly Hong Thanh, Cai Khe, Can Tho",
+        phone: "电话：+84 123 456 789",
+        email: "邮箱：hello@yhotel.vn",
+      },
+
+      backToHome: "返回首页",
+    },
+  },
 };

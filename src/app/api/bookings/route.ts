@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { PAYMENT_METHOD } from '@/lib/constants';
+import {
+  calculateTotalWithWeekdayRates,
+  normalizeWeekdayRates,
+  type WeekdayRates,
+} from '@/lib/pricing';
 
 /**
  * Normalize email for consistent storage and lookup
@@ -451,6 +456,7 @@ export async function POST(request: Request) {
       category_code,
       roomType,
       notes,
+      voucher_code,
     } = body;
 
     if (!check_in || !check_out || !customer_name || !customer_email || !customer_phone) {
@@ -528,8 +534,39 @@ export async function POST(request: Request) {
       );
     }
 
-    // Calculate total amount (same as dashboard)
-    const total_amount = room.price_per_night * number_of_nights;
+    // Total aligned with /api/bookings/quote (weekday rates from settings)
+    let weekdayRates: WeekdayRates = [0, 0, 0, 0, 0, 0, 0];
+    try {
+      const { data: settings } = await supabase
+        .from('settings')
+        .select('pricing_weekday_rates')
+        .limit(1)
+        .maybeSingle();
+      if (
+        settings &&
+        'pricing_weekday_rates' in settings &&
+        (settings as { pricing_weekday_rates?: unknown }).pricing_weekday_rates
+      ) {
+        weekdayRates = normalizeWeekdayRates(
+          (settings as { pricing_weekday_rates: unknown }).pricing_weekday_rates
+        );
+      }
+    } catch (e) {
+      console.error('[bookings POST] pricing_weekday_rates', e);
+    }
+    const checkInYmd = String(check_in).slice(0, 10);
+    const checkOutYmd = String(check_out).slice(0, 10);
+    const { total: total_amount } = calculateTotalWithWeekdayRates({
+      basePrice: room.price_per_night,
+      checkInDate: checkInYmd,
+      checkOutDate: checkOutYmd,
+      weekdayRates,
+    });
+
+    const voucherCodeTrimmed =
+      typeof voucher_code === 'string' && voucher_code.trim() !== ''
+        ? voucher_code.trim()
+        : null;
     
     let bookingId: string;
     
@@ -549,6 +586,7 @@ export async function POST(request: Request) {
           p_total_guests: total_guests ?? 1,
           p_notes: notes || null,
           p_advance_payment: 0, // Đặt cọc luôn là 0 như dashboard
+          p_voucher_code: voucherCodeTrimmed,
         }
       );
     
@@ -575,6 +613,16 @@ export async function POST(request: Request) {
                 {
                   error: 'Phòng đã được đặt trong khoảng thời gian này. Vui lòng chọn phòng hoặc thời gian khác.',
                   code: 'ROOM_NOT_AVAILABLE',
+                },
+                { status: 400 }
+              );
+            }
+
+            if (rpcResult.error_code === 'INVALID_VOUCHER') {
+              return NextResponse.json(
+                {
+                  error: 'Mã voucher không hợp lệ hoặc đã hết hạn.',
+                  code: 'INVALID_VOUCHER',
                 },
                 { status: 400 }
               );
