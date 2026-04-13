@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
+import sharp from 'sharp';
 
 // Mark as dynamic route for file uploads
 export const dynamic = 'force-dynamic';
@@ -134,11 +135,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
+    // Validate file size (max 10MB) before optimization
+    const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'Kích thước file không được vượt quá 5MB' },
+        { error: 'Kích thước file không được vượt quá 10MB' },
         { status: 400 }
       );
     }
@@ -155,15 +156,38 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // Generate unique filename
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    // Process image to reduce payload size for room galleries
+    const originalBuffer = Buffer.from(await file.arrayBuffer());
+    let uploadBuffer: Buffer = originalBuffer;
+    let uploadMimeType = file.type;
+    let fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
 
-    // Upload file to Supabase Storage
+    try {
+      uploadBuffer = await sharp(originalBuffer)
+        .rotate()
+        .resize({
+          width: 1920,
+          height: 1920,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .webp({ quality: 78, effort: 4 })
+        .toBuffer();
+      uploadMimeType = 'image/webp';
+      fileExtension = 'webp';
+    } catch (optimizeError) {
+      // Keep upload resilient if optimization fails for any edge-case image input.
+      console.warn('Image optimization failed, falling back to original file:', optimizeError);
+    }
+
+    // Generate unique filename
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
+
+    // Upload optimized file to Supabase Storage
     const { error: uploadError } = await supabaseService.storage
       .from('images')
-      .upload(fileName, file, {
-        contentType: file.type,
+      .upload(fileName, uploadBuffer, {
+        contentType: uploadMimeType,
         upsert: false
       });
 
@@ -184,8 +208,8 @@ export async function POST(request: NextRequest) {
     const imageData = {
       url: publicUrl,
       filename: file.name,
-      size: file.size,
-      mime_type: file.type,
+      size: uploadBuffer.byteLength,
+      mime_type: uploadMimeType,
     };
 
     const { data: newImage, error: dbError } = await supabase

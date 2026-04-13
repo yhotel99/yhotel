@@ -545,6 +545,12 @@ const PaymentContent = () => {
     Number(booking.voucher_discount) > 0
       ? Number(booking.voucher_discount)
       : 0;
+  const baseNightsAmount =
+    booking?.room?.price_per_night && booking?.number_of_nights > 0
+      ? Number(booking.room.price_per_night) * Number(booking.number_of_nights)
+      : grossAmount;
+  const weekendAdjustmentAmount = Math.max(0, Math.round(grossAmount - baseNightsAmount));
+  const roomAmountBeforeTax = Math.max(0, amountPayable - weekendAdjustmentAmount);
   
   // Generate VietQR API URL
   // Format: https://img.vietqr.io/image/{acqId}-{accountNo}-{template}.png
@@ -800,13 +806,10 @@ const PaymentContent = () => {
 
                       {/* Payment Amount */}
                       <div className="p-4 sm:p-6 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-lg border border-primary/20">
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                          <div>
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="flex-1">
                             <p className="text-sm text-muted-foreground mb-1">{t.payment.amountToPay}</p>
                             <p className="text-xl sm:text-2xl font-bold text-primary">{formatPrice(amountPayable)}đ</p>
-                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                              {t.checkout.totalExcludesVatAndFees}
-                            </p>
                           </div>
                           <div className="text-left sm:text-right">
                             <p className="text-sm text-muted-foreground mb-1">{t.payment.bookingCode}</p>
@@ -1011,20 +1014,32 @@ const PaymentContent = () => {
                         <div>
                           <h3 className="text-lg font-display font-semibold mb-3">{t.payment.paymentSummary}</h3>
                           <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-muted-foreground">{t.payment.roomPrice}</span>
-                              <span className="font-medium">{formatPrice(grossAmount)}đ</span>
-                            </div>
-                            <div className="flex justify-between items-center text-xs text-muted-foreground">
-                              <span>
-                                {booking.number_of_nights} {t.payment.nightsUnit} ×{" "}
-                                {formatPrice(
-                                  booking.number_of_nights > 0
-                                    ? grossAmount / booking.number_of_nights
-                                    : 0
-                                )}
-                                đ
-                              </span>
+                            <div className="rounded-xl border border-border/70 bg-background/90 shadow-sm p-3.5 space-y-2.5">
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">
+                                  {language === "vi"
+                                    ? "Phòng (giá gốc/tạm tính)"
+                                    : language === "zh"
+                                      ? "房费（基础价/暂估）"
+                                      : "Room (base/estimated)"}
+                                </span>
+                                <span className="font-medium tabular-nums">{formatPrice(roomAmountBeforeTax)}đ</span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">{t.checkout.tax}</span>
+                                <span className="font-medium tabular-nums">{formatPrice(weekendAdjustmentAmount)}đ</span>
+                              </div>
+                              <div className="flex justify-between items-center pt-2 border-t border-border/70">
+                                <span className="font-semibold text-lg">{t.payment.total}</span>
+                                <span className="font-bold text-xl text-primary">{formatPrice(amountPayable)}đ</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                {language === "vi"
+                                  ? "Giá đã bao gồm thuế và các phí liên quan"
+                                  : language === "zh"
+                                    ? "价格已包含税费及相关费用"
+                                    : "Price includes taxes and applicable fees"}
+                              </p>
                             </div>
                             {voucherDiscount > 0 && (
                               <div className="flex justify-between items-center text-sm text-emerald-700 dark:text-emerald-400">
@@ -1035,14 +1050,6 @@ const PaymentContent = () => {
                                 <span className="font-medium">−{formatPrice(voucherDiscount)}đ</span>
                               </div>
                             )}
-                            <Separator />
-                            <div className="flex justify-between items-center pt-2">
-                              <span className="font-semibold text-lg">{t.payment.total}</span>
-                              <span className="font-bold text-xl text-primary">{formatPrice(amountPayable)}đ</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground pt-1 leading-relaxed">
-                              {t.checkout.totalExcludesVatAndFees}
-                            </p>
                           </div>
                         </div>
 

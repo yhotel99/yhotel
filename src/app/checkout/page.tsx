@@ -206,7 +206,7 @@ const CheckoutContent = () => {
     enabled: !!bookingId && draftChecked && !draft,
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "pay_at_hotel" | "onepay">("bank_transfer");
+  const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "pay_at_hotel">("bank_transfer");
 
   // Date locale based on language
   const dateLocale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
@@ -364,8 +364,6 @@ const CheckoutContent = () => {
               body: JSON.stringify({ status: BOOKING_STATUS.PENDING, payment_method: PAYMENT_METHOD.PAY_AT_HOTEL }),
             });
             router.push(`/checkout/pay-at-hotel?booking_id=${encodeURIComponent(newBookingId)}`);
-          } else {
-            router.push(`/checkout/onepay/redirect?booking_id=${encodeURIComponent(newBookingId)}`);
           }
         } else {
           const multiPayload = { ...draft.payload };
@@ -422,8 +420,6 @@ const CheckoutContent = () => {
               body: JSON.stringify({ status: BOOKING_STATUS.PENDING, payment_method: PAYMENT_METHOD.PAY_AT_HOTEL }),
             });
             router.push(`/checkout/pay-at-hotel?booking_id=${encodeURIComponent(newBookingId)}`);
-          } else {
-            router.push(`/checkout/onepay/redirect?booking_id=${encodeURIComponent(newBookingId)}`);
           }
         }
       } catch (err) {
@@ -477,9 +473,6 @@ const CheckoutContent = () => {
 
       // Chuyển đến trang thanh toán chuyển khoản với QR code
       router.push(`/checkout/payment?booking_id=${bookingId}`);
-    } 
-    else if (paymentMethod === "onepay") {
-      router.push(`/checkout/onepay/redirect?booking_id=${bookingId}`);
     } 
     else if (paymentMethod === "pay_at_hotel") {
       // Cập nhật phương thức thanh toán, đảm bảo trạng thái là pending (chờ xác nhận)
@@ -538,13 +531,18 @@ const CheckoutContent = () => {
     const quoteTotal = typeof quote?.total_amount === "number" ? quote.total_amount : 0;
     const quotePricePerNight =
       typeof quote?.price_per_night === "number" ? quote.price_per_night : undefined;
-    const quoteBreakdown = Array.isArray(quote?.breakdown) ? (quote.breakdown as any[]) : [];
     const totalFromDraft = quoteTotal;
     const payableTotal =
       appliedVoucher && appliedVoucher.final_amount >= 0
         ? appliedVoucher.final_amount
         : totalFromDraft;
     const nightsDraft = quoteNights || (draft.type === "multi" ? draft.payload.number_of_nights : 0);
+    const draftBaseTotal =
+      isSingle && quotePricePerNight != null && quotePricePerNight > 0
+        ? quotePricePerNight * nightsDraft
+        : totalFromDraft;
+    const weekendAdjustmentDraft = Math.max(0, Math.round(totalFromDraft - draftBaseTotal));
+    const roomAmountBeforeTaxDraft = Math.max(0, payableTotal - weekendAdjustmentDraft);
 
     return (
       <div className="min-h-screen bg-luxury-gradient flex flex-col">
@@ -620,42 +618,24 @@ const CheckoutContent = () => {
                             </div>
                           </div>
                         </label>
-                        {/* OnePay */}
-                        <label className="block relative cursor-pointer group">
-                          <input
-                            type="radio"
-                            name="payment"
-                            value="onepay"
-                            checked={paymentMethod === "onepay"}
-                            onChange={(e) =>
-                              setPaymentMethod(e.target.value as "onepay")
-                            }
-                            className="sr-only"
-                          />
-                          <div className={cn(
-                            "p-4 border-2 rounded-lg transition-all duration-300",
-                            paymentMethod === "onepay"
-                              ? "border-primary bg-primary/5 shadow-md"
-                              : "border-border bg-muted/30 hover:border-primary/50"
-                          )}>
+                        {/* OnePay - Coming Soon */}
+                        <label className="block relative cursor-not-allowed group opacity-60">
+                          <input type="radio" name="payment" value="onepay" disabled className="sr-only" />
+                          <div className="p-4 border-2 rounded-lg border-border bg-muted/30">
                             <div className="flex items-start gap-4">
                               <div className="p-2 rounded-lg bg-primary/10">
-                                <CreditCard className="h-5 w-5 text-primary" />
+                                <CreditCard className="h-5 w-5 text-primary/70" />
                               </div>
                               <div className="flex-1">
-                                <p className="font-semibold text-base mb-1">{t.checkout.onepay}</p>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="font-semibold text-base">{t.checkout.onepay}</p>
+                                  <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full">
+                                    Coming Soon
+                                  </span>
+                                </div>
                                 <p className="text-sm text-muted-foreground">{t.checkout.onepayDescription}</p>
                               </div>
-                              <div className={cn(
-                                "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
-                                paymentMethod === "onepay"
-                                  ? "border-primary bg-primary"
-                                  : "border-border"
-                              )}>
-                                {paymentMethod === "onepay" && (
-                                  <div className="h-2.5 w-2.5 rounded-full bg-white" />
-                                )}
-                              </div>
+                              <div className="h-5 w-5 rounded-full border-2 border-border flex items-center justify-center" />
                             </div>
                           </div>
                         </label>
@@ -824,104 +804,41 @@ const CheckoutContent = () => {
                               {isQuoteLoading && (
                                 <div className="text-sm text-muted-foreground">Đang tính giá...</div>
                               )}
-                              {isSingle && quotePricePerNight != null && quotePricePerNight > 0 && (
-                                <>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-muted-foreground">{t.checkout.roomPricePerNight}</span>
-                                    <span className="font-medium">{formatPrice(quotePricePerNight)}đ</span>
-                                  </div>
-                                  {quoteBreakdown.length > 0 ? (
-                                    <div className="mt-2 space-y-2">
-                                      <div className="rounded-lg border border-border/70 bg-background/80 p-2.5">
-                                        <div className="text-xs font-semibold text-foreground mb-2">
-                                          {t.roomDetail.pricingBreakdownTitle}
-                                        </div>
-                                        <ul className="space-y-1.5">
-                                          {quoteBreakdown.map((row) => {
-                                            const dateStr = typeof row?.date === "string" ? row.date : "";
-                                            const percent = typeof row?.percent === "number" ? row.percent : 0;
-                                            const price = typeof row?.price === "number" ? row.price : 0;
-                                            const d = dateStr ? new Date(`${dateStr}T12:00:00`) : null;
-                                            const label = d
-                                              ? format(d, "EEE, dd/MM", { locale: dateLocale })
-                                              : dateStr;
-
-                                            return (
-                                              <li
-                                                key={dateStr || `${price}-${percent}`}
-                                                className="flex items-baseline justify-between gap-2 text-[11px] text-muted-foreground"
-                                              >
-                                                <span className="min-w-0 flex-1">
-                                                  {label}
-                                                  {percent > 0 ? (
-                                                    <span className="ml-1 text-amber-700 dark:text-amber-400 font-medium">
-                                                      (
-                                                      {t.roomDetail.perNightSurcharge.replace(
-                                                        "{percent}",
-                                                        String(percent)
-                                                      )}
-                                                      )
-                                                    </span>
-                                                  ) : null}
-                                                </span>
-                                                <span className="font-semibold text-foreground tabular-nums shrink-0">
-                                                  {formatPrice(Math.round(price))}đ
-                                                </span>
-                                              </li>
-                                            );
-                                          })}
-                                        </ul>
-                                      </div>
-                                      <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                        <span>
-                                          {t.roomDetail.baseTotalNights
-                                            .replace("{nights}", String(nightsDraft))
-                                            .replace("{price}", formatPrice(quotePricePerNight))}
-                                        </span>
-                                        <span className="font-medium tabular-nums">
-                                          {formatPrice(nightsDraft * quotePricePerNight)}đ
-                                        </span>
-                                      </div>
-                                      {totalFromDraft > nightsDraft * quotePricePerNight && (
-                                        <div className="flex justify-between items-center text-xs text-amber-800 dark:text-amber-300">
-                                          <span>{t.roomDetail.surchargeLine}</span>
-                                          <span className="font-semibold tabular-nums">
-                                            +
-                                            {formatPrice(
-                                              totalFromDraft - nightsDraft * quotePricePerNight
-                                            )}
-                                            đ
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ) : (
-                                    <div className="flex justify-between items-center text-xs text-muted-foreground pl-2">
-                                      <span>
-                                        {nightsDraft} {t.checkout.nightsUnit} ×{" "}
-                                        {formatPrice(quotePricePerNight)}đ
-                                      </span>
-                                      <span className="font-medium">{formatPrice(totalFromDraft)}đ</span>
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                              {!isSingle && draft.display?.room_items && draft.display.room_items.length > 0 && (
-                                <>
-                                  {draft.display.room_items.map((item, idx) => (
-                                    <div key={idx} className="flex justify-between items-center text-sm">
-                                      <span className="text-muted-foreground">{item.room_name} × {item.quantity}</span>
-                                      <span className="font-medium">{formatPrice(item.amount)}đ</span>
-                                    </div>
-                                  ))}
-                                </>
-                              )}
-                              {(!isSingle || quotePricePerNight == null || quotePricePerNight === 0) && totalFromDraft > 0 && (
-                                <div className="flex justify-between items-center">
-                                  <span className="text-muted-foreground">{t.checkout.roomPrice}</span>
-                                  <span className="font-medium">{formatPrice(totalFromDraft)}đ</span>
+                              <div className="rounded-xl border border-border/70 bg-background/90 shadow-sm p-3.5 space-y-2.5">
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className="text-muted-foreground">
+                                    {language === "vi"
+                                      ? "Phòng (giá gốc/tạm tính)"
+                                      : language === "zh"
+                                        ? "房费（基础价/暂估）"
+                                        : "Room (base/estimated)"}
+                                  </span>
+                                  <span className="font-medium tabular-nums">
+                                    {formatPrice(roomAmountBeforeTaxDraft)}đ
+                                  </span>
                                 </div>
-                              )}
+                                <div className="flex justify-between items-center text-sm">
+                                  <span className="text-muted-foreground">{t.checkout.tax}</span>
+                                  <span className="font-medium tabular-nums">
+                                    {formatPrice(weekendAdjustmentDraft)}đ
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center pt-2 border-t border-border/70">
+                                  <span className="font-semibold text-lg">{t.checkout.total}</span>
+                                  <span className="font-bold text-xl text-primary">
+                                    {payableTotal > 0
+                                      ? `${formatPrice(payableTotal)}đ`
+                                      : "Sẽ tính khi xác nhận"}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                  {language === "vi"
+                                    ? "Giá đã bao gồm thuế và các phí liên quan"
+                                    : language === "zh"
+                                      ? "价格已包含税费及相关费用"
+                                      : "Price includes taxes and applicable fees"}
+                                </p>
+                              </div>
                               {appliedVoucher && totalFromDraft > 0 && (
                                 <>
                                   <div className="flex justify-between items-center text-sm">
@@ -938,18 +855,6 @@ const CheckoutContent = () => {
                                   </div>
                                 </>
                               )}
-                              <Separator />
-                              <div className="flex justify-between items-center pt-2">
-                                <span className="font-semibold text-lg">{t.checkout.total}</span>
-                                <span className="font-bold text-xl text-primary">
-                                  {payableTotal > 0
-                                    ? `${formatPrice(payableTotal)}đ`
-                                    : "Sẽ tính khi xác nhận"}
-                                </span>
-                              </div>
-                              <p className="text-xs text-muted-foreground pt-1 leading-relaxed">
-                                {t.checkout.totalExcludesVatAndFees}
-                              </p>
                             </div>
                           </div>
                           <Button
@@ -1064,6 +969,12 @@ const CheckoutContent = () => {
     booking.voucher_discount != null && Number(booking.voucher_discount) > 0
       ? Number(booking.voucher_discount)
       : 0;
+  const bookingBaseTotal =
+    booking.room?.price_per_night && booking.number_of_nights > 0
+      ? Number(booking.room.price_per_night) * Number(booking.number_of_nights)
+      : bookingGross;
+  const weekendAdjustmentBooking = Math.max(0, Math.round(bookingGross - bookingBaseTotal));
+  const roomAmountBeforeTaxBooking = Math.max(0, bookingPayable - weekendAdjustmentBooking);
 
   return (
     <div className="min-h-screen bg-luxury-gradient flex flex-col">
@@ -1181,50 +1092,24 @@ const CheckoutContent = () => {
                         </div>
                       </label>
 
-                      {/* OnePay */}
-                      <label className="block relative cursor-pointer group">
-                        <input
-                          type="radio"
-                          name="payment"
-                          value="onepay"
-                          checked={paymentMethod === "onepay"}
-                          onChange={(e) => setPaymentMethod(e.target.value as "onepay")}
-                          className="sr-only"
-                        />
-                        <div className={cn(
-                          "p-4 border-2 rounded-lg transition-all duration-300",
-                          paymentMethod === "onepay"
-                            ? "border-primary bg-primary/5 shadow-md"
-                            : "border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50"
-                        )}>
+                      {/* OnePay - Coming Soon */}
+                      <label className="block relative cursor-not-allowed group opacity-60">
+                        <input type="radio" name="payment" value="onepay" disabled className="sr-only" />
+                        <div className="p-4 border-2 rounded-lg border-border bg-muted/30">
                           <div className="flex items-start gap-4">
-                            <div className={cn(
-                              "p-2 rounded-lg transition-colors",
-                              paymentMethod === "onepay"
-                                ? "bg-primary/20"
-                                : "bg-primary/10"
-                            )}>
-                              <CreditCard className={cn(
-                                "h-5 w-5 transition-colors",
-                                paymentMethod === "onepay"
-                                  ? "text-primary"
-                                  : "text-primary/70"
-                              )} />
+                            <div className="p-2 rounded-lg bg-primary/10">
+                              <CreditCard className="h-5 w-5 text-primary/70" />
                             </div>
                             <div className="flex-1">
-                              <p className="font-semibold text-base mb-1">{t.checkout.onepay}</p>
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="font-semibold text-base">{t.checkout.onepay}</p>
+                                <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full">
+                                  Coming Soon
+                                </span>
+                              </div>
                               <p className="text-sm text-muted-foreground">{t.checkout.onepayDescription}</p>
                             </div>
-                            <div className={cn(
-                              "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
-                              paymentMethod === "onepay"
-                                ? "border-primary bg-primary"
-                                : "border-border"
-                            )}>
-                              {paymentMethod === "onepay" && (
-                                <div className="h-2.5 w-2.5 rounded-full bg-white" />
-                              )}
-                            </div>
+                            <div className="h-5 w-5 rounded-full border-2 border-border flex items-center justify-center" />
                           </div>
                         </div>
                       </label>
@@ -1374,37 +1259,39 @@ const CheckoutContent = () => {
                         <div>
                           <h3 className="text-lg font-display font-semibold mb-3">{t.checkout.paymentSummary}</h3>
                           <div className="space-y-2">
-                            {booking.room?.price_per_night ? (
-                              <>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-muted-foreground">{t.checkout.roomPricePerNight}</span>
-                                  <span className="font-medium">{formatPrice(booking.room.price_per_night)}đ</span>
-                                </div>
-                                <div className="flex justify-between items-center text-xs text-muted-foreground pl-2">
-                                  <span>{booking.number_of_nights} {t.checkout.nightsUnit} × {formatPrice(booking.room.price_per_night)}đ</span>
-                                  <span className="font-medium">{formatPrice(booking.room.price_per_night * booking.number_of_nights)}đ</span>
-                                </div>
-                              </>
-                            ) : (
-                              <>
-                                <div className="flex justify-between items-center">
-                                  <span className="text-muted-foreground">{t.checkout.roomPrice}</span>
-                                  <span className="font-medium">{formatPrice(bookingGross)}đ</span>
-                                </div>
-                                <div className="flex justify-between items-center text-xs text-muted-foreground pl-2">
-                                  <span>
-                                    {booking.number_of_nights} {t.checkout.nightsUnit} ×{" "}
-                                    {formatPrice(
-                                      booking.number_of_nights > 0
-                                        ? bookingGross / booking.number_of_nights
-                                        : 0
-                                    )}
-                                    đ
-                                  </span>
-                                  <span className="font-medium">{formatPrice(bookingGross)}đ</span>
-                                </div>
-                              </>
-                            )}
+                            <div className="rounded-xl border border-border/70 bg-background/90 shadow-sm p-3.5 space-y-2.5">
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">
+                                  {language === "vi"
+                                    ? "Phòng (giá gốc/tạm tính)"
+                                    : language === "zh"
+                                      ? "房费（基础价/暂估）"
+                                      : "Room (base/estimated)"}
+                                </span>
+                                <span className="font-medium tabular-nums">
+                                  {formatPrice(roomAmountBeforeTaxBooking)}đ
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted-foreground">{t.checkout.tax}</span>
+                                <span className="font-medium tabular-nums">
+                                  {formatPrice(weekendAdjustmentBooking)}đ
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center pt-2 border-t border-border/70">
+                                <span className="font-semibold text-lg">{t.checkout.total}</span>
+                                <span className="font-bold text-xl text-primary">
+                                  {formatPrice(bookingPayable)}đ
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                {language === "vi"
+                                  ? "Giá đã bao gồm thuế và các phí liên quan"
+                                  : language === "zh"
+                                    ? "价格已包含税费及相关费用"
+                                    : "Price includes taxes and applicable fees"}
+                              </p>
+                            </div>
                             {bookingVoucherDiscount > 0 && (
                               <div className="flex justify-between items-center text-sm text-emerald-700 dark:text-emerald-400">
                                 <span>
@@ -1429,14 +1316,6 @@ const CheckoutContent = () => {
                                 </div>
                               </>
                             )}
-                            <Separator />
-                            <div className="flex justify-between items-center pt-2">
-                              <span className="font-semibold text-lg">{t.checkout.total}</span>
-                              <span className="font-bold text-xl text-primary">{formatPrice(bookingPayable)}đ</span>
-                            </div>
-                            <p className="text-xs text-muted-foreground pt-1 leading-relaxed">
-                              {t.checkout.totalExcludesVatAndFees}
-                            </p>
                           </div>
                         </div>
 
