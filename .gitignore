@@ -52,3 +52,6 @@ yarn-error.log*
 *.sw?
 trash/
 supabase-functions/
+
+# Documentation (contains sensitive payment gateway info)
+docs/
