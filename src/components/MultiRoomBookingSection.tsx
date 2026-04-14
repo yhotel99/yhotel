@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -39,6 +39,8 @@ import { RoomCardSkeleton } from "@/components/RoomCardSkeleton";
 import { setBookingDraft, type BookingDraftMulti } from "@/lib/booking-draft";
 import { getAmenityLabel } from "@/lib/constants";
 import { getAmenityIcon } from "@/lib/amenity-icons";
+import { calculateTotalWithWeekdayRates } from "@/lib/pricing";
+import { usePricingSettings } from "@/hooks/use-pricing-settings";
 
 interface SelectedRoom {
   room_id: string;
@@ -74,6 +76,7 @@ export const MultiRoomBookingSection = () => {
   const [isTermsDialogOpen, setIsTermsDialogOpen] = useState(false);
   const [isPrivacyDialogOpen, setIsPrivacyDialogOpen] = useState(false);
   const [selectedRoomDetail, setSelectedRoomDetail] = useState<any>(null);
+  const { data: pricingSettings } = usePricingSettings();
 
   // Fetch available room categories when dates are selected
   const { data: availableCategories = [], isLoading: loadingCategories } = useQuery({
@@ -151,11 +154,43 @@ export const MultiRoomBookingSection = () => {
 
   const nights = calculateNights();
 
+  const getPerRoomTotal = useCallback((pricePerNight: number) => {
+    if (!formData.checkIn || !formData.checkOut || !Number.isFinite(pricePerNight) || pricePerNight <= 0) {
+      return 0;
+    }
+    const toYmd = (d: Date) => {
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      return `${yyyy}-${mm}-${dd}`;
+    };
+    const checkInMidnight = new Date(formData.checkIn);
+    checkInMidnight.setHours(0, 0, 0, 0);
+    const checkOutMidnight = new Date(formData.checkOut);
+    checkOutMidnight.setHours(0, 0, 0, 0);
+    const { total } = calculateTotalWithWeekdayRates({
+      basePrice: pricePerNight,
+      checkInDate: toYmd(checkInMidnight),
+      checkOutDate: toYmd(checkOutMidnight),
+      weekdayRates: pricingSettings?.pricing_weekday_rates ?? [0, 0, 0, 0, 0, 0, 0],
+      holidayPeriods: pricingSettings?.pricing_holiday_periods ?? [],
+    });
+    return total;
+  }, [formData.checkIn, formData.checkOut, pricingSettings]);
+
   const totalAmount = useMemo(() => {
     return selectedRooms.reduce((sum, room) => {
-      return sum + (room.price_per_night * nights);
+      return sum + getPerRoomTotal(room.price_per_night);
     }, 0);
+  }, [selectedRooms, getPerRoomTotal]);
+
+  const baseAmount = useMemo(() => {
+    return selectedRooms.reduce((sum, room) => sum + room.price_per_night * nights, 0);
   }, [selectedRooms, nights]);
+
+  const surchargeAmount = useMemo(() => {
+    return Math.max(0, Math.round(totalAmount - baseAmount));
+  }, [totalAmount, baseAmount]);
 
   const addRoom = async (room: any) => {
     console.log('[addRoom] Attempting to add room:', {
@@ -306,7 +341,7 @@ export const MultiRoomBookingSection = () => {
 
       const roomItems = selectedRooms.map(room => ({
         room_id: room.room_id,
-        amount: room.price_per_night * nights,
+        amount: getPerRoomTotal(room.price_per_night),
       }));
 
       const draft: BookingDraftMulti = {
@@ -329,7 +364,7 @@ export const MultiRoomBookingSection = () => {
             room_name: room.room_name,
             price_per_night: room.price_per_night,
             quantity: room.quantity,
-            amount: room.price_per_night * nights * room.quantity,
+            amount: getPerRoomTotal(room.price_per_night) * room.quantity,
           })),
         },
       };
@@ -635,7 +670,7 @@ export const MultiRoomBookingSection = () => {
                                             {t.multiBooking.selectedRoomsCountText.replace("{count}", String(selectedCategoryRooms.length))}
                                           </p>
                                           <p className="text-lg font-bold text-primary">
-                                            {formatPrice(selectedCategoryRooms.reduce((sum, r) => sum + r.price_per_night * nights, 0))}đ
+                                            {formatPrice(selectedCategoryRooms.reduce((sum, r) => sum + getPerRoomTotal(r.price_per_night), 0))}đ
                                           </p>
                                         </div>
                                         <div className="flex gap-2">
@@ -719,7 +754,7 @@ export const MultiRoomBookingSection = () => {
                                   {formatPrice(room.price_per_night)}đ × {nights} {t.common.nights}
                                 </p>
                                 <p className="text-sm font-semibold text-primary mt-1">
-                                  {formatPrice(room.price_per_night * nights)}đ
+                                  {formatPrice(getPerRoomTotal(room.price_per_night))}đ
                                 </p>
                               </div>
                               <Button
@@ -755,12 +790,28 @@ export const MultiRoomBookingSection = () => {
                           {selectedRooms.length} {t.common.rooms}
                         </span>
                       </div>
-                      <Separator />
-                      <div className="flex justify-between items-center pt-2">
-                        <span className="font-semibold text-lg">{t.common.total}</span>
-                        <span className="font-bold text-xl text-primary">
-                          {formatPrice(totalAmount)}đ
-                        </span>
+                      <div className="rounded-xl border border-border/70 bg-background/90 shadow-sm p-3.5 space-y-2.5">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">
+                            {language === "vi" ? "Phòng (giá gốc/tạm tính)" : "Room (base/estimated)"}
+                          </span>
+                          <span className="font-medium tabular-nums">{formatPrice(baseAmount)}đ</span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">
+                            {language === "vi" ? "Thuế & phí" : "Taxes & fees"}
+                          </span>
+                          <span className="font-medium tabular-nums">{formatPrice(surchargeAmount)}đ</span>
+                        </div>
+                        <div className="flex justify-between items-center pt-2 border-t border-border/70">
+                          <span className="font-semibold text-lg">{t.common.total}</span>
+                          <span className="font-bold text-xl text-primary">{formatPrice(totalAmount)}đ</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {language === "vi"
+                            ? "Giá đã bao gồm thuế và các phí liên quan"
+                            : "Price includes taxes and applicable fees"}
+                        </p>
                       </div>
                     </div>
                   </CardContent>

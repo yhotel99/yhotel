@@ -4,7 +4,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { PAYMENT_METHOD } from '@/lib/constants';
 import {
   calculateTotalWithWeekdayRates,
+  normalizeHolidayPeriods,
   normalizeWeekdayRates,
+  type PricingHolidayPeriod,
   type WeekdayRates,
 } from '@/lib/pricing';
 
@@ -536,10 +538,11 @@ export async function POST(request: Request) {
 
     // Total aligned with /api/bookings/quote (weekday rates from settings)
     let weekdayRates: WeekdayRates = [0, 0, 0, 0, 0, 0, 0];
+    let holidayPeriods: PricingHolidayPeriod[] = [];
     try {
       const { data: settings } = await supabase
         .from('settings')
-        .select('pricing_weekday_rates')
+        .select('pricing_weekday_rates,pricing_holiday_periods')
         .limit(1)
         .maybeSingle();
       if (
@@ -551,8 +554,13 @@ export async function POST(request: Request) {
           (settings as { pricing_weekday_rates: unknown }).pricing_weekday_rates
         );
       }
+      if (settings && 'pricing_holiday_periods' in settings) {
+        holidayPeriods = normalizeHolidayPeriods(
+          (settings as { pricing_holiday_periods?: unknown }).pricing_holiday_periods ?? []
+        );
+      }
     } catch (e) {
-      console.error('[bookings POST] pricing_weekday_rates', e);
+      console.error('[bookings POST] pricing settings', e);
     }
     const checkInYmd = String(check_in).slice(0, 10);
     const checkOutYmd = String(check_out).slice(0, 10);
@@ -561,6 +569,7 @@ export async function POST(request: Request) {
       checkInDate: checkInYmd,
       checkOutDate: checkOutYmd,
       weekdayRates,
+      holidayPeriods,
     });
 
     const voucherCodeTrimmed =

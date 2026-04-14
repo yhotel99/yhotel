@@ -307,6 +307,26 @@ const CheckoutContent = () => {
           const singlePayload = { ...draft.payload };
           if (appliedVoucher) singlePayload.voucher_code = appliedVoucher.code;
           else delete singlePayload.voucher_code;
+          if (paymentMethod === "bank_transfer") {
+            const intentDraft = { ...draft, payload: singlePayload };
+            const intentRes = await fetch("/api/payments/intents", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ draft: intentDraft }),
+            });
+            const intentData = await intentRes.json();
+            if (!intentRes.ok || !intentData?.intent_code) {
+              toast({
+                title: t.checkout.updatePaymentError,
+                description: intentData?.error || "Không thể khởi tạo thanh toán.",
+                variant: "destructive",
+              });
+              return;
+            }
+            clearBookingDraft();
+            router.push(`/checkout/payment-intent?code=${encodeURIComponent(intentData.intent_code)}`);
+            return;
+          }
           const response = await fetch("/api/bookings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -349,15 +369,8 @@ const CheckoutContent = () => {
             });
             return;
           }
-          clearBookingDraft();
-          if (paymentMethod === "bank_transfer") {
-            await fetch(`/api/bookings/${newBookingId}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ status: "pending", payment_method: PAYMENT_METHOD.BANK_TRANSFER }),
-            });
-            router.push(`/checkout/payment?booking_id=${encodeURIComponent(newBookingId)}`);
-          } else if (paymentMethod === "pay_at_hotel") {
+          if (paymentMethod === "pay_at_hotel") {
+            clearBookingDraft();
             await fetch(`/api/bookings/${newBookingId}`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
@@ -369,6 +382,26 @@ const CheckoutContent = () => {
           const multiPayload = { ...draft.payload };
           if (appliedVoucher) multiPayload.voucher_code = appliedVoucher.code;
           else delete multiPayload.voucher_code;
+          if (paymentMethod === "bank_transfer") {
+            const intentDraft = { ...draft, payload: multiPayload };
+            const intentRes = await fetch("/api/payments/intents", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ draft: intentDraft }),
+            });
+            const intentData = await intentRes.json();
+            if (!intentRes.ok || !intentData?.intent_code) {
+              toast({
+                title: t.checkout.updatePaymentError,
+                description: intentData?.error || "Không thể khởi tạo thanh toán.",
+                variant: "destructive",
+              });
+              return;
+            }
+            clearBookingDraft();
+            router.push(`/checkout/payment-intent?code=${encodeURIComponent(intentData.intent_code)}`);
+            return;
+          }
           const response = await fetch("/api/bookings/multi", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -405,15 +438,8 @@ const CheckoutContent = () => {
             });
             return;
           }
-          clearBookingDraft();
-          if (paymentMethod === "bank_transfer") {
-            await fetch(`/api/bookings/${newBookingId}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ status: "pending", payment_method: PAYMENT_METHOD.BANK_TRANSFER }),
-            });
-            router.push(`/checkout/payment?booking_id=${encodeURIComponent(newBookingId)}`);
-          } else if (paymentMethod === "pay_at_hotel") {
+          if (paymentMethod === "pay_at_hotel") {
+            clearBookingDraft();
             await fetch(`/api/bookings/${newBookingId}`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
@@ -537,10 +563,26 @@ const CheckoutContent = () => {
         ? appliedVoucher.final_amount
         : totalFromDraft;
     const nightsDraft = quoteNights || (draft.type === "multi" ? draft.payload.number_of_nights : 0);
+    const multiBaseFromDisplay =
+      !isSingle &&
+      nightsDraft > 0 &&
+      draft.display?.room_items &&
+      draft.display.room_items.length > 0
+        ? draft.display.room_items.reduce(
+            (sum, item) =>
+              sum +
+              (Number(item.price_per_night) || 0) *
+                nightsDraft *
+                (Number(item.quantity) || 1),
+            0
+          )
+        : null;
     const draftBaseTotal =
       isSingle && quotePricePerNight != null && quotePricePerNight > 0
         ? quotePricePerNight * nightsDraft
-        : totalFromDraft;
+        : multiBaseFromDisplay != null
+          ? multiBaseFromDisplay
+          : totalFromDraft;
     const weekendAdjustmentDraft = Math.max(0, Math.round(totalFromDraft - draftBaseTotal));
     const roomAmountBeforeTaxDraft = Math.max(0, payableTotal - weekendAdjustmentDraft);
 
@@ -703,13 +745,20 @@ const CheckoutContent = () => {
                             </div>
                           )}
                           {!isSingle && draft.display?.room_items && draft.display.room_items.length > 0 && (
-                            <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
-                              <p className="text-xs text-muted-foreground mb-2">{t.checkout.room}</p>
-                              <div className="space-y-2">
+                            <div className="rounded-xl border border-border/70 bg-background/90 shadow-sm p-3.5 space-y-2.5">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs text-muted-foreground">{t.checkout.room}</p>
+                                <span className="text-xs text-muted-foreground">
+                                  {draft.display.room_items.length} {t.common.rooms}
+                                </span>
+                              </div>
+                              <div className="space-y-2 border-t border-border/70 pt-2">
                                 {draft.display.room_items.map((item, idx) => (
-                                  <div key={idx} className="flex justify-between text-sm">
-                                    <span className="text-foreground">{item.room_name} × {item.quantity}</span>
-                                    <span className="font-medium">{formatPrice(item.amount)}đ</span>
+                                  <div key={idx} className="flex items-center justify-between text-sm">
+                                    <span className="text-foreground">
+                                      {item.room_name} × {item.quantity}
+                                    </span>
+                                    <span className="font-medium tabular-nums">{formatPrice(item.amount)}đ</span>
                                   </div>
                                 ))}
                               </div>

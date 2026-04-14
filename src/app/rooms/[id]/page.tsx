@@ -56,8 +56,8 @@ import { useQuery } from "@tanstack/react-query";
 import { setBookingDraft, type BookingDraftSingle } from "@/lib/booking-draft";
 import {
   calculateTotalWithWeekdayRates,
-  normalizeWeekdayRates,
 } from "@/lib/pricing";
+import { usePricingSettings } from "@/hooks/use-pricing-settings";
 
 interface RoomDetailPageProps {
   params: Promise<{ id: string }>;
@@ -314,39 +314,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     );
   }, [room?.price]);
 
-  const [weekdayRates, setWeekdayRates] = useState<
-    [number, number, number, number, number, number, number] | null
-  >(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchSettingsWeekdayRates() {
-      try {
-        const res = await fetch("/api/settings");
-        if (!res.ok) {
-          if (isMounted) setWeekdayRates(normalizeWeekdayRates(null));
-          return;
-        }
-        const data = await res.json();
-        if (isMounted) {
-          if (data && "pricing_weekday_rates" in data) {
-            setWeekdayRates(normalizeWeekdayRates(data.pricing_weekday_rates));
-          } else {
-            setWeekdayRates(normalizeWeekdayRates(null));
-          }
-        }
-      } catch (e) {
-        console.error("[RoomDetail] Failed to load pricing_weekday_rates:", e);
-        if (isMounted) setWeekdayRates(normalizeWeekdayRates(null));
-      }
-    }
-
-    fetchSettingsWeekdayRates();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const { data: pricingSettings } = usePricingSettings();
 
   const { totalPrice, baseNightsTotal } = useMemo(() => {
     const base = roomPrice * nights;
@@ -359,12 +327,6 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
       return {
         totalPrice: 0,
         baseNightsTotal: 0,
-      };
-    }
-    if (!weekdayRates) {
-      return {
-        totalPrice: base,
-        baseNightsTotal: base,
       };
     }
     const checkInDate = new Date(formData.checkIn);
@@ -383,13 +345,14 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
       basePrice: roomPrice,
       checkInDate: toYMD(checkInDate),
       checkOutDate: toYMD(checkOutDate),
-      weekdayRates,
+      weekdayRates: pricingSettings?.pricing_weekday_rates ?? [0, 0, 0, 0, 0, 0, 0],
+      holidayPeriods: pricingSettings?.pricing_holiday_periods ?? [],
     });
     return {
       totalPrice: total,
       baseNightsTotal: base,
     };
-  }, [roomPrice, nights, formData.checkIn, formData.checkOut, weekdayRates]);
+  }, [roomPrice, nights, formData.checkIn, formData.checkOut, pricingSettings]);
 
   const payableTotal = useMemo(
     () =>
