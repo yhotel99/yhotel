@@ -193,12 +193,6 @@ export const MultiRoomBookingSection = () => {
   }, [totalAmount, baseAmount]);
 
   const addRoom = async (room: any) => {
-    console.log('[addRoom] Attempting to add room:', {
-      room_id: room.id,
-      room_name: room.name,
-      category_code: room.id, // room.id is actually category_code
-    });
-    
     if (!formData.checkIn || !formData.checkOut) {
       toast({
         title: t.multiBooking.errorTitle,
@@ -216,7 +210,6 @@ export const MultiRoomBookingSection = () => {
       checkOutDate.setHours(12, 0, 0, 0);
 
       const apiUrl = `/api/rooms/available-by-category?category_code=${encodeURIComponent(room.id)}&check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}&quantity=10`;
-      console.log('[addRoom] Calling API:', apiUrl);
 
       const response = await fetch(apiUrl);
 
