@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { BANK_BIN_CODES } from "@/lib/utils";
-import Image from "next/image";
+import Image from "@/components/ui/safe-image";
 import { supabase } from "@/lib/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useLanguage } from "@/lib/i18n/LanguageContext";

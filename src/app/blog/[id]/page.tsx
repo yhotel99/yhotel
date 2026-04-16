@@ -1,9 +1,9 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect, useRef } from "react";
 import { Calendar, User, Clock, ArrowLeft, Share2 } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import Image from "@/components/ui/safe-image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Navigation from "@/components/Navigation";
@@ -18,14 +18,76 @@ interface BlogDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+const HTML_IMAGE_FALLBACK_SRC =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='800' viewBox='0 0 1200 800'%3E%3Crect width='1200' height='800' fill='%23f1f5f9'/%3E%3Cpath d='M400 520l120-140 100 120 140-170 160 190H280z' fill='%23cbd5e1'/%3E%3Ccircle cx='460' cy='280' r='52' fill='%23cbd5e1'/%3E%3C/svg%3E";
+
 // Component để render HTML content từ Tiptap
 const HTMLContent = ({ content, emptyMessage }: { content: string; emptyMessage: string }) => {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const isRemoteImageUrl = (src: string): boolean => /^https?:\/\//i.test(src);
+  const toWebpUrl = (url: string): string => url.replace(/\.(png|jpe?g)$/i, ".webp");
+
+  // Rewrite img src to webp before first paint to avoid flicker in StrictMode remounts
+  const preparedContent = content.replace(
+    /(<img[^>]*\ssrc=["'])(https?:\/\/[^"']+\.(?:png|jpe?g))(["'][^>]*>)/gi,
+    (_match, prefix, src, suffix) => `${prefix}${toWebpUrl(src)}${suffix}`
+  );
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const cleanupFns: Array<() => void> = [];
+    let disposed = false;
+    const images = Array.from(container.querySelectorAll("img"));
+
+    images.forEach((img) => {
+      const originalSrc = img.getAttribute("src") || "";
+      if (!originalSrc) return;
+
+      const webpSrc = isRemoteImageUrl(originalSrc) ? toWebpUrl(originalSrc) : originalSrc;
+      const shouldTryWebpFirst = webpSrc !== originalSrc;
+      const candidates = shouldTryWebpFirst
+        ? [webpSrc, originalSrc, HTML_IMAGE_FALLBACK_SRC]
+        : [originalSrc, HTML_IMAGE_FALLBACK_SRC];
+
+      const tryLoad = (candidate: string) =>
+        new Promise<boolean>((resolve) => {
+          const tester = new window.Image();
+          tester.onload = () => resolve(true);
+          tester.onerror = () => resolve(false);
+          tester.src = candidate;
+        });
+
+      (async () => {
+        for (const candidate of candidates) {
+          const ok = await tryLoad(candidate);
+          if (disposed) return;
+          if (ok) {
+            img.src = candidate;
+            return;
+          }
+        }
+
+        if (!disposed) {
+          img.src = HTML_IMAGE_FALLBACK_SRC;
+        }
+      })();
+    });
+
+    return () => {
+      disposed = true;
+      cleanupFns.forEach((cleanup) => cleanup());
+    };
+  }, [preparedContent]);
+
   if (!content || !content.trim()) {
     return <p className="text-muted-foreground text-sm sm:text-base md:text-lg">{emptyMessage}</p>;
   }
 
   return (
     <div
+      ref={containerRef}
       className="w-full text-sm sm:text-base md:text-lg text-muted-foreground leading-relaxed
         [&_h1]:text-xl [&_h1]:sm:text-2xl [&_h1]:md:text-3xl [&_h1]:lg:text-4xl [&_h1]:font-display [&_h1]:font-bold [&_h1]:text-foreground [&_h1]:mt-6 [&_h1]:mb-4
         [&_h2]:text-lg [&_h2]:sm:text-xl [&_h2]:md:text-2xl [&_h2]:font-display [&_h2]:font-bold [&_h2]:text-foreground [&_h2]:mt-6 [&_h2]:mb-3
@@ -41,7 +103,7 @@ const HTMLContent = ({ content, emptyMessage }: { content: string; emptyMessage:
         [&_pre]:bg-muted [&_pre]:p-4 [&_pre]:rounded-md [&_pre]:overflow-x-auto [&_pre]:my-4 [&_pre]:text-xs [&_pre]:sm:text-sm
         [&_a]:text-blue-600 [&_a]:underline hover:[&_a]:text-blue-800
         [&_img]:max-w-full [&_img]:h-auto [&_img]:rounded-md [&_img]:my-4"
-      dangerouslySetInnerHTML={{ __html: content }}
+      dangerouslySetInnerHTML={{ __html: preparedContent }}
     />
   );
 };

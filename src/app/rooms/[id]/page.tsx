@@ -2,7 +2,7 @@
 
 import { use, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import Image from "next/image";
+import Image from "@/components/ui/safe-image";
 import {
   Bed,
   Users,
@@ -225,30 +225,27 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     }
   }, [formData, id]);
 
-  // Sync main carousel and thumbnail carousel
+  // Keep gallery state in sync with main carousel only.
+  // Avoid 2-way select syncing (main <-> thumbnails), which can cause redundant
+  // select events and extra work during drag/scroll.
   useEffect(() => {
     if (!mainCarouselApi) return;
 
-    mainCarouselApi.on("select", () => {
+    const syncFromMainCarousel = () => {
       const selected = mainCarouselApi.selectedScrollSnap();
-      setCurrentImageIndex(selected);
-      // Sync thumbnail carousel
-      if (thumbnailCarouselApi) {
-        thumbnailCarouselApi.scrollTo(selected);
-      }
-    });
-  }, [mainCarouselApi, thumbnailCarouselApi]);
+      setCurrentImageIndex((prev) => (prev === selected ? prev : selected));
+      thumbnailCarouselApi?.scrollTo(selected);
+    };
 
-  useEffect(() => {
-    if (!thumbnailCarouselApi) return;
+    // Sync immediately when APIs become available.
+    syncFromMainCarousel();
+    mainCarouselApi.on("select", syncFromMainCarousel);
+    mainCarouselApi.on("reInit", syncFromMainCarousel);
 
-    thumbnailCarouselApi.on("select", () => {
-      const selected = thumbnailCarouselApi.selectedScrollSnap();
-      // Sync main carousel
-      if (mainCarouselApi) {
-        mainCarouselApi.scrollTo(selected);
-      }
-    });
+    return () => {
+      mainCarouselApi.off("select", syncFromMainCarousel);
+      mainCarouselApi.off("reInit", syncFromMainCarousel);
+    };
   }, [mainCarouselApi, thumbnailCarouselApi]);
 
   useEffect(() => {
@@ -858,10 +855,11 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                           alt={`${room.name} - ${language === "vi" ? "Hình" : "Image"} ${index + 1}`}
                           fill
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 1200px"
-                          className="object-cover select-none transition-transform duration-500 ease-out group-hover:scale-105"
+                          className="object-cover select-none transition-transform duration-300 ease-out md:group-hover:scale-[1.02]"
                           priority={index === 0}
-                          loading={index < 2 ? "eager" : "lazy"}
-                          quality={70}
+                          loading={index === 0 ? "eager" : "lazy"}
+                          quality={60}
+                          draggable={false}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
@@ -1754,7 +1752,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                   <button
                     key={index}
                     onClick={() => setLightboxImageIndex(index)}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
                       index === lightboxImageIndex
                         ? "border-white"
                         : "border-transparent hover:border-white/50 opacity-60 hover:opacity-100"

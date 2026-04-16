@@ -121,8 +121,8 @@ const RoomsSection = () => {
                     href={`/rooms/category/${encodeURIComponent(room.id)}`}
                     className="block h-full"
                   >
-                    <div className="border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg bg-card h-full">
-                      <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4">
+                    <div className="border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg bg-card h-full md:h-[279px]">
+                      <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4 h-full">
                         {/* Room Image */}
                         <div className="relative h-40 md:h-full rounded-lg overflow-hidden flex-shrink-0">
                           <img

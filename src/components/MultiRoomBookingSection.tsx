@@ -537,11 +537,11 @@ export const MultiRoomBookingSection = () => {
                             <div
                               key={room.id}
                               className={cn(
-                                "border rounded-lg overflow-hidden transition-all bg-card",
+                                "border rounded-lg overflow-hidden transition-all bg-card md:h-[279px]",
                                 isSelected ? "border-primary shadow-lg" : "border-border hover:border-primary/50 hover:shadow-lg"
                               )}
                             >
-                              <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4">
+                              <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4 h-full">
                                 {/* Room Image */}
                                 <div className="relative h-40 md:h-full rounded-lg overflow-hidden flex-shrink-0">
                                   <img

@@ -10,7 +10,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 import { BANK_BIN_CODES } from "@/lib/utils";
-import Image from "next/image";
+import Image from "@/components/ui/safe-image";
 
 type PaymentIntentData = {
   code: string;

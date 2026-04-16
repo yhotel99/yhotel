@@ -3,7 +3,7 @@
 import { use, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
-import Image from "next/image";
+import Image from "@/components/ui/safe-image";
 
 interface CategoryPageProps {
   params: Promise<{ code: string }>;
