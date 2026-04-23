@@ -42,7 +42,7 @@ async function handleIpn(request: Request) {
   }
 
   const env =
-    process.env.NODE_ENV === "production" ? "production" : "sandbox";
+    process.env.ONEPAY_ENV === "production" ? "production" : "sandbox";
   const creds = getOnePayCredentials(env);
 
   if (!verifySecureHash(params, creds.hashCode)) {
@@ -55,7 +55,7 @@ async function handleIpn(request: Request) {
   const bookingIdFromRef = merchTxnRef.startsWith("YH_")
     ? merchTxnRef.slice(3)
     : merchTxnRef;
-  let resolvedBookingId = bookingIdFromRef;
+  const resolvedBookingId = bookingIdFromRef;
 
   if (!resolvedBookingId) {
     console.error("[OnePay IPN] Cannot resolve booking for:", merchTxnRef);

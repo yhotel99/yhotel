@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     }
 
     const env =
-      process.env.NODE_ENV === "production" ? "production" : "sandbox";
+      process.env.ONEPAY_ENV === "production" ? "production" : "sandbox";
     const creds = getOnePayCredentials(env);
 
     if (!verifySecureHash(params, creds.hashCode)) {

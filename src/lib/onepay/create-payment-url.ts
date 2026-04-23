@@ -3,7 +3,11 @@
  * Based on official sample - CreateInvoice.js
  */
 
-import { ONEPAY_CONFIG, getOnePayCredentials } from "./config";
+import {
+  ONEPAY_CONFIG,
+  getOnePayCredentials,
+  resolveOnePayBaseUrl,
+} from "./config";
 import { sortParams, generateStringToHash, genSecureHash } from "./utils";
 
 export interface CreatePaymentParams {
@@ -65,7 +69,7 @@ export function createPaymentUrl(params: CreatePaymentParams): string {
   const secureHash = genSecureHash(stringToHash, creds.hashCode);
   baseParams.vpc_SecureHash = secureHash;
 
-  const baseUrl = ONEPAY_CONFIG.baseUrl + ONEPAY_CONFIG.paygatePath;
+  const baseUrl = resolveOnePayBaseUrl(env) + ONEPAY_CONFIG.paygatePath;
   const search = new URLSearchParams(baseParams).toString();
   return `${baseUrl}?${search}`;
 }

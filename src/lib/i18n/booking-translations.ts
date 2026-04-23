@@ -106,7 +106,7 @@ export const bookingTranslations = {
       payAtHotelDescription: "Thanh toán bằng tiền mặt hoặc thẻ khi nhận phòng",
       payAtHotelNoteTitle: "Lưu ý:",
       payAtHotelNote: "Quý khách vui lòng thanh toán toàn bộ chi phí khi làm thủ tục nhận phòng.",
-      onepay: "Thanh toán OnePay",
+      onepay: "Thanh toán Visa",
       onepayDescription: "Thanh toán trực tuyến qua cổng OnePay",
       onepayNote: "Thanh toán nhanh chóng và an toàn bằng thẻ ATM nội địa, Visa, Mastercard qua cổng thanh toán OnePay.",
       bookingInfo: "Thông tin đặt phòng",

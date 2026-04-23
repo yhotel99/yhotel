@@ -3,7 +3,12 @@
  * Use when ReturnURL/IPN not received after 15-30 mins
  */
 
-import { ONEPAY_CONFIG, getOnePayCredentials } from "./config";
+import {
+  ONEPAY_CONFIG,
+  getOnePayCredentials,
+  getOnePayEnv,
+  resolveOnePayBaseUrl,
+} from "./config";
 import { sortParams, generateStringToHash, genSecureHash } from "./utils";
 
 export interface QueryDrParams {
@@ -35,7 +40,17 @@ export interface QueryDrResult {
  * Note: Sandbox QueryDR may use different User/Password - check with OnePay docs
  */
 export async function queryDr(params: QueryDrParams): Promise<QueryDrResult> {
-  const { merchTxnRef, user = "op01", password = "op123456", env = "sandbox" } = params;
+  const env = params.env ?? getOnePayEnv();
+  const { merchTxnRef } = params;
+  const user = params.user ?? process.env.ONEPAY_QUERY_USER;
+  const password = params.password ?? process.env.ONEPAY_QUERY_PASSWORD;
+
+  if (!user || !password) {
+    throw new Error(
+      "Missing QueryDR credentials. Set ONEPAY_QUERY_USER and ONEPAY_QUERY_PASSWORD or pass user/password explicitly."
+    );
+  }
+
   const creds = getOnePayCredentials(env);
 
   const baseParams: Record<string, string> = {
@@ -53,7 +68,7 @@ export async function queryDr(params: QueryDrParams): Promise<QueryDrResult> {
   const secureHash = genSecureHash(stringToHash, creds.hashCode);
   baseParams.vpc_SecureHash = secureHash;
 
-  const url = ONEPAY_CONFIG.baseUrl + ONEPAY_CONFIG.queryDrPath;
+  const url = resolveOnePayBaseUrl(env) + ONEPAY_CONFIG.queryDrPath;
   const body = new URLSearchParams(baseParams).toString();
 
   const res = await fetch(url, {

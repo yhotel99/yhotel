@@ -6,6 +6,8 @@
 export {
   ONEPAY_CONFIG,
   getOnePayCredentials,
+  getOnePayEnv,
+  resolveOnePayBaseUrl,
   type OnePayEnv,
 } from "./config";
 export { sortParams, generateStringToHash, genSecureHash } from "./utils";
