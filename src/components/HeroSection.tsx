@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Search, Calendar as CalendarIcon, Users } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
+import Image from "@/components/ui/safe-image";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { vi, enUS, zhCN } from "date-fns/locale";
 

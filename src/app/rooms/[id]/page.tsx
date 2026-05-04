@@ -2,7 +2,7 @@
 
 import { use, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
-import Image from "next/image";
+import Image from "@/components/ui/safe-image";
 import {
   Bed,
   Users,
@@ -56,9 +56,8 @@ import { useQuery } from "@tanstack/react-query";
 import { setBookingDraft, type BookingDraftSingle } from "@/lib/booking-draft";
 import {
   calculateTotalWithWeekdayRates,
-  normalizeWeekdayRates,
-  type DailyPricingBreakdownItem,
 } from "@/lib/pricing";
+import { usePricingSettings } from "@/hooks/use-pricing-settings";
 
 interface RoomDetailPageProps {
   params: Promise<{ id: string }>;
@@ -107,6 +106,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxImageIndex, setLightboxImageIndex] = useState(0);
+  const [showAllGalleryImages, setShowAllGalleryImages] = useState(false);
   const [mainCarouselApi, setMainCarouselApi] = useState<CarouselApi>();
   const [thumbnailCarouselApi, setThumbnailCarouselApi] = useState<CarouselApi>();
   const [isTermsDialogOpen, setIsTermsDialogOpen] = useState(false);
@@ -163,6 +163,9 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   });
 
   const images = room ? (room.galleryImages || [room.image]) : [];
+  const INITIAL_GALLERY_IMAGE_COUNT = 8;
+  const galleryImages = showAllGalleryImages ? images : images.slice(0, INITIAL_GALLERY_IMAGE_COUNT);
+  const hasMoreGalleryImages = images.length > INITIAL_GALLERY_IMAGE_COUNT && !showAllGalleryImages;
 
   // Persist booking form state per room so users don't lose data when navigating
   useEffect(() => {
@@ -222,31 +225,36 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     }
   }, [formData, id]);
 
-  // Sync main carousel and thumbnail carousel
+  // Keep gallery state in sync with main carousel only.
+  // Avoid 2-way select syncing (main <-> thumbnails), which can cause redundant
+  // select events and extra work during drag/scroll.
   useEffect(() => {
     if (!mainCarouselApi) return;
 
-    mainCarouselApi.on("select", () => {
+    const syncFromMainCarousel = () => {
       const selected = mainCarouselApi.selectedScrollSnap();
-      setCurrentImageIndex(selected);
-      // Sync thumbnail carousel
-      if (thumbnailCarouselApi) {
-        thumbnailCarouselApi.scrollTo(selected);
-      }
-    });
+      setCurrentImageIndex((prev) => (prev === selected ? prev : selected));
+      thumbnailCarouselApi?.scrollTo(selected);
+    };
+
+    // Sync immediately when APIs become available.
+    syncFromMainCarousel();
+    mainCarouselApi.on("select", syncFromMainCarousel);
+    mainCarouselApi.on("reInit", syncFromMainCarousel);
+
+    return () => {
+      mainCarouselApi.off("select", syncFromMainCarousel);
+      mainCarouselApi.off("reInit", syncFromMainCarousel);
+    };
   }, [mainCarouselApi, thumbnailCarouselApi]);
 
   useEffect(() => {
-    if (!thumbnailCarouselApi) return;
-
-    thumbnailCarouselApi.on("select", () => {
-      const selected = thumbnailCarouselApi.selectedScrollSnap();
-      // Sync main carousel
-      if (mainCarouselApi) {
-        mainCarouselApi.scrollTo(selected);
-      }
-    });
-  }, [mainCarouselApi, thumbnailCarouselApi]);
+    if (galleryImages.length === 0) return;
+    if (currentImageIndex >= galleryImages.length) {
+      setCurrentImageIndex(0);
+      mainCarouselApi?.scrollTo(0);
+    }
+  }, [currentImageIndex, galleryImages.length, mainCarouselApi]);
 
   const openLightbox = useCallback((index: number) => {
     setLightboxImageIndex(index);
@@ -303,41 +311,9 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
     );
   }, [room?.price]);
 
-  const [weekdayRates, setWeekdayRates] = useState<
-    [number, number, number, number, number, number, number] | null
-  >(null);
+  const { data: pricingSettings } = usePricingSettings();
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function fetchSettingsWeekdayRates() {
-      try {
-        const res = await fetch("/api/settings");
-        if (!res.ok) {
-          if (isMounted) setWeekdayRates(normalizeWeekdayRates(null));
-          return;
-        }
-        const data = await res.json();
-        if (isMounted) {
-          if (data && "pricing_weekday_rates" in data) {
-            setWeekdayRates(normalizeWeekdayRates(data.pricing_weekday_rates));
-          } else {
-            setWeekdayRates(normalizeWeekdayRates(null));
-          }
-        }
-      } catch (e) {
-        console.error("[RoomDetail] Failed to load pricing_weekday_rates:", e);
-        if (isMounted) setWeekdayRates(normalizeWeekdayRates(null));
-      }
-    }
-
-    fetchSettingsWeekdayRates();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const { subtotal, totalPrice, nightlyBreakdown, baseNightsTotal } = useMemo(() => {
+  const { totalPrice, baseNightsTotal } = useMemo(() => {
     const base = roomPrice * nights;
     if (
       roomPrice <= 0 ||
@@ -346,18 +322,8 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
       nights <= 0
     ) {
       return {
-        subtotal: 0,
         totalPrice: 0,
-        nightlyBreakdown: [] as DailyPricingBreakdownItem[],
         baseNightsTotal: 0,
-      };
-    }
-    if (!weekdayRates) {
-      return {
-        subtotal: base,
-        totalPrice: base,
-        nightlyBreakdown: [] as DailyPricingBreakdownItem[],
-        baseNightsTotal: base,
       };
     }
     const checkInDate = new Date(formData.checkIn);
@@ -372,24 +338,18 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
       return `${yyyy}-${mm}-${dd}`;
     };
 
-    const { total, breakdown } = calculateTotalWithWeekdayRates({
+    const { total } = calculateTotalWithWeekdayRates({
       basePrice: roomPrice,
       checkInDate: toYMD(checkInDate),
       checkOutDate: toYMD(checkOutDate),
-      weekdayRates,
+      weekdayRates: pricingSettings?.pricing_weekday_rates ?? [0, 0, 0, 0, 0, 0, 0],
+      holidayPeriods: pricingSettings?.pricing_holiday_periods ?? [],
     });
     return {
-      subtotal: total,
       totalPrice: total,
-      nightlyBreakdown: breakdown,
       baseNightsTotal: base,
     };
-  }, [roomPrice, nights, formData.checkIn, formData.checkOut, weekdayRates]);
-
-  const surchargeAmount = useMemo(() => {
-    if (nightlyBreakdown.length === 0) return 0;
-    return Math.max(0, Math.round(subtotal - baseNightsTotal));
-  }, [nightlyBreakdown.length, subtotal, baseNightsTotal]);
+  }, [roomPrice, nights, formData.checkIn, formData.checkOut, pricingSettings]);
 
   const payableTotal = useMemo(
     () =>
@@ -743,8 +703,28 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   };
 
   const formatPrice = (price: number) => {
-    return price.toLocaleString("vi-VN");
+    const safePrice = Number.isFinite(price) ? Math.round(price) : 0;
+    if (language === "vi") {
+      return `${safePrice.toLocaleString("vi-VN")}₫`;
+    }
+    if (language === "zh") {
+      return new Intl.NumberFormat("zh-CN", {
+        style: "currency",
+        currency: "VND",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(safePrice);
+    }
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "VND",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(safePrice);
   };
+
+  const weekendAdjustment = Math.max(0, Math.round(totalPrice - baseNightsTotal));
+  const roomAmountBeforeTax = Math.max(0, payableTotal - weekendAdjustment);
 
   const categoryLabels: Record<string, string> = {
     standard: "Standard",
@@ -864,7 +844,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                 className="w-full"
               >
                 <CarouselContent>
-                  {images.map((image, index) => (
+                  {galleryImages.map((image, index) => (
                     <CarouselItem key={index}>
                       <div 
                         className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] rounded-xl overflow-hidden cursor-pointer group"
@@ -875,9 +855,11 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                           alt={`${room.name} - ${language === "vi" ? "Hình" : "Image"} ${index + 1}`}
                           fill
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 1200px"
-                          className="object-cover select-none transition-transform duration-500 ease-out group-hover:scale-105"
+                          className="object-cover select-none transition-transform duration-300 ease-out md:group-hover:scale-[1.02]"
                           priority={index === 0}
-                          loading={index < 2 ? "eager" : "lazy"}
+                          loading={index === 0 ? "eager" : "lazy"}
+                          quality={60}
+                          draggable={false}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
@@ -892,9 +874,9 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                 </CarouselContent>
 
                 {/* Image Indicators */}
-                {images.length > 1 && (
+                {galleryImages.length > 1 && (
                   <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10 pointer-events-none">
-                    {images.map((_, index) => (
+                    {galleryImages.map((_, index) => (
                       <button
                         key={index}
                         onClick={() => mainCarouselApi?.scrollTo(index)}
@@ -911,7 +893,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
               </Carousel>
 
               {/* Thumbnail Gallery */}
-              {images.length > 1 && (
+              {galleryImages.length > 1 && (
                 <div className="mt-3 md:mt-4">
                   <Carousel
                     setApi={setThumbnailCarouselApi}
@@ -923,7 +905,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                     className="w-full"
                   >
                     <CarouselContent className="-ml-2 md:-ml-4">
-                      {images.map((image, index) => (
+                      {galleryImages.map((image, index) => (
                         <CarouselItem key={index} className="pl-2 md:pl-4 basis-auto">
                           <button
                             onClick={() => {
@@ -935,9 +917,13 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                 : "border-transparent hover:border-primary/50"
                             }`}
                           >
-                            <img
+                            <Image
                               src={image}
                               alt={`Thumbnail ${index + 1}`}
+                              fill
+                              sizes="112px"
+                              quality={55}
+                              loading="lazy"
                               className="w-full h-full object-cover"
                               draggable={false}
                             />
@@ -946,6 +932,21 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                       ))}
                     </CarouselContent>
                   </Carousel>
+                </div>
+              )}
+              {hasMoreGalleryImages && (
+                <div className="mt-4 text-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAllGalleryImages(true)}
+                    className="backdrop-blur-sm"
+                  >
+                    {language === "vi"
+                      ? `Xem thêm ${images.length - INITIAL_GALLERY_IMAGE_COUNT} ảnh`
+                      : `Show ${images.length - INITIAL_GALLERY_IMAGE_COUNT} more photos`}
+                  </Button>
                 </div>
               )}
             </motion.div>
@@ -1162,80 +1163,41 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                 <span className="text-muted-foreground">{t.lookup.nights}:</span>
                                 <span className="font-medium">{nights} {t.lookup.nightsUnit}</span>
                               </div>
-
-                              {nightlyBreakdown.length > 0 && (
-                                <>
-                                  <div>
-                                    <p className="text-xs font-semibold text-foreground mb-2">
-                                      {t.roomDetail.pricingBreakdownTitle}
-                                    </p>
-                                    <ul className="space-y-1.5 rounded-lg border border-border/70 bg-background/80 p-2.5">
-                                      {nightlyBreakdown.map((row) => {
-                                        const d = new Date(`${row.date}T12:00:00`);
-                                        const label = format(d, "EEEE, dd/MM/yyyy", {
-                                          locale: dateLocale,
-                                        });
-                                        return (
-                                          <li
-                                            key={row.date}
-                                            className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5 text-[11px] md:text-xs"
-                                          >
-                                            <span className="text-muted-foreground min-w-0 flex-1">
-                                              {label}
-                                              {row.percent > 0 ? (
-                                                <span className="ml-1 text-amber-700 dark:text-amber-400 font-medium">
-                                                  (
-                                                  {t.roomDetail.perNightSurcharge.replace(
-                                                    "{percent}",
-                                                    String(row.percent)
-                                                  )}
-                                                  )
-                                                </span>
-                                              ) : (
-                                                <span className="ml-1 text-muted-foreground/80">
-                                                  ({t.roomDetail.perNightBase})
-                                                </span>
-                                              )}
-                                            </span>
-                                            <span className="font-semibold tabular-nums shrink-0">
-                                              {formatPrice(Math.round(row.price))}₫
-                                            </span>
-                                          </li>
-                                        );
-                                      })}
-                                    </ul>
-                                  </div>
-                                  <div className="flex justify-between items-center text-xs md:text-sm">
-                                    <span className="text-muted-foreground">
-                                      {t.roomDetail.baseTotalNights
-                                        .replace("{nights}", String(nights))
-                                        .replace("{price}", formatPrice(roomPrice))}
-                                    </span>
-                                    <span className="font-medium tabular-nums">
-                                      {formatPrice(baseNightsTotal)}₫
-                                    </span>
-                                  </div>
-                                  {surchargeAmount > 0 && (
-                                    <div className="flex justify-between items-center text-xs md:text-sm text-amber-800 dark:text-amber-300">
-                                      <span>{t.roomDetail.surchargeLine}</span>
-                                      <span className="font-semibold tabular-nums">
-                                        +{formatPrice(surchargeAmount)}₫
-                                      </span>
-                                    </div>
-                                  )}
-                                </>
-                              )}
-
-                              {nightlyBreakdown.length === 0 && (
+                              <div className="rounded-xl border border-border/70 bg-background/90 shadow-sm p-3.5 space-y-2.5">
                                 <div className="flex justify-between items-center text-xs md:text-sm">
                                   <span className="text-muted-foreground">
-                                    {t.lookup.roomPrice} ({nights} {t.lookup.nightsUnit}):
+                                    {language === "vi"
+                                      ? "Phòng (giá gốc/tạm tính)"
+                                      : language === "zh"
+                                        ? "房费（基础价/暂估）"
+                                        : "Room (base/estimated)"}
                                   </span>
                                   <span className="font-medium tabular-nums">
-                                    {formatPrice(subtotal)}₫
+                                    {formatPrice(roomAmountBeforeTax)}
                                   </span>
                                 </div>
-                              )}
+                                <div className="flex justify-between items-center text-xs md:text-sm">
+                                  <span className="text-muted-foreground">{t.checkout.tax}</span>
+                                  <span className="font-medium tabular-nums">
+                                    {formatPrice(weekendAdjustment)}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center pt-2 border-t border-border/70">
+                                  <span className="text-sm md:text-base font-semibold">
+                                    {t.checkout.total}
+                                  </span>
+                                  <span className="text-lg md:text-xl font-bold text-primary tabular-nums">
+                                    {formatPrice(payableTotal)}
+                                  </span>
+                                </div>
+                                <p className="text-[11px] md:text-xs text-muted-foreground">
+                                  {language === "vi"
+                                    ? "Giá đã bao gồm thuế và các phí liên quan"
+                                    : language === "zh"
+                                      ? "价格已包含税费及相关费用"
+                                      : "Price includes taxes and applicable fees"}
+                                </p>
+                              </div>
 
                               <div className="rounded-lg border border-border/60 bg-muted/20 p-2.5 space-y-2">
                                 <div className="flex items-center gap-2 text-xs md:text-sm font-medium text-foreground">
@@ -1295,7 +1257,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                       {t.checkout.subtotal}
                                     </span>
                                     <span className="font-medium tabular-nums">
-                                      {formatPrice(totalPrice)}₫
+                                      {formatPrice(totalPrice)}
                                     </span>
                                   </div>
                                   <div className="flex justify-between items-center text-xs md:text-sm text-emerald-700 dark:text-emerald-400">
@@ -1303,20 +1265,11 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                       {t.checkout.discount} ({appliedVoucher.code})
                                     </span>
                                     <span className="font-medium tabular-nums">
-                                      −{formatPrice(appliedVoucher.discount)}₫
+                                      -{formatPrice(appliedVoucher.discount)}
                                     </span>
                                   </div>
                                 </>
                               )}
-
-                              <div className="flex justify-between items-center pt-2 border-t">
-                                <span className="text-sm md:text-base font-semibold">
-                                  {t.lookup.total}:
-                                </span>
-                                <span className="text-base md:text-lg font-bold text-primary tabular-nums">
-                                  {formatPrice(payableTotal)}₫
-                                </span>
-                              </div>
                             </div>
                           )}
 
@@ -1603,9 +1556,13 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                             <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4">
                               {/* Category Image */}
                               <div className="relative h-40 md:h-full rounded-lg overflow-hidden flex-shrink-0">
-                                <img
+                                <Image
                                   src={category.image}
                                   alt={category.name}
+                                  fill
+                                  sizes="(max-width: 768px) 100vw, 200px"
+                                  quality={65}
+                                  loading="lazy"
                                   className="w-full h-full object-cover"
                                 />
                               </div>
@@ -1795,15 +1752,19 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                   <button
                     key={index}
                     onClick={() => setLightboxImageIndex(index)}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                    className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
                       index === lightboxImageIndex
                         ? "border-white"
                         : "border-transparent hover:border-white/50 opacity-60 hover:opacity-100"
                     }`}
                   >
-                    <img
+                    <Image
                       src={image}
                       alt={`Thumbnail ${index + 1}`}
+                      fill
+                      sizes="64px"
+                      quality={45}
+                      loading="lazy"
                       className="w-full h-full object-cover"
                       draggable={false}
                     />

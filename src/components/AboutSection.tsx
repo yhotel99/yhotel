@@ -2,7 +2,7 @@
 
 import { Award, Users, Globe, Heart } from "lucide-react";
 import { memo } from "react";
-import Image from "next/image";
+import Image from "@/components/ui/safe-image";
 import { CardContent } from "@/components/ui/card";
 import { FloatingCard } from "@/components/ui/floating-card";
 import { GradientBorder } from "@/components/ui/gradient-border";

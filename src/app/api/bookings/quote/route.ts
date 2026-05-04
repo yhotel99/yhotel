@@ -3,7 +3,9 @@ import { supabase } from '@/lib/supabase/server';
 import type { BookingDraft } from '@/lib/booking-draft';
 import {
   calculateTotalWithWeekdayRates,
+  normalizeHolidayPeriods,
   normalizeWeekdayRates,
+  type PricingHolidayPeriod,
   type WeekdayRates,
 } from '@/lib/pricing';
 
@@ -46,18 +48,22 @@ async function quoteSingle(draft: Extract<BookingDraft, { type: 'single' }>) {
   // Weekday-based pricing using settings.pricing_weekday_rates (always from DB)
   // If không lấy được từ DB, coi như 0% cho tất cả ngày
   let weekdayRates: WeekdayRates = [0, 0, 0, 0, 0, 0, 0];
+  let holidayPeriods: PricingHolidayPeriod[] = [];
   try {
     const { data: settings } = await supabase
       .from('settings')
-      .select('pricing_weekday_rates')
+      .select('pricing_weekday_rates,pricing_holiday_periods')
       .limit(1)
       .maybeSingle();
 
     if (settings && 'pricing_weekday_rates' in settings && (settings as any).pricing_weekday_rates) {
       weekdayRates = normalizeWeekdayRates((settings as any).pricing_weekday_rates);
     }
+    if (settings && 'pricing_holiday_periods' in settings) {
+      holidayPeriods = normalizeHolidayPeriods((settings as any).pricing_holiday_periods ?? []);
+    }
   } catch (e) {
-    console.error('[quote] failed to load pricing_weekday_rates from settings, using 0% rates', e);
+    console.error('[quote] failed to load pricing settings, using fallback rates', e);
   }
 
   const checkInDate = draft.payload.check_in?.slice(0, 10) ?? "";
@@ -68,6 +74,7 @@ async function quoteSingle(draft: Extract<BookingDraft, { type: 'single' }>) {
     checkInDate,
     checkOutDate,
     weekdayRates,
+    holidayPeriods,
   });
 
   return NextResponse.json({

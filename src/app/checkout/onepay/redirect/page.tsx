@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import Image from "next/image";
+import Image from "@/components/ui/safe-image";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 function RedirectContent() {

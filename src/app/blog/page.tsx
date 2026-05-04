@@ -13,13 +13,19 @@ import Footer from "@/components/Footer";
 import { useBlogs } from "@/hooks/use-blogs";
 import { format } from "date-fns";
 import { vi, enUS, zhCN } from "date-fns/locale";
-import Image from "next/image";
+import Image from "@/components/ui/safe-image";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+
+const toWebpUrl = (url: string): string => {
+  if (!url || url.startsWith("/")) return url;
+  return url.replace(/\.(png|jpe?g)$/i, ".webp");
+};
 
 const BlogListingPage = () => {
   const { t, language } = useLanguage();
   const [searchQuery] = useState("");
   const [selectedCategory] = useState("all");
+  const [imageOverrides, setImageOverrides] = useState<Record<string, string>>({});
   const isScrolled = useScrollThreshold(100);
 
   const { blogs, isLoading } = useBlogs({
@@ -59,6 +65,25 @@ const BlogListingPage = () => {
       return Math.abs(hash % 4000) + 1000;
     };
   }, []);
+
+  const getImageSrc = (id: string, image?: string | null) => {
+    return imageOverrides[id] || image || "/placeholder.svg";
+  };
+
+  const handleImageError = (post: { id: string; slug: string; image: string | null }, bucket: "featured" | "regular" | "side") => {
+    const currentSrc = getImageSrc(post.id, post.image);
+    const webpSrc = post.image ? toWebpUrl(post.image) : "/placeholder.svg";
+
+    if (post.image && currentSrc !== webpSrc) {
+      setImageOverrides((prev) => ({ ...prev, [post.id]: webpSrc }));
+      return;
+    }
+
+    if (currentSrc !== "/placeholder.svg") {
+      setImageOverrides((prev) => ({ ...prev, [post.id]: "/placeholder.svg" }));
+      return;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f5f5f5] flex flex-col">
@@ -108,9 +133,13 @@ const BlogListingPage = () => {
                       <div className="relative rounded-xl overflow-hidden bg-[#1a1a1a] cursor-pointer group shadow-lg">
                         <div className="relative h-[400px] md:h-[500px]">
                           <Image
-                            src={featuredPost.image || "/placeholder.svg"}
+                            src={getImageSrc(featuredPost.id, featuredPost.image)}
                             alt={featuredPost.title}
                             fill
+                            unoptimized
+                            onError={() => {
+                              handleImageError(featuredPost, "featured");
+                            }}
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
@@ -177,9 +206,13 @@ const BlogListingPage = () => {
                           {/* Thumbnail */}
                           <div className="relative w-28 h-28 md:w-36 md:h-36 flex-shrink-0 rounded-lg overflow-hidden">
                             <Image
-                              src={post.image || "/placeholder.svg"}
+                              src={getImageSrc(post.id, post.image)}
                               alt={post.title}
                               fill
+                              unoptimized
+                              onError={() => {
+                                handleImageError(post, "regular");
+                              }}
                               className="object-cover group-hover:scale-110 transition-transform duration-300"
                             />
                           </div>
@@ -231,9 +264,13 @@ const BlogListingPage = () => {
                         <div className="relative rounded-xl overflow-hidden bg-[#1a1a1a] cursor-pointer group shadow-lg">
                           <div className="relative h-[200px]">
                             <Image
-                              src={post.image || "/placeholder.svg"}
+                              src={getImageSrc(post.id, post.image)}
                               alt={post.title}
                               fill
+                              unoptimized
+                              onError={() => {
+                                handleImageError(post, "side");
+                              }}
                               className="object-cover group-hover:scale-105 transition-transform duration-500"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>

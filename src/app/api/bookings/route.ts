@@ -4,7 +4,9 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { PAYMENT_METHOD } from '@/lib/constants';
 import {
   calculateTotalWithWeekdayRates,
+  normalizeHolidayPeriods,
   normalizeWeekdayRates,
+  type PricingHolidayPeriod,
   type WeekdayRates,
 } from '@/lib/pricing';
 
@@ -312,7 +314,6 @@ async function createBookingFallback(
 
   // Ensure we return a string
   const bookingIdString = String(booking.id).trim();
-  console.log('[API] Fallback created booking ID:', bookingIdString);
   return bookingIdString;
 }
 
@@ -343,7 +344,7 @@ async function findAvailableRoom(
 
       // Check if room is available or clean (ready for booking)
       if (room.status !== 'available' && room.status !== 'clean') {
-        console.log(`Room ${roomId} status is ${room.status}, not available for booking`);
+        console.warn(`Room ${roomId} status is ${room.status}, not available for booking`);
         // Still allow booking, admin can handle status
       }
 
@@ -366,7 +367,7 @@ async function findAvailableRoom(
         });
 
         if (hasConflict) {
-          console.log(`Room ${roomId} has booking conflicts`);
+          console.warn(`Room ${roomId} has booking conflicts`);
           // Still return the room, admin can handle conflicts
         }
       }
@@ -395,7 +396,7 @@ async function findAvailableRoom(
     }
 
     if (!rooms || rooms.length === 0) {
-      console.log('No rooms found matching criteria');
+      console.warn('No rooms found matching criteria');
       return null;
     }
 
@@ -429,7 +430,7 @@ async function findAvailableRoom(
 
     // If all rooms have conflicts but we have category/type, still allow booking (admin handles conflicts)
     if ((categoryCode || roomType) && rooms.length > 0) {
-      console.log('All rooms have conflicts, but allowing booking anyway');
+      console.warn('All rooms have conflicts, but allowing booking anyway');
       return { id: rooms[0].id, price_per_night: rooms[0].price_per_night };
     }
 
@@ -536,10 +537,11 @@ export async function POST(request: Request) {
 
     // Total aligned with /api/bookings/quote (weekday rates from settings)
     let weekdayRates: WeekdayRates = [0, 0, 0, 0, 0, 0, 0];
+    let holidayPeriods: PricingHolidayPeriod[] = [];
     try {
       const { data: settings } = await supabase
         .from('settings')
-        .select('pricing_weekday_rates')
+        .select('pricing_weekday_rates,pricing_holiday_periods')
         .limit(1)
         .maybeSingle();
       if (
@@ -551,8 +553,13 @@ export async function POST(request: Request) {
           (settings as { pricing_weekday_rates: unknown }).pricing_weekday_rates
         );
       }
+      if (settings && 'pricing_holiday_periods' in settings) {
+        holidayPeriods = normalizeHolidayPeriods(
+          (settings as { pricing_holiday_periods?: unknown }).pricing_holiday_periods ?? []
+        );
+      }
     } catch (e) {
-      console.error('[bookings POST] pricing_weekday_rates', e);
+      console.error('[bookings POST] pricing settings', e);
     }
     const checkInYmd = String(check_in).slice(0, 10);
     const checkOutYmd = String(check_out).slice(0, 10);
@@ -561,6 +568,7 @@ export async function POST(request: Request) {
       checkInDate: checkInYmd,
       checkOutDate: checkOutYmd,
       weekdayRates,
+      holidayPeriods,
     });
 
     const voucherCodeTrimmed =
@@ -592,13 +600,6 @@ export async function POST(request: Request) {
     
       // If RPC function exists and succeeds, use it
       if (!rpcError && rpcBookingId) {
-        // Log what we received from RPC
-        console.log('[API] RPC response:', {
-          rpcBookingId,
-          rpcBookingId_type: typeof rpcBookingId,
-          rpcBookingId_stringified: JSON.stringify(rpcBookingId),
-        });
-        
         // New: handle standard { ok, booking_id, error_code } shape from RPC
         if (typeof rpcBookingId === 'object' && rpcBookingId !== null && 'ok' in rpcBookingId) {
           const rpcResult = rpcBookingId as { ok: boolean; booking_id?: string; error_code?: string };
@@ -654,7 +655,6 @@ export async function POST(request: Request) {
             throw new Error('Không thể lấy booking ID từ RPC function');
           }
           
-          console.log('[API] Extracted booking ID from RPC (ok=true):', bookingId);
         } else {
           // Legacy behavior: Extract UUID - handle different response formats
           let extractedId: string | null = null;
@@ -685,7 +685,6 @@ export async function POST(request: Request) {
           
           if (extractedId && extractedId.length > 0 && extractedId !== '[object Object]') {
             bookingId = extractedId;
-            console.log('[API] Extracted booking ID from RPC:', bookingId);
           } else {
             console.error('[API] Failed to extract booking ID from RPC response:', rpcBookingId);
             throw new Error('Không thể lấy booking ID từ RPC function');
@@ -693,7 +692,7 @@ export async function POST(request: Request) {
         }
       } else {
         // If RPC function doesn't exist or errors, use fallback
-        console.log('[API] RPC function not available or error, using fallback logic. RPC error:', rpcError);
+        console.warn('[API] RPC function not available or error, using fallback logic. RPC error:', rpcError);
         bookingId = await createBookingFallback(
           supabase,
           customerId,
@@ -723,13 +722,6 @@ export async function POST(request: Request) {
     }
 
     // Ensure bookingId is always a valid string UUID
-    console.log('[API] Final bookingId before validation:', {
-      bookingId,
-      type: typeof bookingId,
-      isString: typeof bookingId === 'string',
-      length: typeof bookingId === 'string' ? bookingId.length : 'N/A',
-    });
-    
     if (!bookingId) {
       console.error('[API] bookingId is null/undefined');
       return NextResponse.json(
@@ -784,7 +776,6 @@ export async function POST(request: Request) {
       );
     }
     
-    console.log('[API] Validated bookingId:', bookingId);
 
     // Fetch booking details to return (same structure as dashboard)
     const { data: booking, error: fetchError } = await supabase
@@ -825,14 +816,6 @@ export async function POST(request: Request) {
         message: 'Đặt phòng thành công!',
       };
       
-      console.log('[API] Booking created but fetch failed. Sending response:', {
-        booking_id: responseData.booking_id,
-        booking_id_type: typeof responseData.booking_id,
-        booking_id_length: responseData.booking_id?.length,
-        is_uuid_format: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(responseData.booking_id),
-        fetchError: fetchError?.message,
-      });
-      
       return NextResponse.json(responseData, { status: 201 });
     }
 
@@ -853,7 +836,6 @@ export async function POST(request: Request) {
       );
     }
     
-    // Log the response we're about to send
     const responseData = {
       success: true,
       booking_id: bookingIdString, // Always include booking_id as string
@@ -870,15 +852,6 @@ export async function POST(request: Request) {
       },
       message: 'Đặt phòng thành công! Vui lòng kiểm tra email để xác nhận.',
     };
-    
-    console.log('[API] Sending booking response:', {
-      booking_id: responseData.booking_id,
-      booking_id_type: typeof responseData.booking_id,
-      booking_id_length: responseData.booking_id?.length,
-      is_uuid_format: /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(responseData.booking_id),
-      has_booking: !!responseData.booking,
-      booking_id_in_booking: responseData.booking?.id,
-    });
     
     return NextResponse.json(responseData, { status: 201 });
   } catch (error) {

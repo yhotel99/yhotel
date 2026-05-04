@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { Mail, Phone, MapPin } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import Image from "@/components/ui/safe-image";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 

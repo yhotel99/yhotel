@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const { data, error } = await supabase
       .from('settings')
-      .select('pricing_weekday_rates')
+      .select('pricing_weekday_rates,pricing_holiday_periods')
       .limit(1)
       .maybeSingle();
 
@@ -19,6 +19,7 @@ export async function GET() {
 
     return NextResponse.json({
       pricing_weekday_rates: data?.pricing_weekday_rates ?? null,
+      pricing_holiday_periods: data?.pricing_holiday_periods ?? [],
     });
   } catch (e) {
     console.error('[settings] unexpected error:', e);

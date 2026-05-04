@@ -96,10 +96,6 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Debug logging
-    console.log(`[Blogs API] Fetched ${data?.length || 0} blogs out of ${count || 0} total`);
-    console.log(`[Blogs API] Page: ${page}, Limit: ${limit}, From: ${from}, To: ${to}`);
-
     // Transform the data
     type BlogWithAuthor = {
       id: string;

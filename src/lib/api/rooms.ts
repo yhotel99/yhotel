@@ -20,15 +20,11 @@ export async function getRooms(type?: string, status?: string, skipFilters?: boo
       ? `/api/rooms?${params.toString()}`
       : '/api/rooms';
     
-    console.log('Fetching rooms from:', url); // Debug log
-    
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
       },
     });
-
-    console.log('Response status:', response.status); // Debug log
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -37,7 +33,6 @@ export async function getRooms(type?: string, status?: string, skipFilters?: boo
     }
 
     const data = await response.json();
-    console.log('API Response data:', data); // Debug log
     
     if (!Array.isArray(data)) {
       console.error('API returned non-array data:', data);

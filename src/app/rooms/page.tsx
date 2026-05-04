@@ -547,10 +547,6 @@ const RoomsPageContent = () => {
             ) : filteredRooms.length > 0 ? (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {filteredRooms.map((room) => {
-                  const pricePerNight = typeof room.price === 'string' 
-                    ? parseFloat(room.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "").replace(/-/g, "")) 
-                    : 0;
-                  
                   // All rooms are now categories (since we always show by category)
                   const roomLink = `/rooms/category/${encodeURIComponent(room.id)}${checkInParam && checkOutParam ? `?check_in=${checkInParam}&check_out=${checkOutParam}` : ''}`;
                   
@@ -565,8 +561,8 @@ const RoomsPageContent = () => {
                         href={roomLink}
                         className="block h-full"
                       >
-                        <div className="border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg bg-card h-full">
-                          <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4">
+                        <div className="border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg bg-card h-full md:h-[279px]">
+                          <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4 h-full">
                             {/* Room Image */}
                             <div className="relative h-40 md:h-full rounded-lg overflow-hidden flex-shrink-0">
                               <img
@@ -593,7 +589,7 @@ const RoomsPageContent = () => {
                                     <div className="mb-2">
                                       <div className="flex items-baseline gap-1">
                                         <p className="text-lg sm:text-xl font-bold text-primary">
-                                          {pricePerNight.toLocaleString('vi-VN')}₫
+                                          {typeof room.price === 'string' ? room.price : room.price.toLocaleString('vi-VN')}₫
                                         </p>
                                         <p className="text-xs text-muted-foreground">{t.roomsPage.perNight}</p>
                                       </div>

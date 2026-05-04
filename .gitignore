@@ -37,6 +37,7 @@ yarn-error.log*
 .env
 .env.*
 .env*.local
+.env,local.txt
 *.local
 !.env.example
 
@@ -52,3 +53,6 @@ yarn-error.log*
 *.sw?
 trash/
 supabase-functions/
+
+# Documentation (contains sensitive payment gateway info)
+docs/

@@ -3,7 +3,7 @@
 import { useState, useEffect, memo } from "react";
 import { Menu, X, Phone, Mail, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import Image from "next/image";
+import Image from "@/components/ui/safe-image";
 import { Button } from "@/components/ui/button";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { useScrollThreshold } from "@/hooks/use-scroll";

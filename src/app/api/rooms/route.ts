@@ -61,8 +61,6 @@ function transformRoomToResponse(room: RoomWithImages): RoomResponse {
 
 export async function GET(request: Request) {
   try {
-    console.log('API /rooms called'); // Debug log
-    
     // Check Supabase connection
     if (!supabase) {
       console.error('Supabase client is not initialized');
@@ -75,8 +73,6 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const roomType = searchParams.get('type');
     const status = searchParams.get('status'); // No default - get all if not specified
-
-    console.log('Query params - type:', roomType, 'status:', status); // Debug log
 
     // Build query - optimize by selecting only needed fields
     let query = supabase
@@ -134,8 +130,6 @@ export async function GET(request: Request) {
       );
     }
 
-    console.log('Raw data from Supabase:', data?.length || 0, 'rooms'); // Debug log
-    
     if (!data || data.length === 0) {
       console.warn('No rooms found in database. Make sure you have:');
       console.warn('1. Run the migration SQL');

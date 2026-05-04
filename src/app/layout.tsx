@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 import Providers from "./providers";
 import type { Language } from "@/lib/i18n/translations";
 import "@/index.css";
@@ -90,7 +91,7 @@ export default async function RootLayout({
       "@type": "Rating",
       "ratingValue": "5"
     },
-    "priceRange": "$$$$",
+    "priceRange": "$$",
     "checkinTime": "14:00",
     "checkoutTime": "12:00",
     "amenityFeature": [
@@ -190,6 +191,7 @@ export default async function RootLayout({
         <meta name="ICBM" content="10.034149, 105.722198" />
       </head>
       <body className="antialiased" suppressHydrationWarning>
+        <GoogleAnalytics />
         <Script
           id="structured-data-hotel"
           type="application/ld+json"
@@ -215,4 +217,3 @@ export default async function RootLayout({
     </html>
   );
 }
-

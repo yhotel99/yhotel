@@ -10,8 +10,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Please check your .env.local file.');
 }
 
-console.log('Supabase initialized with URL:', supabaseUrl ? 'Set' : 'Missing');
-
 // OPTIMIZED: Configure Supabase client with connection pooling and performance settings
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

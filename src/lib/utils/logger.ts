@@ -6,10 +6,8 @@
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 export const logger = {
-  log: (...args: unknown[]) => {
-    if (isDevelopment) {
-      console.log(...args);
-    }
+  log: (..._args: unknown[]) => {
+    // Intentionally no-op: keep API compatibility without stdout noise.
   },
   warn: (...args: unknown[]) => {
     if (isDevelopment) {
