@@ -77,9 +77,9 @@ function ReturnContent() {
   }, [bookingId, searchParams, router, t, getResponseMessage]);
 
   return (
-    <div className="min-h-screen bg-luxury-gradient">
+    <div className="min-h-screen bg-luxury-gradient flex flex-col">
       <Navigation />
-      <main className="pt-14 lg:pt-16">
+      <main className="pt-14 lg:pt-16 flex-1 flex flex-col justify-center min-h-0">
         <section className="py-20">
           <div className="container-luxury max-w-lg mx-auto">
             <Card className="border-0 bg-background/80 backdrop-blur-sm shadow-xl">
