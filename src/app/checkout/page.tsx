@@ -20,6 +20,7 @@ import {
   FileText,
   Tag,
   CreditCard,
+  Check,
   Loader2
 } from "lucide-react";
 import Link from "next/link";
@@ -206,7 +207,8 @@ const CheckoutContent = () => {
     enabled: !!bookingId && draftChecked && !draft,
   });
 
-  const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "pay_at_hotel">("bank_transfer");
+  type CheckoutPaymentMethod = "bank_transfer" | "pay_at_hotel" | "onepay";
+  const [paymentMethod, setPaymentMethod] = useState<CheckoutPaymentMethod>("bank_transfer");
 
   // Date locale based on language
   const dateLocale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
@@ -377,6 +379,14 @@ const CheckoutContent = () => {
               body: JSON.stringify({ status: BOOKING_STATUS.PENDING, payment_method: PAYMENT_METHOD.PAY_AT_HOTEL }),
             });
             router.push(`/checkout/pay-at-hotel?booking_id=${encodeURIComponent(newBookingId)}`);
+          } else if (paymentMethod === "onepay") {
+            clearBookingDraft();
+            await fetch(`/api/bookings/${newBookingId}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: BOOKING_STATUS.PENDING, payment_method: PAYMENT_METHOD.ONEPAY }),
+            });
+            router.push(`/checkout/onepay/redirect?booking_id=${encodeURIComponent(newBookingId)}`);
           }
         } else {
           const multiPayload = { ...draft.payload };
@@ -446,6 +456,14 @@ const CheckoutContent = () => {
               body: JSON.stringify({ status: BOOKING_STATUS.PENDING, payment_method: PAYMENT_METHOD.PAY_AT_HOTEL }),
             });
             router.push(`/checkout/pay-at-hotel?booking_id=${encodeURIComponent(newBookingId)}`);
+          } else if (paymentMethod === "onepay") {
+            clearBookingDraft();
+            await fetch(`/api/bookings/${newBookingId}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: BOOKING_STATUS.PENDING, payment_method: PAYMENT_METHOD.ONEPAY }),
+            });
+            router.push(`/checkout/onepay/redirect?booking_id=${encodeURIComponent(newBookingId)}`);
           }
         }
       } catch (err) {
@@ -526,6 +544,39 @@ const CheckoutContent = () => {
         router.push(`/checkout/pay-at-hotel?booking_id=${bookingId}`);
       } catch (error) {
         console.error("Failed to update payment method (pay_at_hotel):", error);
+        toast({
+          title: t.checkout.updatePaymentError,
+          description:
+            error instanceof Error
+              ? error.message
+              : t.checkout.updatePaymentErrorDescription,
+          variant: "destructive",
+        });
+      }
+    } else if (paymentMethod === "onepay") {
+      try {
+        const response = await fetch(`/api/bookings/${bookingId}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            status: booking.status,
+            payment_method: PAYMENT_METHOD.ONEPAY,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.json().catch(() => null);
+          const message =
+            errorBody?.error ||
+            "Không thể cập nhật phương thức thanh toán. Vui lòng thử lại sau.";
+          throw new Error(message);
+        }
+
+        router.push(`/checkout/onepay/redirect?booking_id=${encodeURIComponent(bookingId)}`);
+      } catch (error) {
+        console.error("Failed to update payment method (onepay):", error);
         toast({
           title: t.checkout.updatePaymentError,
           description:
@@ -619,7 +670,7 @@ const CheckoutContent = () => {
                             name="payment"
                             value="bank_transfer"
                             checked={paymentMethod === "bank_transfer"}
-                            onChange={(e) => setPaymentMethod(e.target.value as "bank_transfer")}
+                            onChange={(e) => setPaymentMethod(e.target.value as CheckoutPaymentMethod)}
                             className="sr-only"
                           />
                           <div className={cn(
@@ -629,12 +680,82 @@ const CheckoutContent = () => {
                               : "border-border bg-muted/30 hover:border-primary/50"
                           )}>
                             <div className="flex items-start gap-4">
-                              <div className="p-2 rounded-lg bg-primary/10">
-                                <Banknote className="h-5 w-5 text-primary" />
+                              <div className={cn(
+                                "p-2 rounded-lg transition-colors",
+                                paymentMethod === "bank_transfer" ? "bg-primary/20" : "bg-primary/10"
+                              )}>
+                                <Banknote className={cn(
+                                  "h-5 w-5 transition-colors",
+                                  paymentMethod === "bank_transfer" ? "text-primary" : "text-primary/70"
+                                )} />
                               </div>
-                              <div className="flex-1">
+                              <div className="flex-1 min-w-0">
                                 <p className="font-semibold text-base mb-1">{t.checkout.bankTransfer}</p>
                                 <p className="text-sm text-muted-foreground">{t.checkout.bankTransferDescription}</p>
+                              </div>
+                              <div
+                                className={cn(
+                                  "mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-all",
+                                  paymentMethod === "bank_transfer"
+                                    ? "border-primary bg-primary"
+                                    : "border-border bg-background"
+                                )}
+                                aria-hidden
+                              >
+                                {paymentMethod === "bank_transfer" && (
+                                  <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </label>
+                        <label className="block relative cursor-pointer group">
+                          <input
+                            type="radio"
+                            name="payment"
+                            value="onepay"
+                            checked={paymentMethod === "onepay"}
+                            onChange={(e) => setPaymentMethod(e.target.value as CheckoutPaymentMethod)}
+                            className="sr-only"
+                          />
+                          <div
+                            className={cn(
+                              "p-4 border-2 rounded-lg transition-all duration-300",
+                              paymentMethod === "onepay"
+                                ? "border-primary bg-primary/5 shadow-md"
+                                : "border-border bg-muted/30 hover:border-primary/50"
+                            )}
+                          >
+                            <div className="flex items-start gap-4">
+                              <div
+                                className={cn(
+                                  "p-2 rounded-lg transition-colors",
+                                  paymentMethod === "onepay" ? "bg-primary/20" : "bg-primary/10"
+                                )}
+                              >
+                                <CreditCard
+                                  className={cn(
+                                    "h-5 w-5 transition-colors",
+                                    paymentMethod === "onepay" ? "text-primary" : "text-primary/70"
+                                  )}
+                                />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-base mb-1">{t.checkout.onepay}</p>
+                                <p className="text-sm text-muted-foreground">{t.checkout.onepayDescription}</p>
+                              </div>
+                              <div
+                                className={cn(
+                                  "mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-all",
+                                  paymentMethod === "onepay"
+                                    ? "border-primary bg-primary"
+                                    : "border-border bg-background"
+                                )}
+                                aria-hidden
+                              >
+                                {paymentMethod === "onepay" && (
+                                  <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                                )}
                               </div>
                             </div>
                           </div>
@@ -655,27 +776,6 @@ const CheckoutContent = () => {
                                   </span>
                                 </div>
                                 <p className="text-sm text-muted-foreground">{t.checkout.payAtHotelDescription}</p>
-                              </div>
-                              <div className="h-5 w-5 rounded-full border-2 border-border flex items-center justify-center" />
-                            </div>
-                          </div>
-                        </label>
-                        {/* OnePay - Coming Soon */}
-                        <label className="block relative cursor-not-allowed group opacity-60">
-                          <input type="radio" name="payment" value="onepay" disabled className="sr-only" />
-                          <div className="p-4 border-2 rounded-lg border-border bg-muted/30">
-                            <div className="flex items-start gap-4">
-                              <div className="p-2 rounded-lg bg-primary/10">
-                                <CreditCard className="h-5 w-5 text-primary/70" />
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <p className="font-semibold text-base">{t.checkout.onepay}</p>
-                                  <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full">
-                                    Coming Soon
-                                  </span>
-                                </div>
-                                <p className="text-sm text-muted-foreground">{t.checkout.onepayDescription}</p>
                               </div>
                               <div className="h-5 w-5 rounded-full border-2 border-border flex items-center justify-center" />
                             </div>
@@ -1069,7 +1169,7 @@ const CheckoutContent = () => {
                           name="payment"
                           value="bank_transfer"
                           checked={paymentMethod === "bank_transfer"}
-                          onChange={(e) => setPaymentMethod(e.target.value as "bank_transfer")}
+                          onChange={(e) => setPaymentMethod(e.target.value as CheckoutPaymentMethod)}
                           className="sr-only"
                         />
                         <div className={cn(
@@ -1092,20 +1192,23 @@ const CheckoutContent = () => {
                                   : "text-primary/70"
                               )} />
                             </div>
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <p className="font-semibold text-base mb-1">{t.checkout.bankTransfer}</p>
                               <p className="text-sm text-muted-foreground">
                                 {t.checkout.bankTransferDescription}
                               </p>
                             </div>
-                            <div className={cn(
-                              "h-5 w-5 rounded-full border-2 flex items-center justify-center transition-all",
-                              paymentMethod === "bank_transfer"
-                                ? "border-primary bg-primary"
-                                : "border-border"
-                            )}>
+                            <div
+                              className={cn(
+                                "mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-all",
+                                paymentMethod === "bank_transfer"
+                                  ? "border-primary bg-primary"
+                                  : "border-border bg-background"
+                              )}
+                              aria-hidden
+                            >
                               {paymentMethod === "bank_transfer" && (
-                                <div className="h-2.5 w-2.5 rounded-full bg-white" />
+                                <Check className="h-3 w-3 text-white" strokeWidth={3} />
                               )}
                             </div>
                           </div>
@@ -1113,6 +1216,65 @@ const CheckoutContent = () => {
                             <div className="mt-4 pt-4 border-t border-primary/20">
                               <p className="text-sm text-muted-foreground leading-relaxed">
                                 {t.checkout.bankTransferNote}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </label>
+
+                      <label className="block relative cursor-pointer group">
+                        <input
+                          type="radio"
+                          name="payment"
+                          value="onepay"
+                          checked={paymentMethod === "onepay"}
+                          onChange={(e) => setPaymentMethod(e.target.value as CheckoutPaymentMethod)}
+                          className="sr-only"
+                        />
+                        <div
+                          className={cn(
+                            "p-4 border-2 rounded-lg transition-all duration-300",
+                            paymentMethod === "onepay"
+                              ? "border-primary bg-primary/5 shadow-md"
+                              : "border-border bg-muted/30 hover:border-primary/50 hover:bg-muted/50"
+                          )}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div
+                              className={cn(
+                                "p-2 rounded-lg transition-colors",
+                                paymentMethod === "onepay" ? "bg-primary/20" : "bg-primary/10"
+                              )}
+                            >
+                              <CreditCard
+                                className={cn(
+                                  "h-5 w-5 transition-colors",
+                                  paymentMethod === "onepay" ? "text-primary" : "text-primary/70"
+                                )}
+                              />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-base mb-1">{t.checkout.onepay}</p>
+                              <p className="text-sm text-muted-foreground">{t.checkout.onepayDescription}</p>
+                            </div>
+                            <div
+                              className={cn(
+                                "mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-all",
+                                paymentMethod === "onepay"
+                                  ? "border-primary bg-primary"
+                                  : "border-border bg-background"
+                              )}
+                              aria-hidden
+                            >
+                              {paymentMethod === "onepay" && (
+                                <Check className="h-3 w-3 text-white" strokeWidth={3} />
+                              )}
+                            </div>
+                          </div>
+                          {paymentMethod === "onepay" && (
+                            <div className="mt-4 pt-4 border-t border-primary/20">
+                              <p className="text-sm text-muted-foreground leading-relaxed">
+                                {t.checkout.onepayNote}
                               </p>
                             </div>
                           )}
@@ -1135,28 +1297,6 @@ const CheckoutContent = () => {
                                 </span>
                               </div>
                               <p className="text-sm text-muted-foreground">{t.checkout.payAtHotelDescription}</p>
-                            </div>
-                            <div className="h-5 w-5 rounded-full border-2 border-border flex items-center justify-center" />
-                          </div>
-                        </div>
-                      </label>
-
-                      {/* OnePay - Coming Soon */}
-                      <label className="block relative cursor-not-allowed group opacity-60">
-                        <input type="radio" name="payment" value="onepay" disabled className="sr-only" />
-                        <div className="p-4 border-2 rounded-lg border-border bg-muted/30">
-                          <div className="flex items-start gap-4">
-                            <div className="p-2 rounded-lg bg-primary/10">
-                              <CreditCard className="h-5 w-5 text-primary/70" />
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <p className="font-semibold text-base">{t.checkout.onepay}</p>
-                                <span className="px-2 py-0.5 text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200 rounded-full">
-                                  Coming Soon
-                                </span>
-                              </div>
-                              <p className="text-sm text-muted-foreground">{t.checkout.onepayDescription}</p>
                             </div>
                             <div className="h-5 w-5 rounded-full border-2 border-border flex items-center justify-center" />
                           </div>

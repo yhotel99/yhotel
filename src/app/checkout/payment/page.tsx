@@ -541,12 +541,10 @@ const PaymentContent = () => {
     });
   };
 
-  // OnePay - Coming Soon (commented out)
-  // const handlePayWithOnePay = () => {
-  //   if (!bookingId) return;
-  //   router.push(`/checkout/onepay/redirect?booking_id=${bookingId}`);
-  // };
-
+  const handlePayWithOnePay = () => {
+    if (!bookingId) return;
+    router.push(`/checkout/onepay/redirect?booking_id=${bookingId}`);
+  };
 
   if (!bookingId) {
     return (
@@ -768,8 +766,6 @@ const PaymentContent = () => {
 
                       <Separator />
 
-                      {/* OnePay - Coming Soon (commented out) */}
-                      {/* 
                       <div className="p-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30 rounded-lg border border-emerald-200 dark:border-emerald-800">
                         <p className="font-semibold text-emerald-900 dark:text-emerald-100 mb-2 flex items-center gap-2">
                           <CreditCard className="h-5 w-5" />
@@ -787,7 +783,6 @@ const PaymentContent = () => {
                           {t.payment.onepayButton}
                         </Button>
                       </div>
-                      */}
                     </CardContent>
                   </FloatingCard>
                 </GradientBorder>
