@@ -309,26 +309,6 @@ const CheckoutContent = () => {
           const singlePayload = { ...draft.payload };
           if (appliedVoucher) singlePayload.voucher_code = appliedVoucher.code;
           else delete singlePayload.voucher_code;
-          if (paymentMethod === "bank_transfer") {
-            const intentDraft = { ...draft, payload: singlePayload };
-            const intentRes = await fetch("/api/payments/intents", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ draft: intentDraft }),
-            });
-            const intentData = await intentRes.json();
-            if (!intentRes.ok || !intentData?.intent_code) {
-              toast({
-                title: t.checkout.updatePaymentError,
-                description: intentData?.error || "Không thể khởi tạo thanh toán.",
-                variant: "destructive",
-              });
-              return;
-            }
-            clearBookingDraft();
-            router.push(`/checkout/payment-intent?code=${encodeURIComponent(intentData.intent_code)}`);
-            return;
-          }
           const response = await fetch("/api/bookings", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -371,7 +351,15 @@ const CheckoutContent = () => {
             });
             return;
           }
-          if (paymentMethod === "pay_at_hotel") {
+          if (paymentMethod === "bank_transfer") {
+            clearBookingDraft();
+            await fetch(`/api/bookings/${newBookingId}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: BOOKING_STATUS.PENDING, payment_method: PAYMENT_METHOD.BANK_TRANSFER }),
+            });
+            router.push(`/checkout/payment?booking_id=${encodeURIComponent(newBookingId)}`);
+          } else if (paymentMethod === "pay_at_hotel") {
             clearBookingDraft();
             await fetch(`/api/bookings/${newBookingId}`, {
               method: "PATCH",
@@ -392,26 +380,6 @@ const CheckoutContent = () => {
           const multiPayload = { ...draft.payload };
           if (appliedVoucher) multiPayload.voucher_code = appliedVoucher.code;
           else delete multiPayload.voucher_code;
-          if (paymentMethod === "bank_transfer") {
-            const intentDraft = { ...draft, payload: multiPayload };
-            const intentRes = await fetch("/api/payments/intents", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ draft: intentDraft }),
-            });
-            const intentData = await intentRes.json();
-            if (!intentRes.ok || !intentData?.intent_code) {
-              toast({
-                title: t.checkout.updatePaymentError,
-                description: intentData?.error || "Không thể khởi tạo thanh toán.",
-                variant: "destructive",
-              });
-              return;
-            }
-            clearBookingDraft();
-            router.push(`/checkout/payment-intent?code=${encodeURIComponent(intentData.intent_code)}`);
-            return;
-          }
           const response = await fetch("/api/bookings/multi", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -448,7 +416,15 @@ const CheckoutContent = () => {
             });
             return;
           }
-          if (paymentMethod === "pay_at_hotel") {
+          if (paymentMethod === "bank_transfer") {
+            clearBookingDraft();
+            await fetch(`/api/bookings/${newBookingId}`, {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ status: BOOKING_STATUS.PENDING, payment_method: PAYMENT_METHOD.BANK_TRANSFER }),
+            });
+            router.push(`/checkout/payment?booking_id=${encodeURIComponent(newBookingId)}`);
+          } else if (paymentMethod === "pay_at_hotel") {
             clearBookingDraft();
             await fetch(`/api/bookings/${newBookingId}`, {
               method: "PATCH",
