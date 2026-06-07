@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/server';
+import { createServiceSupabase, supabase } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { PAYMENT_METHOD } from '@/lib/constants';
+import {
+  DEFAULT_BRANCH_ID,
+  resolveBranchByCode,
+  resolveBranchFromRoomId,
+} from '@/lib/utils/booking-branch';
+import { parseCategorySlug } from '@/lib/utils/branch-rooms';
+import { DEFAULT_BRANCH_CODE } from '@/lib/branch';
+import { resolveBranchIdForFilter, resolveBranchCodeById } from '@/lib/branch.server';
 import {
   calculateTotalWithWeekdayRates,
   normalizeHolidayPeriods,
@@ -162,16 +170,19 @@ function calculateNights(checkIn: string, checkOut: string): number {
 async function findOrCreateCustomer(
   fullName: string,
   email: string,
-  phone: string
+  phone: string,
+  branchId?: string | null
 ): Promise<string | null> {
   // Normalize inputs for consistent storage and lookup
   const normalizedEmail = email ? normalizeEmail(email) : '';
   const normalizedPhone = phone ? normalizePhone(phone) : '';
 
   try {
+    const db = createServiceSupabase();
+
     // First, try to find existing customer by email
     if (normalizedEmail) {
-      const { data: customerByEmail } = await supabase
+      const { data: customerByEmail } = await db
         .from('customers')
         .select('id')
         .eq('email', normalizedEmail)
@@ -185,7 +196,7 @@ async function findOrCreateCustomer(
 
     // Try to find by phone
     if (normalizedPhone) {
-      const { data: customerByPhone } = await supabase
+      const { data: customerByPhone } = await db
         .from('customers')
         .select('id')
         .eq('phone', normalizedPhone)
@@ -198,7 +209,7 @@ async function findOrCreateCustomer(
     }
 
     // Create new customer
-    const { data: newCustomer, error: createError } = await supabase
+    const { data: newCustomer, error: createError } = await db
       .from('customers')
       .insert([
         {
@@ -207,6 +218,7 @@ async function findOrCreateCustomer(
           phone: normalizedPhone || null,
           customer_type: 'regular',
           source: 'website',
+          branch_id: branchId || DEFAULT_BRANCH_ID,
         },
       ])
       .select('id')
@@ -278,7 +290,8 @@ async function createBookingFallback(
   numberOfNights: number,
   totalAmount: number,
   totalGuests: number,
-  notes: string | null
+  notes: string | null,
+  branchId?: string | null
 ): Promise<string> {
   const bookingCode = generateBookingCode();
 
@@ -325,17 +338,23 @@ async function findAvailableRoom(
   checkOut: string,
   roomId?: string,
   categoryCode?: string,
-  roomType?: string
-): Promise<{ id: string; price_per_night: number } | null> {
+  roomType?: string,
+  branchId?: string
+): Promise<{ id: string; price_per_night: number; branch_id?: string | null } | null> {
   try {
     // If room_id is provided, check that specific room
     if (roomId) {
-      const { data: room, error } = await supabase
+      let roomQuery = supabase
         .from('rooms')
-        .select('id, price_per_night, max_guests, status')
+        .select('id, price_per_night, max_guests, status, branch_id')
         .eq('id', roomId)
-        .is('deleted_at', null)
-        .single();
+        .is('deleted_at', null);
+
+      if (branchId) {
+        roomQuery = roomQuery.eq('branch_id', branchId);
+      }
+
+      const { data: room, error } = await roomQuery.single();
 
       if (error || !room) {
         console.error('Error fetching room by ID:', error);
@@ -372,15 +391,19 @@ async function findAvailableRoom(
         }
       }
 
-      return { id: room.id, price_per_night: room.price_per_night };
+      return { id: room.id, price_per_night: room.price_per_night, branch_id: room.branch_id };
     }
 
     // If no room_id, search by category_code or room_type
     let query = supabase
       .from('rooms')
-      .select('id, price_per_night, max_guests, status, category_code')
+      .select('id, price_per_night, max_guests, status, category_code, branch_id')
       .is('deleted_at', null)
       .in('status', ['available', 'clean']); // Allow both available and clean rooms
+
+    if (branchId) {
+      query = query.eq('branch_id', branchId);
+    }
 
     if (categoryCode) {
       query = query.eq('category_code', categoryCode);
@@ -409,7 +432,7 @@ async function findAvailableRoom(
         .in('status', ['pending', 'awaiting_payment', 'confirmed', 'checked_in']);
 
       if (!existingBookingRooms || existingBookingRooms.length === 0) {
-        return { id: room.id, price_per_night: room.price_per_night };
+        return { id: room.id, price_per_night: room.price_per_night, branch_id: room.branch_id };
       }
 
       // Check for conflicts: new booking overlaps if check_in < existing_check_out AND check_out > existing_check_in
@@ -424,14 +447,14 @@ async function findAvailableRoom(
 
       // If no conflicts, return this room
       if (!hasConflict) {
-        return { id: room.id, price_per_night: room.price_per_night };
+        return { id: room.id, price_per_night: room.price_per_night, branch_id: room.branch_id };
       }
     }
 
     // If all rooms have conflicts but we have category/type, still allow booking (admin handles conflicts)
     if ((categoryCode || roomType) && rooms.length > 0) {
       console.warn('All rooms have conflicts, but allowing booking anyway');
-      return { id: rooms[0].id, price_per_night: rooms[0].price_per_night };
+      return { id: rooms[0].id, price_per_night: rooms[0].price_per_night, branch_id: rooms[0].branch_id };
     }
 
     return null;
@@ -458,6 +481,7 @@ export async function POST(request: Request) {
       roomType,
       notes,
       voucher_code,
+      branch_code,
     } = body;
 
     if (!check_in || !check_out || !customer_name || !customer_email || !customer_phone) {
@@ -512,23 +536,52 @@ export async function POST(request: Request) {
       );
     }
 
+    const parsedCategory = category_code
+      ? parseCategorySlug(String(category_code))
+      : { categoryCode: undefined as string | undefined };
+    const effectiveCategoryCode =
+      parsedCategory.categoryCode ?? (category_code || undefined);
+    const effectiveBranchCode =
+      parsedCategory.branchCode ??
+      (typeof branch_code === 'string' ? branch_code : undefined);
+
+    const resolvedBranchId = await resolveBranchIdForFilter(
+      supabase,
+      null,
+      effectiveBranchCode ?? null
+    );
+
     // Find available room
-    const room = await findAvailableRoom(check_in, check_out, room_id, category_code, roomType);
+    const room = await findAvailableRoom(
+      check_in,
+      check_out,
+      room_id,
+      effectiveCategoryCode,
+      roomType,
+      resolvedBranchId
+    );
 
     if (!room) {
       // Provide more specific error message
       let errorMessage = 'Không tìm thấy phòng phù hợp';
       if (room_id) {
         errorMessage = `Không tìm thấy phòng với ID: ${room_id}. Phòng có thể đã bị xóa hoặc không tồn tại.`;
-      } else if (category_code) {
-        errorMessage = `Không tìm thấy phòng loại "${category_code}" còn trống trong khoảng thời gian đã chọn.`;
+      } else if (effectiveCategoryCode) {
+        errorMessage = `Không tìm thấy phòng loại "${effectiveCategoryCode}" còn trống trong khoảng thời gian đã chọn.`;
       } else if (roomType) {
         errorMessage = `Không tìm thấy phòng loại "${roomType}" còn trống trong khoảng thời gian đã chọn.`;
       } else {
         errorMessage = 'Vui lòng chọn phòng hoặc loại phòng để đặt.';
       }
       
-      console.error('Room not found:', { room_id, category_code, roomType, check_in, check_out });
+      console.error('Room not found:', {
+        room_id,
+        category_code: effectiveCategoryCode,
+        branch_code: effectiveBranchCode,
+        roomType,
+        check_in,
+        check_out,
+      });
       return NextResponse.json(
         { error: errorMessage },
         { status: 400 }
@@ -576,6 +629,13 @@ export async function POST(request: Request) {
         ? voucher_code.trim()
         : null;
     
+    const bookingBranchCode =
+      effectiveBranchCode ||
+      (room.branch_id ? await resolveBranchCodeById(supabase, room.branch_id) : null) ||
+      DEFAULT_BRANCH_CODE;
+
+    const bookingBranchId = room.branch_id || DEFAULT_BRANCH_ID;
+    
     let bookingId: string;
     
     // Try to use RPC function first (if available)
@@ -595,6 +655,7 @@ export async function POST(request: Request) {
           p_notes: notes || null,
           p_advance_payment: 0, // Đặt cọc luôn là 0 như dashboard
           p_voucher_code: voucherCodeTrimmed,
+          p_branch_code: bookingBranchCode,
         }
       );
     
@@ -624,6 +685,16 @@ export async function POST(request: Request) {
                 {
                   error: 'Mã voucher không hợp lệ hoặc đã hết hạn.',
                   code: 'INVALID_VOUCHER',
+                },
+                { status: 400 }
+              );
+            }
+
+            if (rpcResult.error_code === 'ROOM_BRANCH_MISMATCH') {
+              return NextResponse.json(
+                {
+                  error: 'Phòng không thuộc chi nhánh đã chọn. Vui lòng thử lại.',
+                  code: 'ROOM_BRANCH_MISMATCH',
                 },
                 { status: 400 }
               );
@@ -702,7 +773,8 @@ export async function POST(request: Request) {
           number_of_nights,
           total_amount,
           total_guests ?? 1,
-          notes || null
+          notes || null,
+          bookingBranchId
         );
       }
     } catch (rpcError) {
@@ -717,7 +789,8 @@ export async function POST(request: Request) {
         number_of_nights,
         total_amount,
         total_guests ?? 1,
-        notes || null
+        notes || null,
+        bookingBranchId
       );
     }
 

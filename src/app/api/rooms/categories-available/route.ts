@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
+import {
+  attachCategoryImages,
+  fetchActiveBranches,
+  fetchPublicRoomsWithBookings,
+  groupRoomsByBranchCategory,
+} from '@/lib/utils/branch-rooms';
 
 export const dynamic = 'force-dynamic';
 
+const DEFAULT_BRANCH_ID = 'a0000000-0000-4000-8000-000000000001';
+
 /**
  * GET /api/rooms/categories-available
- * Get all room categories and check which ones have available rooms
- * Query params:
- *   - check_in: ISO date string (required)
- *   - check_out: ISO date string (required)
+ * Categories with availability, grouped per branch + category_code.
  */
 export async function GET(request: Request) {
   try {
@@ -16,7 +21,6 @@ export async function GET(request: Request) {
     const checkIn = searchParams.get('check_in');
     const checkOut = searchParams.get('check_out');
 
-    // Validate required parameters
     if (!checkIn || !checkOut) {
       return NextResponse.json(
         { error: 'Thiếu tham số check_in hoặc check_out' },
@@ -24,7 +28,6 @@ export async function GET(request: Request) {
       );
     }
 
-    // Validate dates
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
 
@@ -42,31 +45,10 @@ export async function GET(request: Request) {
       );
     }
 
-    // OPTIMIZED: Single query to get rooms with booking status
-    // This reduces 2 separate queries into 1 with a LEFT JOIN
-    const { data: roomsWithBookings, error: roomsError } = await supabase
-      .from('rooms')
-      .select(`
-        id, 
-        name, 
-        description, 
-        room_type, 
-        category_code, 
-        price_per_night, 
-        max_guests, 
-        amenities,
-        status,
-        booking_rooms!left(
-          room_id,
-          status,
-          check_in,
-          check_out
-        )
-      `)
-      .is('deleted_at', null)
-      .neq('status', 'maintenance') // Only exclude maintenance rooms
-      .not('category_code', 'is', null)
-      .order('name');
+    const { branchById } = await fetchActiveBranches(supabase);
+
+    const { data: roomsWithBookings, error: roomsError } =
+      await fetchPublicRoomsWithBookings(supabase);
 
     if (roomsError) {
       console.error('Error fetching rooms:', roomsError);
@@ -80,18 +62,29 @@ export async function GET(request: Request) {
       return NextResponse.json([]);
     }
 
-    // Process rooms and check availability in memory (faster than separate query)
-    const allRooms = roomsWithBookings.map((room: any) => {
-      // Check if room has conflicting bookings
-      const hasConflict = room.booking_rooms?.some((br: any) => {
+    const allRooms = roomsWithBookings.map((room: {
+      id: string;
+      name: string;
+      description: string | null;
+      room_type: string;
+      category_code: string | null;
+      branch_id?: string | null;
+      price_per_night: number;
+      max_guests: number;
+      amenities?: string[] | null;
+      booking_rooms?: Array<{
+        status: string;
+        check_in: string;
+        check_out: string;
+      }>;
+    }) => {
+      const hasConflict = room.booking_rooms?.some((br) => {
         if (!['pending', 'awaiting_payment', 'confirmed', 'checked_in'].includes(br.status)) {
           return false;
         }
         const brCheckIn = new Date(br.check_in);
         const brCheckOut = new Date(br.check_out);
-        const isConflict = brCheckIn < checkOutDate && brCheckOut > checkInDate;
-        
-        return isConflict;
+        return brCheckIn < checkOutDate && brCheckOut > checkInDate;
       }) || false;
 
       return {
@@ -100,6 +93,7 @@ export async function GET(request: Request) {
         description: room.description,
         room_type: room.room_type,
         category_code: room.category_code,
+        branch_id: room.branch_id,
         price_per_night: room.price_per_night,
         max_guests: room.max_guests,
         amenities: room.amenities,
@@ -107,109 +101,11 @@ export async function GET(request: Request) {
       };
     });
 
-    // Create set of booked room IDs for backward compatibility
-    const bookedRoomIds = new Set(
-      allRooms.filter((r: any) => !r.is_available).map((r: any) => r.id)
-    );
-
-    // Group rooms by category and check availability
-    const categoryMap = new Map<string, any>();
-    const sampleRoomIds: string[] = [];
-
-    allRooms.forEach((room: any) => {
-      if (!room.category_code) return;
-
-      const isAvailable = room.is_available;
-
-      if (!categoryMap.has(room.category_code)) {
-        categoryMap.set(room.category_code, {
-          category_code: room.category_code,
-          name: room.name,
-          description: room.description,
-          room_type: room.room_type,
-          min_price: room.price_per_night,
-          max_price: room.price_per_night,
-          max_guests: room.max_guests,
-          amenities: room.amenities || [],
-          total_count: 0,
-          available_count: 0,
-          sample_room_id: room.id,
-        });
-        sampleRoomIds.push(room.id);
-      }
-
-      const category = categoryMap.get(room.category_code);
-      category.total_count += 1;
-      
-      if (isAvailable) {
-        category.available_count += 1;
-      }
-
-      // Update min/max price
-      if (room.price_per_night < category.min_price) {
-        category.min_price = room.price_per_night;
-      }
-      if (room.price_per_night > category.max_price) {
-        category.max_price = room.price_per_night;
-      }
-    });
-
-    // OPTIMIZED: Fetch images for sample rooms with limit
-    // Only get first 5 images per room to reduce data transfer
-    const { data: imagesData } = await supabase
-      .from('room_images')
-      .select(`
-        room_id,
-        position,
-        is_main,
-        images (
-          id,
-          url
-        )
-      `)
-      .in('room_id', sampleRoomIds)
-      .order('position')
-      .limit(100); // Reasonable limit for sample images
-
-    // Group images by room_id
-    const imagesByRoom = new Map();
-    if (imagesData) {
-      imagesData.forEach((ri: any) => {
-        if (!imagesByRoom.has(ri.room_id)) {
-          imagesByRoom.set(ri.room_id, []);
-        }
-        if (ri.images) {
-          imagesByRoom.get(ri.room_id).push({
-            url: ri.images.url,
-            is_main: ri.is_main,
-            position: ri.position,
-          });
-        }
-      });
-    }
-
-    // Transform to response format - only include categories with available rooms
-    const categories = Array.from(categoryMap.values())
-      .filter(cat => cat.available_count > 0) // Only show categories with available rooms
-      .map((cat) => {
-        const images = imagesByRoom.get(cat.sample_room_id) || [];
-        const mainImage = images.find((img: any) => img.is_main) || images[0];
-
-        return {
-          category_code: cat.category_code,
-          name: cat.name,
-          description: cat.description,
-          room_type: cat.room_type,
-          min_price: cat.min_price,
-          max_price: cat.max_price,
-          max_guests: cat.max_guests,
-          amenities: cat.amenities,
-          available_count: cat.available_count,
-          total_count: cat.total_count,
-          image: mainImage?.url || '/placeholder.svg',
-          gallery_images: images.map((img: any) => img.url),
-        };
-      });
+    const categoryMap = groupRoomsByBranchCategory(allRooms, branchById, DEFAULT_BRANCH_ID);
+    const categories = (await attachCategoryImages(
+      supabase,
+      Array.from(categoryMap.values())
+    )).filter((cat) => (cat.available_count || 0) > 0);
 
     return NextResponse.json(categories, {
       headers: {

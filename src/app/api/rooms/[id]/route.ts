@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 import { Room, RoomWithImages, RoomResponse, RoomType, RoomStatus } from '@/types/database';
 import { isTestOrPlaceholderRoom } from '@/lib/utils/room-filters';
+import { getResolvedBranchIdFromRequest } from '@/lib/branch-query.server';
+import { parseBranchFilter } from '@/lib/branch';
 
 // Cache for 5 minutes
 export const revalidate = 300; // 5 minutes in seconds
@@ -18,7 +20,7 @@ function transformRoomToResponse(room: RoomWithImages): RoomResponse {
     .map(img => img.url);
 
   // Format price
-  const price = room.price_per_night.toLocaleString('vi-VN');
+  const price = (room.price_per_night ?? 0).toLocaleString('vi-VN');
   
   // Extract features from description or amenities
   const features: string[] = [];
@@ -53,6 +55,10 @@ function transformRoomToResponse(room: RoomWithImages): RoomResponse {
     popular: false, // You can add a popular field to the database if needed
     category: room.room_type,
     category_code: (room as any).category_code,
+    branch_id: (room as any).branch_id || undefined,
+    branch_code: (room as any).branch_code || undefined,
+    branch_name: (room as any).branch_name || undefined,
+    branch_address: (room as any).branch_address || undefined,
     description: room.description || undefined,
     status: room.status,
   };
@@ -68,10 +74,40 @@ export async function GET(
     // Check if skipFilters is requested
     const { searchParams } = new URL(request.url);
     const skipFilters = searchParams.get('skipFilters') === 'true';
+    const { branchId, branchCode } = parseBranchFilter(searchParams);
+    const hasExplicitBranchFilter = Boolean(
+      branchId ||
+        branchCode ||
+        searchParams.get('branch')
+    );
+    const resolvedBranchId = hasExplicitBranchFilter
+      ? await getResolvedBranchIdFromRequest(supabase, request)
+      : null;
 
-    const { data, error } = await supabase
-      .from('rooms')
-      .select(`
+    const roomSelectWithBranch = `
+        id,
+        name,
+        description,
+        room_type,
+        category_code,
+        branch_id,
+        price_per_night,
+        max_guests,
+        amenities,
+        status,
+        deleted_at,
+        created_at,
+        updated_at,
+        room_images (
+          position,
+          is_main,
+          images (
+            id,
+            url
+          )
+        )
+      `;
+    const roomSelectBase = `
         id,
         name,
         description,
@@ -92,10 +128,23 @@ export async function GET(
             url
           )
         )
-      `)
+      `;
+
+    let { data, error } = await supabase
+      .from('rooms')
+      .select(roomSelectWithBranch)
       .eq('id', id)
       .is('deleted_at', null)
       .single();
+
+    if (error?.code === '42703' || error?.message?.includes('branch_id')) {
+      ({ data, error } = await supabase
+        .from('rooms')
+        .select(roomSelectBase)
+        .eq('id', id)
+        .is('deleted_at', null)
+        .single());
+    }
 
     if (error) {
       console.error('Error fetching room:', error);
@@ -123,6 +172,8 @@ export async function GET(
     };
     
     type RawRoom = Room & {
+      category_code?: string | null;
+      branch_id?: string | null;
       room_images: RawRoomImage[] | null;
     };
     
@@ -147,10 +198,39 @@ export async function GET(
       );
     }
 
-    // Convert to API response format
+    if (
+      resolvedBranchId &&
+      (rawRoom as Room & { branch_id?: string }).branch_id &&
+      (rawRoom as Room & { branch_id?: string }).branch_id !== resolvedBranchId
+    ) {
+      return NextResponse.json(
+        { error: 'Room not found' },
+        { status: 404 }
+      );
+    }
+
     const response: RoomResponse = transformRoomToResponse(room);
 
-    // Set cache headers
+    if (rawRoom.branch_id) {
+      const { data: branch } = await supabase
+        .from('branches')
+        .select('id, code, name, address')
+        .eq('id', rawRoom.branch_id)
+        .eq('is_active', true)
+        .is('deleted_at', null)
+        .maybeSingle();
+
+      if (branch) {
+        response.branch_id = branch.id;
+        response.branch_code = branch.code;
+        response.branch_name = branch.name;
+        response.branch_address = branch.address;
+        if (rawRoom.category_code) {
+          response.category_slug = `${branch.code}::${rawRoom.category_code}`;
+        }
+      }
+    }
+
     return NextResponse.json(response, {
       headers: {
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',

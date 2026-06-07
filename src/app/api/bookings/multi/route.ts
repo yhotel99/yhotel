@@ -1,7 +1,12 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/server';
+import { createServiceSupabase, supabase } from '@/lib/supabase/server';
 import { PAYMENT_METHOD } from '@/lib/constants';
-
+import {
+  DEFAULT_BRANCH_ID,
+  resolveBranchByCode,
+  resolveBranchFromRoomId,
+} from '@/lib/utils/booking-branch';
+import { DEFAULT_BRANCH_CODE } from '@/lib/branch';
 /**
  * Normalize email for consistent storage and lookup
  */
@@ -23,15 +28,18 @@ async function findOrCreateCustomer(
   fullName: string,
   email: string,
   phone: string,
-  nationality?: string | null
+  nationality?: string | null,
+  branchId?: string | null
 ): Promise<string | null> {
   const normalizedEmail = email ? normalizeEmail(email) : '';
   const normalizedPhone = phone ? normalizePhone(phone) : '';
 
   try {
+    const db = createServiceSupabase();
+
     // Try to find existing customer by email
     if (normalizedEmail) {
-      const { data: customerByEmail } = await supabase
+      const { data: customerByEmail } = await db
         .from('customers')
         .select('id')
         .eq('email', normalizedEmail)
@@ -45,7 +53,7 @@ async function findOrCreateCustomer(
 
     // Try to find by phone
     if (normalizedPhone) {
-      const { data: customerByPhone } = await supabase
+      const { data: customerByPhone } = await db
         .from('customers')
         .select('id')
         .eq('phone', normalizedPhone)
@@ -58,7 +66,7 @@ async function findOrCreateCustomer(
     }
 
     // Create new customer
-    const { data: newCustomer, error: createError } = await supabase
+    const { data: newCustomer, error: createError } = await db
       .from('customers')
       .insert([
         {
@@ -68,6 +76,7 @@ async function findOrCreateCustomer(
           nationality: nationality || null,
           customer_type: 'regular',
           source: 'website',
+          branch_id: branchId || DEFAULT_BRANCH_ID,
         },
       ])
       .select('id')
@@ -106,6 +115,7 @@ export async function POST(request: Request) {
       room_items, // Array of { room_id, amount }
       notes,
       voucher_code,
+      branch_code,
     } = body;
 
     if (!check_in || !check_out || !customer_name || !customer_email || !customer_phone) {
@@ -144,11 +154,30 @@ export async function POST(request: Request) {
     const normalizedEmail = normalizeEmail(customer_email);
     const normalizedPhone = normalizePhone(customer_phone);
 
+    const firstRoomId = room_items[0]?.room_id as string | undefined;
+    let bookingBranchId = DEFAULT_BRANCH_ID;
+    let effectiveBranchCode = branch_code as string | undefined;
+
+    if (effectiveBranchCode) {
+      const branch = await resolveBranchByCode(supabase, effectiveBranchCode);
+      if (branch) {
+        bookingBranchId = branch.branch_id;
+        effectiveBranchCode = branch.branch_code;
+      }
+    } else if (firstRoomId) {
+      const branch = await resolveBranchFromRoomId(supabase, firstRoomId);
+      if (branch) {
+        bookingBranchId = branch.branch_id;
+        effectiveBranchCode = branch.branch_code;
+      }
+    }
+
     const customerId = await findOrCreateCustomer(
       customer_name,
       normalizedEmail,
       normalizedPhone,
-      customer_nationality
+      customer_nationality,
+      bookingBranchId
     );
 
     if (!customerId) {
@@ -162,6 +191,8 @@ export async function POST(request: Request) {
       typeof voucher_code === 'string' && voucher_code.trim() !== ''
         ? voucher_code.trim()
         : null;
+
+    const bookingBranchCode = effectiveBranchCode || DEFAULT_BRANCH_CODE;
 
     // Call create_multi_booking_secure RPC function
     const { data: rpcResult, error: rpcError } = await supabase.rpc(
@@ -177,6 +208,7 @@ export async function POST(request: Request) {
         p_payment_method: PAYMENT_METHOD.PAY_AT_HOTEL,
         p_advance_payment: 0,
         p_voucher_code: voucherCodeTrimmed,
+        p_branch_code: bookingBranchCode,
       }
     );
 
@@ -228,6 +260,16 @@ export async function POST(request: Request) {
           {
             error: 'Mã voucher không hợp lệ hoặc đã hết hạn.',
             code: 'INVALID_VOUCHER',
+          },
+          { status: 400 }
+        );
+      }
+
+      if (result.error_code === 'ROOM_BRANCH_MISMATCH') {
+        return NextResponse.json(
+          {
+            error: 'Các phòng phải cùng một chi nhánh. Vui lòng chọn lại.',
+            code: 'ROOM_BRANCH_MISMATCH',
           },
           { status: 400 }
         );

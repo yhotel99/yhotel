@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 import { Room, RoomWithImages, RoomResponse } from '@/types/database';
+import { getResolvedBranchIdFromRequest } from '@/lib/branch-query.server';
 
 // Mark as dynamic route since we use request.url for query params
 export const dynamic = 'force-dynamic';
@@ -20,7 +21,7 @@ function transformRoomToResponse(room: RoomWithImages): RoomResponse {
     .map(img => img.url);
 
   // Format price
-  const price = room.price_per_night.toLocaleString('vi-VN');
+  const price = (room.price_per_night ?? 0).toLocaleString('vi-VN');
   
   // Extract features from description or amenities
   const features: string[] = [];
@@ -74,6 +75,8 @@ export async function GET(request: Request) {
     const roomType = searchParams.get('type');
     const status = searchParams.get('status'); // No default - get all if not specified
 
+    const resolvedBranchId = await getResolvedBranchIdFromRequest(supabase, request);
+
     // Build query - optimize by selecting only needed fields
     let query = supabase
       .from('rooms')
@@ -98,7 +101,11 @@ export async function GET(request: Request) {
           )
         )
       `)
-      .is('deleted_at', null); // Only get non-deleted rooms
+      .is('deleted_at', null);
+
+    if (resolvedBranchId) {
+      query = query.eq('branch_id', resolvedBranchId);
+    }
 
     // Filter by status only if provided
     if (status && status !== 'all') {

@@ -21,7 +21,8 @@ import {
   Tag,
   CreditCard,
   Check,
-  Loader2
+  Loader2,
+  MapPin
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,8 @@ import {
   setBookingDraft,
   type BookingDraft,
 } from "@/lib/booking-draft";
+import { useBranch } from "@/contexts/branch-context";
+import { DEFAULT_BRANCH_CODE } from "@/lib/branch";
 
 function draftFingerprint(d: BookingDraft): string {
   if (d.type === "single") {
@@ -53,6 +56,7 @@ function draftFingerprint(d: BookingDraft): string {
       out: d.payload.check_out,
       rid: d.payload.room_id ?? null,
       cc: d.payload.category_code ?? null,
+      bc: d.payload.branch_code ?? null,
       rt: d.payload.roomType ?? null,
     });
   }
@@ -61,6 +65,7 @@ function draftFingerprint(d: BookingDraft): string {
     in: d.payload.check_in,
     out: d.payload.check_out,
     items: d.payload.room_items,
+    bc: d.payload.branch_code ?? null,
   });
 }
 
@@ -70,6 +75,7 @@ const CheckoutContent = () => {
   const { toast } = useToast();
   const bookingId = searchParams.get("booking_id");
   const { t, language } = useLanguage();
+  const { branches, selectedBranch } = useBranch();
 
   const [draft, setDraft] = useState<BookingDraft | null>(null);
   const [draftChecked, setDraftChecked] = useState(false);
@@ -307,6 +313,9 @@ const CheckoutContent = () => {
       try {
         if (draft.type === "single") {
           const singlePayload = { ...draft.payload };
+          if (!singlePayload.branch_code) {
+            singlePayload.branch_code = selectedBranch?.code ?? DEFAULT_BRANCH_CODE;
+          }
           if (appliedVoucher) singlePayload.voucher_code = appliedVoucher.code;
           else delete singlePayload.voucher_code;
           const response = await fetch("/api/bookings", {
@@ -378,6 +387,9 @@ const CheckoutContent = () => {
           }
         } else {
           const multiPayload = { ...draft.payload };
+          if (!multiPayload.branch_code) {
+            multiPayload.branch_code = selectedBranch?.code ?? DEFAULT_BRANCH_CODE;
+          }
           if (appliedVoucher) multiPayload.voucher_code = appliedVoucher.code;
           else delete multiPayload.voucher_code;
           const response = await fetch("/api/bookings/multi", {
@@ -396,6 +408,12 @@ const CheckoutContent = () => {
                   (language === "vi"
                     ? "Mã voucher không hợp lệ hoặc đã hết hạn."
                     : "Invalid or expired voucher."),
+                variant: "destructive",
+              });
+            } else if (result?.code === "ROOM_BRANCH_MISMATCH") {
+              toast({
+                title: t.checkout.updatePaymentError,
+                description: errMsg,
                 variant: "destructive",
               });
             } else {
@@ -612,6 +630,11 @@ const CheckoutContent = () => {
           : totalFromDraft;
     const weekendAdjustmentDraft = Math.max(0, Math.round(totalFromDraft - draftBaseTotal));
     const roomAmountBeforeTaxDraft = Math.max(0, payableTotal - weekendAdjustmentDraft);
+    const draftBranchName =
+      (quote?.branch?.name as string | undefined) ??
+      branches.find((b) => b.code === p.branch_code)?.name ??
+      p.branch_code ??
+      null;
 
     return (
       <div className="min-h-screen bg-luxury-gradient flex flex-col">
@@ -804,6 +827,19 @@ const CheckoutContent = () => {
                               <p className="font-bold text-lg text-foreground">{nightsDraft} {t.checkout.nightsUnit}</p>
                             </div>
                           </div>
+                          {draftBranchName ? (
+                            <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                  <MapPin className="h-4 w-4 text-primary" />
+                                </div>
+                                <div className="flex-1">
+                                  <p className="text-xs text-muted-foreground mb-0.5">{t.checkout.branch}</p>
+                                  <p className="font-semibold text-foreground">{draftBranchName}</p>
+                                </div>
+                              </div>
+                            </div>
+                          ) : null}
                           {isSingle && draft.display?.room_name && (
                             <div className="p-3 bg-muted/30 rounded-lg border border-border/50">
                               <div className="flex items-center gap-3">

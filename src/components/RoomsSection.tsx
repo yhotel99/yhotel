@@ -12,6 +12,9 @@ import { getAmenityIcon } from "@/lib/amenity-icons";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { useBranch } from "@/contexts/branch-context";
+import { withBranchQuery } from "@/lib/branch";
+import { BranchPickerSection } from "@/components/BranchPickerSection";
 
 const categoryLabels: Record<string, string> = {
   standard: "Standard",
@@ -29,12 +32,13 @@ const getCategoryLabel = (category: string): string => {
 
 const RoomsSection = () => {
   const { t } = useLanguage();
+  const { selectedBranchId } = useBranch();
   
   // Fetch room categories
   const { data: allCategories = [], isLoading: loading } = useQuery<any[]>({
-    queryKey: ['room-categories'],
+    queryKey: ['room-categories', selectedBranchId],
     queryFn: async () => {
-      const response = await fetch('/api/rooms/categories');
+      const response = await fetch(withBranchQuery('/api/rooms/categories', selectedBranchId));
       
       if (!response.ok) {
         throw new Error('Không thể lấy danh sách loại phòng');
@@ -56,8 +60,9 @@ const RoomsSection = () => {
         : `${minPrice.toLocaleString('vi-VN')} - ${maxPrice.toLocaleString('vi-VN')}`;
       
       return {
-        id: cat.category_code,
+        id: cat.category_slug || cat.category_code,
         name: cat.name,
+        branchName: cat.branch_name,
         image: cat.image,
         price: priceDisplay,
         guests: cat.max_guests,
@@ -72,29 +77,14 @@ const RoomsSection = () => {
 
   return (
     <section id="rooms" className="py-12 md:py-16 bg-gradient-subtle">
-      <div className="container-luxury">
-        {/* Header */}
-        <div className="text-center mb-8 md:mb-12">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground mb-6"
-          >
-            {t.rooms.title}
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="text-base text-muted-foreground max-w-3xl mx-auto"
-          >
-            {t.rooms.description}
-          </motion.p>
-        </div>
+      <BranchPickerSection compact />
 
+      <div className="container-luxury">
+        <div className="text-center mb-8 md:mb-10">
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground">
+            {t.rooms.title}
+          </h2>
+        </div>
         {/* Room Cards */}
         {loading ? (
           <RoomGridSkeleton count={4} />
@@ -118,7 +108,10 @@ const RoomsSection = () => {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
                   <Link 
-                    href={`/rooms/category/${encodeURIComponent(room.id)}`}
+                    href={withBranchQuery(
+                      `/rooms/category/${encodeURIComponent(room.id)}`,
+                      selectedBranchId
+                    )}
                     className="block h-full"
                   >
                     <div className="border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg bg-card h-full md:h-[279px]">
@@ -226,7 +219,10 @@ const RoomsSection = () => {
                               onClick={(e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                window.location.href = `/rooms/category/${encodeURIComponent(room.id)}`;
+                                window.location.href = withBranchQuery(
+                                  `/rooms/category/${encodeURIComponent(room.id)}`,
+                                  selectedBranchId
+                                );
                               }}
                             >
                               <Plus className="w-4 h-4 mr-2" />

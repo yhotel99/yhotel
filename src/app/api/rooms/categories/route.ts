@@ -1,22 +1,28 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
+import { getResolvedBranchIdFromRequest } from '@/lib/branch-query.server';
+import {
+  attachCategoryImages,
+  fetchActiveBranches,
+  fetchPublicRooms,
+  groupRoomsByBranchCategory,
+} from '@/lib/utils/branch-rooms';
 
 export const dynamic = 'force-dynamic';
 
+const DEFAULT_BRANCH_ID = 'a0000000-0000-4000-8000-000000000001';
+
 /**
  * GET /api/rooms/categories
- * Get all room categories grouped by category_code
- * Shows total count of rooms per category
+ * Room categories grouped by branch + category_code.
+ * Query params: branch_id | branch_code | branch
  */
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    // Get all rooms grouped by category_code
-    const { data: rooms, error } = await supabase
-      .from('rooms')
-      .select('id, name, description, room_type, category_code, price_per_night, max_guests, amenities')
-      .is('deleted_at', null)
-      .not('category_code', 'is', null)
-      .order('name');
+    const resolvedBranchId = await getResolvedBranchIdFromRequest(supabase, request);
+    const { branchById } = await fetchActiveBranches(supabase);
+
+    const { data: rooms, error } = await fetchPublicRooms(supabase);
 
     if (error) {
       console.error('Error fetching rooms:', error);
@@ -30,96 +36,22 @@ export async function GET() {
       return NextResponse.json([]);
     }
 
-    // Group rooms by category_code
-    const categoryMap = new Map<string, any>();
-    const sampleRoomIds: string[] = [];
+    const categoryMap = groupRoomsByBranchCategory(
+      rooms as Parameters<typeof groupRoomsByBranchCategory>[0],
+      branchById,
+      DEFAULT_BRANCH_ID
+    );
 
-    rooms.forEach((room) => {
-      if (!room.category_code) return;
+    let categories = Array.from(categoryMap.values());
 
-      if (!categoryMap.has(room.category_code)) {
-        categoryMap.set(room.category_code, {
-          category_code: room.category_code,
-          name: room.name,
-          description: room.description,
-          room_type: room.room_type,
-          min_price: room.price_per_night,
-          max_price: room.price_per_night,
-          max_guests: room.max_guests,
-          amenities: room.amenities || [],
-          total_count: 0,
-          sample_room_id: room.id,
-        });
-        sampleRoomIds.push(room.id);
-      }
-
-      const category = categoryMap.get(room.category_code);
-      category.total_count += 1;
-      
-      // Update min/max price
-      if (room.price_per_night < category.min_price) {
-        category.min_price = room.price_per_night;
-      }
-      if (room.price_per_night > category.max_price) {
-        category.max_price = room.price_per_night;
-      }
-    });
-
-    // Fetch images for sample rooms
-    const { data: imagesData } = await supabase
-      .from('room_images')
-      .select(`
-        room_id,
-        position,
-        is_main,
-        images (
-          id,
-          url
-        )
-      `)
-      .in('room_id', sampleRoomIds)
-      .order('position');
-
-    // Group images by room_id
-    const imagesByRoom = new Map();
-    if (imagesData) {
-      imagesData.forEach((ri: any) => {
-        if (!imagesByRoom.has(ri.room_id)) {
-          imagesByRoom.set(ri.room_id, []);
-        }
-        if (ri.images) {
-          imagesByRoom.get(ri.room_id).push({
-            url: ri.images.url,
-            is_main: ri.is_main,
-            position: ri.position,
-          });
-        }
-      });
+    if (resolvedBranchId) {
+      categories = categories.filter((cat) => cat.branch_id === resolvedBranchId);
     }
 
-    // Transform to response format
-    const categories = Array.from(categoryMap.values()).map((cat) => {
-      const images = imagesByRoom.get(cat.sample_room_id) || [];
-      const mainImage = images.find((img: any) => img.is_main) || images[0];
+    const categoriesWithImages = await attachCategoryImages(supabase, categories);
 
-      return {
-        category_code: cat.category_code,
-        name: cat.name,
-        description: cat.description,
-        room_type: cat.room_type,
-        min_price: cat.min_price,
-        max_price: cat.max_price,
-        max_guests: cat.max_guests,
-        amenities: cat.amenities,
-        total_count: cat.total_count,
-        image: mainImage?.url || '/placeholder.svg',
-        gallery_images: images.map((img: any) => img.url),
-      };
-    });
-
-    return NextResponse.json(categories, {
+    return NextResponse.json(categoriesWithImages, {
       headers: {
-        // OPTIMIZED: Longer cache for categories (they don't change often)
         'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1800',
       },
     });

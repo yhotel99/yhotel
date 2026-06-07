@@ -4,13 +4,19 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
 import { LanguageProvider } from "@/lib/i18n/LanguageContext";
 import type { Language } from "@/lib/i18n/translations";
+import { BranchProvider } from "@/contexts/branch-context";
+import type { Branch } from "@/lib/branch";
 
 export default function Providers({
   children,
   initialLanguage,
+  initialBranches = [],
+  initialSelectedBranchId,
 }: {
   children: React.ReactNode;
   initialLanguage: Language;
+  initialBranches?: Branch[];
+  initialSelectedBranchId?: string;
 }) {
   const [queryClient] = useState(
     () =>
@@ -35,7 +41,12 @@ export default function Providers({
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider initialLanguage={initialLanguage}>
-        {children}
+        <BranchProvider
+          initialBranches={initialBranches}
+          initialSelectedBranchId={initialSelectedBranchId}
+        >
+          {children}
+        </BranchProvider>
       </LanguageProvider>
     </QueryClientProvider>
   );

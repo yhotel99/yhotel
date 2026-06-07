@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
 import { RoomResponse, RoomWithImages } from '@/types/database';
 import { isTestOrPlaceholderRoom, deduplicateRooms } from '@/lib/utils/room-filters';
+import { getResolvedBranchIdFromRequest } from '@/lib/branch-query.server';
 
 // Mark as dynamic route
 export const dynamic = 'force-dynamic';
@@ -81,6 +82,7 @@ export async function GET(request: Request) {
     const checkIn = searchParams.get('check_in');
     const checkOut = searchParams.get('check_out');
     const skipFilters = searchParams.get('skipFilters') === 'true';
+    const resolvedBranchId = await getResolvedBranchIdFromRequest(supabase, request);
 
     // Validate required parameters
     if (!checkIn || !checkOut) {
@@ -109,11 +111,29 @@ export async function GET(request: Request) {
     }
 
     // Call RPC function to get available rooms
-    // This function should exist in your Supabase database
-    const { data, error } = await supabase.rpc('get_available_rooms', {
+    const rpcArgs: Record<string, string | null> = {
       p_check_in: checkIn,
       p_check_out: checkOut,
-    });
+    };
+    if (resolvedBranchId) {
+      rpcArgs.p_branch_id = resolvedBranchId;
+      rpcArgs.p_branch_code = null;
+    }
+
+    let { data, error } = await supabase.rpc(
+      'get_available_rooms',
+      resolvedBranchId ? rpcArgs : { p_check_in: checkIn, p_check_out: checkOut }
+    );
+
+    // Fallback: older DB may only expose 2-arg get_available_rooms
+    if (error && resolvedBranchId) {
+      const legacy = await supabase.rpc('get_available_rooms', {
+        p_check_in: checkIn,
+        p_check_out: checkOut,
+      });
+      data = legacy.data;
+      error = legacy.error;
+    }
 
     if (error) {
       console.error('RPC Error:', error);

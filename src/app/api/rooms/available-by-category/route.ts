@@ -1,26 +1,31 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
+import { fetchActiveBranches, parseCategorySlug } from '@/lib/utils/branch-rooms';
 
 /**
- * GET endpoint to fetch available rooms by category
- * Returns actual room UUIDs that can be booked
+ * GET /api/rooms/available-by-category
+ * Returns available room UUIDs for a branch-scoped category.
  */
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const categoryCode = searchParams.get('category_code');
+    const categoryCodeParam = searchParams.get('category_code');
+    const branchCodeParam = searchParams.get('branch_code');
     const checkIn = searchParams.get('check_in');
     const checkOut = searchParams.get('check_out');
-    const quantity = parseInt(searchParams.get('quantity') || '1');
+    const quantity = parseInt(searchParams.get('quantity') || '1', 10);
 
-    if (!categoryCode || !checkIn || !checkOut) {
+    if (!categoryCodeParam || !checkIn || !checkOut) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
       );
     }
 
-    // Validate dates
+    const parsed = parseCategorySlug(categoryCodeParam);
+    const categoryCode = parsed.categoryCode;
+    const branchCode = branchCodeParam || parsed.branchCode;
+
     const checkInDate = new Date(checkIn);
     const checkOutDate = new Date(checkOut);
 
@@ -38,13 +43,42 @@ export async function GET(request: Request) {
       );
     }
 
-    // Get all rooms of this category (all statuses except maintenance)
-    const { data: rooms, error: roomsError } = await supabase
+    const { branchById } = await fetchActiveBranches(supabase);
+    let branchId: string | null = null;
+
+    if (branchCode) {
+      const branch = Array.from(branchById.values()).find(
+        (item) => item.code.toLowerCase() === branchCode.toLowerCase()
+      );
+      if (!branch) {
+        return NextResponse.json({ available_rooms: [] });
+      }
+      branchId = branch.id;
+    }
+
+    let roomsQuery = supabase
       .from('rooms')
-      .select('id, name, price_per_night, status')
+      .select('id, name, price_per_night, status, branch_id')
       .eq('category_code', categoryCode)
-      .neq('status', 'maintenance') // Only exclude maintenance rooms
+      .neq('status', 'maintenance')
       .is('deleted_at', null);
+
+    if (branchId) {
+      roomsQuery = roomsQuery.eq('branch_id', branchId);
+    }
+
+    let { data: rooms, error: roomsError } = await roomsQuery;
+
+    if (roomsError?.code === '42703' || roomsError?.message?.includes('branch_id')) {
+      const fallback = await supabase
+        .from('rooms')
+        .select('id, name, price_per_night, status')
+        .eq('category_code', categoryCode)
+        .neq('status', 'maintenance')
+        .is('deleted_at', null);
+      rooms = (fallback.data ?? []) as typeof rooms;
+      roomsError = fallback.error;
+    }
 
     if (roomsError) {
       console.error('Error fetching rooms:', roomsError);
@@ -54,16 +88,18 @@ export async function GET(request: Request) {
       );
     }
 
-    if (!rooms || rooms.length === 0) {
-      console.warn(`[${categoryCode}] No rooms found in database`);
+    const activeRooms = (rooms || []).filter((room) =>
+      !room.branch_id || branchById.has(room.branch_id)
+    );
+
+    if (activeRooms.length === 0) {
       return NextResponse.json({ available_rooms: [] });
     }
 
-    // Check which rooms are available (not booked) in the date range
     const { data: bookedRooms, error: bookedError } = await supabase
       .from('booking_rooms')
       .select('room_id, status, check_in, check_out')
-      .in('room_id', rooms.map(r => r.id))
+      .in('room_id', activeRooms.map((room) => room.id))
       .in('status', ['pending', 'awaiting_payment', 'confirmed', 'checked_in'])
       .or(`and(check_in.lt.${checkOut},check_out.gt.${checkIn})`);
 
@@ -75,16 +111,17 @@ export async function GET(request: Request) {
       );
     }
 
-    const bookedRoomIds = new Set(bookedRooms?.map(br => br.room_id) || []);
-    const availableRooms = rooms.filter(room => !bookedRoomIds.has(room.id));
+    const bookedRoomIds = new Set(bookedRooms?.map((br) => br.room_id) || []);
+    const availableRooms = activeRooms
+      .filter((room) => !bookedRoomIds.has(room.id))
+      .slice(0, quantity)
+      .map((room) => ({
+        id: room.id,
+        name: room.name,
+        price_per_night: room.price_per_night,
+      }));
 
-    // Return requested quantity or all available
-    const roomsToReturn = availableRooms.slice(0, quantity);
-
-    return NextResponse.json({
-      available_rooms: roomsToReturn,
-      total_available: availableRooms.length,
-    });
+    return NextResponse.json({ available_rooms: availableRooms });
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json(

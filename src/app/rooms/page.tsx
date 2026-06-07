@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, Suspense } from "react";
+import { useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Bed, Users, Search, X, ArrowLeft, Calendar as CalendarIcon, Building2, Plus } from "lucide-react";
@@ -22,6 +22,8 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useRooms, usePrefetchRoom } from "@/hooks/use-rooms";
 import { getCategories, type Category } from "@/lib/api/categories";
+import { useBranch } from "@/contexts/branch-context";
+import { withBranchQuery } from "@/lib/branch";
 import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
 import { MultiRoomBookingSection } from "@/components/MultiRoomBookingSection";
 import { format } from "date-fns";
@@ -31,6 +33,7 @@ import type { RoomResponse } from "@/types/database";
 import { getAmenityLabel } from "@/lib/constants";
 import { getAmenityIcon } from "@/lib/amenity-icons";
 import { cn } from "@/lib/utils";
+import { BranchPickerSection } from "@/components/BranchPickerSection";
 
 const categoryLabels: Record<string, string> = {
   standard: "Standard",
@@ -56,6 +59,7 @@ const RoomsPageContent = () => {
   
   const { data: rooms = [], isLoading: loading, error: queryError } = useRooms(undefined, undefined, true);
   const prefetchRoom = usePrefetchRoom();
+  const { selectedBranchId } = useBranch();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("default");
@@ -122,9 +126,9 @@ const RoomsPageContent = () => {
 
   // Fetch all room categories (always)
   const { data: allCategories = [], isLoading: isLoadingCategories } = useQuery<any[]>({
-    queryKey: ['room-categories'],
+    queryKey: ['room-categories', selectedBranchId],
     queryFn: async () => {
-      const response = await fetch('/api/rooms/categories');
+      const response = await fetch(withBranchQuery('/api/rooms/categories', selectedBranchId));
       
       if (!response.ok) {
         throw new Error('Không thể lấy danh sách loại phòng');
@@ -137,12 +141,15 @@ const RoomsPageContent = () => {
 
   // Fetch available room categories if check_in and check_out params exist
   const { data: availableCategories = [], isLoading: isLoadingAvailable } = useQuery<any[]>({
-    queryKey: ['available-categories', checkInParam, checkOutParam],
+    queryKey: ['available-categories', checkInParam, checkOutParam, selectedBranchId],
     queryFn: async () => {
       if (!checkInParam || !checkOutParam) return [];
       
       const response = await fetch(
-        `/api/rooms/categories-available?check_in=${encodeURIComponent(checkInParam)}&check_out=${encodeURIComponent(checkOutParam)}`
+        withBranchQuery(
+          `/api/rooms/categories-available?check_in=${encodeURIComponent(checkInParam)}&check_out=${encodeURIComponent(checkOutParam)}`,
+          selectedBranchId
+        )
       );
       
       if (!response.ok) {
@@ -166,8 +173,9 @@ const RoomsPageContent = () => {
       : `${minPrice.toLocaleString('vi-VN')} - ${maxPrice.toLocaleString('vi-VN')}`;
     
     return {
-      id: cat.category_code, // Use category_code as temporary ID for navigation
+      id: cat.category_slug || cat.category_code,
       name: cat.name,
+      branchName: cat.branch_name,
       image: cat.image,
       galleryImages: cat.gallery_images,
       price: priceDisplay,
@@ -188,6 +196,21 @@ const RoomsPageContent = () => {
   
   // Determine if we're currently loading
   const isLoadingRooms = checkInParam && checkOutParam ? isLoadingAvailable : isLoadingCategories;
+
+  const buildCategoryLink = useCallback(
+    (categoryCode: string) => {
+      let link = withBranchQuery(
+        `/rooms/category/${encodeURIComponent(categoryCode)}`,
+        selectedBranchId
+      );
+      if (checkInParam && checkOutParam) {
+        const separator = link.includes("?") ? "&" : "?";
+        link += `${separator}check_in=${checkInParam}&check_out=${checkOutParam}`;
+      }
+      return link;
+    },
+    [selectedBranchId, checkInParam, checkOutParam]
+  );
 
   // Handle date range selection
   const handleDateRangeSelect = (range: { from?: Date; to?: Date } | undefined) => {
@@ -307,78 +330,66 @@ const RoomsPageContent = () => {
 
         {/* Header Section */}
         <section className="pt-12 md:pt-16 bg-gradient-subtle">
-          <div className="container-luxury">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-              className="mb-8"
-            >
-              {/* Header Row: Back Button + Title */}
-              <div className="flex items-center justify-between gap-4 mb-6 relative">
-                <Link href="/">
-                  <Button variant="secondary" size="sm" className="gap-2 backdrop-blur-sm bg-background/80 shrink-0">
-                    <ArrowLeft className="w-4 h-4" />
-                    <span className="hidden md:inline">{t.roomsPage.backToHome}</span>
-                  </Button>
-                </Link>
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-foreground absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
-                  {t.roomsPage.title}
-                </h1>
-                <div className="w-[100px] shrink-0 md:w-[140px]"></div>
-              </div>
-              
-              {/* Description */}
-              <div className="text-center mb-6">
+          <div className="container-luxury mb-6">
+            <div className="relative flex items-center justify-between gap-4 mb-6">
+              <Link href="/">
+                <Button variant="secondary" size="sm" className="gap-2 backdrop-blur-sm bg-background/80 shrink-0">
+                  <ArrowLeft className="w-4 h-4" />
+                  <span className="hidden md:inline">{t.roomsPage.backToHome}</span>
+                </Button>
+              </Link>
+              <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground absolute left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
+                {t.roomsPage.title}
+              </h1>
+              <div className="w-[100px] shrink-0 md:w-[140px]">
                 {checkInParam && checkOutParam ? (
-                  <div className="space-y-2">
-                    <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
-                      {t.roomsPage.availableFrom}{" "}
-                      <span className="font-semibold text-foreground">
-                        {format(new Date(checkInParam), "dd/MM/yyyy", { locale: dateLocale })}
-                      </span>{" "}
-                      {t.roomsPage.to}{" "}
-                      <span className="font-semibold text-foreground">
-                        {format(new Date(checkOutParam), "dd/MM/yyyy", { locale: dateLocale })}
-                      </span>
-                    </p>
-                    <div className="flex items-center justify-center gap-2">
-                      <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
-                        <CalendarIcon className="w-3 h-3 mr-1" />
-                        {t.roomsPage.filteredByDate}
-                      </Badge>
-                      <Link href="/rooms">
-                        <Button variant="ghost" size="sm" className="h-7 text-xs">
-                          <X className="w-3 h-3 mr-1" />
-                          {t.roomsPage.clearDateFilter}
-                        </Button>
-                      </Link>
-                    </div>
+                  <div className="flex items-center justify-end gap-2">
+                    <Badge variant="outline" className="hidden sm:inline-flex bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
+                      <CalendarIcon className="w-3 h-3 mr-1" />
+                      {t.roomsPage.filteredByDate}
+                    </Badge>
+                    <Link href="/rooms">
+                      <Button variant="ghost" size="sm" className="h-7 text-xs px-2">
+                        <X className="w-3 h-3" />
+                      </Button>
+                    </Link>
                   </div>
-                ) : (
-                  <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
-                    {t.roomsPage.description}
-                  </p>
-                )}
+                ) : null}
               </div>
+            </div>
 
-              {/* Booking Mode Toggle */}
-              <div className="flex justify-center">
-                <Tabs value={bookingMode} onValueChange={handleBookingModeChange} className="w-full max-w-md">
-                  <TabsList className="grid w-full grid-cols-2 h-11">
-                    <TabsTrigger value="single" className="gap-2">
-                      <Bed className="w-4 h-4" />
-                      {t.roomsPage.bookingSingle}
-                    </TabsTrigger>
-                    <TabsTrigger value="multi" className="gap-2">
-                      <Building2 className="w-4 h-4" />
-                      {t.roomsPage.bookingMulti}
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-            </motion.div>
+            {checkInParam && checkOutParam ? (
+              <p className="text-center text-sm text-muted-foreground mb-6">
+                {t.roomsPage.availableFrom}{" "}
+                <span className="font-semibold text-foreground">
+                  {format(new Date(checkInParam), "dd/MM/yyyy", { locale: dateLocale })}
+                </span>{" "}
+                {t.roomsPage.to}{" "}
+                <span className="font-semibold text-foreground">
+                  {format(new Date(checkOutParam), "dd/MM/yyyy", { locale: dateLocale })}
+                </span>
+              </p>
+            ) : null}
 
+            <div className="flex justify-center mb-2">
+              <Tabs value={bookingMode} onValueChange={handleBookingModeChange} className="w-full max-w-md">
+                <TabsList className="grid w-full grid-cols-2 h-11">
+                  <TabsTrigger value="single" className="gap-2">
+                    <Bed className="w-4 h-4" />
+                    {t.roomsPage.bookingSingle}
+                  </TabsTrigger>
+                  <TabsTrigger value="multi" className="gap-2">
+                    <Building2 className="w-4 h-4" />
+                    {t.roomsPage.bookingMulti}
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+          </div>
+
+          <BranchPickerSection className="!mt-4" />
+
+          <div className="container-luxury pb-8">
             {/* Filters - Only show in single room mode */}
             {bookingMode === 'single' && (
               <motion.div
@@ -548,7 +559,7 @@ const RoomsPageContent = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {filteredRooms.map((room) => {
                   // All rooms are now categories (since we always show by category)
-                  const roomLink = `/rooms/category/${encodeURIComponent(room.id)}${checkInParam && checkOutParam ? `?check_in=${checkInParam}&check_out=${checkOutParam}` : ''}`;
+                  const roomLink = buildCategoryLink(room.id);
                   
                   return (
                     <motion.div
@@ -666,7 +677,7 @@ const RoomsPageContent = () => {
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    const roomLink = `/rooms/category/${encodeURIComponent(room.id)}${checkInParam && checkOutParam ? `?check_in=${checkInParam}&check_out=${checkOutParam}` : ''}`;
+                                    const roomLink = buildCategoryLink(room.id);
                                     window.location.href = roomLink;
                                   }}
                                 >

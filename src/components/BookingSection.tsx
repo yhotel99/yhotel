@@ -22,12 +22,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 import type { RoomResponse } from "@/types/database";
 import { setBookingDraft, type BookingDraftSingle } from "@/lib/booking-draft";
+import { useBranch } from "@/contexts/branch-context";
+import { DEFAULT_BRANCH_CODE, withBranchQuery } from "@/lib/branch";
 
 const BookingSectionContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { t, language } = useLanguage();
+  const { selectedBranchId, selectedBranch } = useBranch();
   
   // Date locale based on language
   const dateLocale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
@@ -111,11 +114,17 @@ const BookingSectionContent = () => {
     }
   }, [formData]);
 
-  // Get room types from database
+  // Reset room type when branch changes — avoid mismatched branch/room selection
+  useEffect(() => {
+    setFormData((prev) => ({ ...prev, roomType: "" }));
+    setAvailableRooms([]);
+  }, [selectedBranchId]);
+
+  // Get room types from database (filtered by selected branch)
   const { data: categories = [] } = useQuery({
-    queryKey: ['room-types'],
+    queryKey: ['room-types', selectedBranchId],
     queryFn: async () => {
-      const response = await fetch('/api/rooms/categories');
+      const response = await fetch(withBranchQuery('/api/rooms/categories', selectedBranchId));
       if (!response.ok) return [];
       return response.json();
     },
@@ -258,7 +267,10 @@ const BookingSectionContent = () => {
       checkOutDate.setHours(12, 0, 0, 0); // Default check-out time 12:00
 
       const response = await fetch(
-        `/api/rooms/available?check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}&skipFilters=true`
+        withBranchQuery(
+          `/api/rooms/available?check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}&skipFilters=true`,
+          selectedBranchId
+        )
       );
 
       if (!response.ok) {
@@ -340,6 +352,7 @@ const BookingSectionContent = () => {
           ...(formData.specialRequests && { notes: sanitizeInput(formData.specialRequests) }),
           ...(formData.roomType && { roomType: formData.roomType }),
           ...(roomIdFromUrl && { room_id: roomIdFromUrl }),
+          branch_code: selectedBranch?.code ?? DEFAULT_BRANCH_CODE,
         },
         display: {
           room_type: formData.roomType || undefined,

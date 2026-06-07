@@ -20,6 +20,7 @@ export interface BookingDraftSinglePayload {
   roomType?: string;
   /** Optional; applied server-side via create_*_booking_secure */
   voucher_code?: string | null;
+  branch_code?: string | null;
 }
 
 /** Display info for single booking (room name, price) */
@@ -28,6 +29,7 @@ export interface BookingDraftSingleDisplay {
   room_type?: string;
   price_per_night?: number;
   number_of_nights?: number;
+  branch_name?: string;
 }
 
 export interface BookingDraftSingle {
@@ -55,6 +57,7 @@ export interface BookingDraftMultiPayload {
   notes?: string | null;
   room_items: BookingDraftMultiRoomItem[];
   voucher_code?: string | null;
+  branch_code?: string | null;
 }
 
 export interface BookingDraftMultiItemDisplay {
@@ -63,6 +66,7 @@ export interface BookingDraftMultiItemDisplay {
   price_per_night: number;
   quantity: number;
   amount: number;
+  branch_name?: string;
 }
 
 export interface BookingDraftMulti {

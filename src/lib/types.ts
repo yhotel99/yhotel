@@ -11,6 +11,7 @@ export interface BookingInput {
   total_guests: number;
   notes?: string;
   voucher_code?: string | null;
+  branch_code?: string | null;
 }
 
 export interface BookingRecord {

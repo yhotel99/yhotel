@@ -1,6 +1,12 @@
 import { RoomResponse } from '@/types/database';
+import { appendBranchParams } from '@/lib/branch';
 
-export async function getRooms(type?: string, status?: string, skipFilters?: boolean): Promise<RoomResponse[]> {
+export async function getRooms(
+  type?: string,
+  status?: string,
+  skipFilters?: boolean,
+  branchId?: string | null
+): Promise<RoomResponse[]> {
   try {
     const params = new URLSearchParams();
     
@@ -15,6 +21,8 @@ export async function getRooms(type?: string, status?: string, skipFilters?: boo
     if (skipFilters) {
       params.append('skipFilters', 'true');
     }
+
+    appendBranchParams(params, branchId ?? null);
     
     const url = params.toString() 
       ? `/api/rooms?${params.toString()}`
@@ -55,13 +63,19 @@ export async function getAllRooms(type?: string, skipFilters?: boolean): Promise
   return getRooms(type, 'all', skipFilters);
 }
 
-export async function getRoomById(id: string, skipFilters?: boolean): Promise<RoomResponse | null> {
+export async function getRoomById(
+  id: string,
+  skipFilters?: boolean,
+  branchId?: string | null
+): Promise<RoomResponse | null> {
   try {
     const params = new URLSearchParams();
     
     if (skipFilters) {
       params.append('skipFilters', 'true');
     }
+
+    appendBranchParams(params, branchId ?? null);
     
     const url = params.toString() 
       ? `/api/rooms/${id}?${params.toString()}`
@@ -73,7 +87,9 @@ export async function getRoomById(id: string, skipFilters?: boolean): Promise<Ro
       if (response.status === 404) {
         return null;
       }
-      throw new Error('Failed to fetch room');
+      const errorText = await response.text().catch(() => '');
+      console.error('Failed to fetch room:', response.status, errorText);
+      return null;
     }
 
     return await response.json();

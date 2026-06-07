@@ -41,10 +41,14 @@ import { getAmenityLabel } from "@/lib/constants";
 import { getAmenityIcon } from "@/lib/amenity-icons";
 import { calculateTotalWithWeekdayRates } from "@/lib/pricing";
 import { usePricingSettings } from "@/hooks/use-pricing-settings";
+import { useBranch } from "@/contexts/branch-context";
+import { withBranchQuery, DEFAULT_BRANCH_CODE } from "@/lib/branch";
 
 interface SelectedRoom {
   room_id: string;
   room_name: string;
+  branch_code?: string;
+  branch_name?: string;
   price_per_night: number;
   quantity: number;
 }
@@ -53,6 +57,7 @@ export const MultiRoomBookingSection = () => {
   const router = useRouter();
   const { toast } = useToast();
   const { t, language } = useLanguage();
+  const { selectedBranchId, selectedBranch } = useBranch();
   
   // Read URL params for check_in and check_out
   const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
@@ -80,7 +85,7 @@ export const MultiRoomBookingSection = () => {
 
   // Fetch available room categories when dates are selected
   const { data: availableCategories = [], isLoading: loadingCategories } = useQuery({
-    queryKey: ['available-categories', formData.checkIn, formData.checkOut],
+    queryKey: ['available-categories', formData.checkIn, formData.checkOut, selectedBranchId],
     queryFn: async () => {
       if (!formData.checkIn || !formData.checkOut) return [];
       
@@ -90,7 +95,10 @@ export const MultiRoomBookingSection = () => {
       checkOutDate.setHours(12, 0, 0, 0);
 
       const response = await fetch(
-        `/api/rooms/categories-available?check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}`
+        withBranchQuery(
+          `/api/rooms/categories-available?check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}`,
+          selectedBranchId
+        )
       );
 
       if (!response.ok) return [];
@@ -101,9 +109,9 @@ export const MultiRoomBookingSection = () => {
 
   // Fetch all room categories when no dates selected
   const { data: allCategories = [], isLoading: loadingAllCategories } = useQuery({
-    queryKey: ['all-categories'],
+    queryKey: ['all-categories', selectedBranchId],
     queryFn: async () => {
-      const response = await fetch('/api/rooms/categories');
+      const response = await fetch(withBranchQuery('/api/rooms/categories', selectedBranchId));
       if (!response.ok) return [];
       return response.json();
     },
@@ -123,8 +131,11 @@ export const MultiRoomBookingSection = () => {
         : `${minPrice.toLocaleString('vi-VN')} - ${maxPrice.toLocaleString('vi-VN')}`;
       
       return {
-        id: cat.category_code,
+        id: cat.category_slug || cat.category_code,
         name: cat.name,
+        branchName: cat.branch_name,
+        branchCode: cat.branch_code,
+        branchId: cat.branch_id,
         image: cat.image,
         price_per_night: pricePerNight,
         price: priceDisplay,
@@ -209,7 +220,10 @@ export const MultiRoomBookingSection = () => {
       const checkOutDate = new Date(formData.checkOut);
       checkOutDate.setHours(12, 0, 0, 0);
 
-      const apiUrl = `/api/rooms/available-by-category?category_code=${encodeURIComponent(room.id)}&check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}&quantity=10`;
+      const apiUrl = withBranchQuery(
+        `/api/rooms/available-by-category?category_code=${encodeURIComponent(room.id)}&check_in=${encodeURIComponent(checkInDate.toISOString())}&check_out=${encodeURIComponent(checkOutDate.toISOString())}&quantity=10`,
+        selectedBranchId
+      );
 
       const response = await fetch(apiUrl);
 
@@ -262,10 +276,29 @@ export const MultiRoomBookingSection = () => {
         ? parseFloat(priceValue.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, ""))
         : (priceValue || 0);
 
+      if (
+        selectedRooms.length > 0 &&
+        room.branchCode &&
+        selectedRooms[0].branch_code &&
+        selectedRooms[0].branch_code !== room.branchCode
+      ) {
+        toast({
+          title: t.multiBooking.errorTitle,
+          description:
+            language === "vi"
+              ? "Vui lòng chọn phòng cùng một chi nhánh trong một lần đặt."
+              : "Please select rooms from the same branch in one booking.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Add the new room
       setSelectedRooms([...selectedRooms, {
         room_id: availableRoom.id,
         room_name: room.name,
+        branch_code: room.branchCode,
+        branch_name: room.branchName,
         price_per_night: pricePerNight,
         quantity: 1
       }]);
@@ -350,6 +383,7 @@ export const MultiRoomBookingSection = () => {
           customer_nationality: formData.nationality || null,
           notes: formData.specialRequests || null,
           room_items: roomItems,
+          branch_code: selectedBranch?.code ?? DEFAULT_BRANCH_CODE,
         },
         display: {
           room_items: selectedRooms.map(room => ({

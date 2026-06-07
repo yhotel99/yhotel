@@ -1,0 +1,2 @@
+-- Copy of dashboard branch migration — run in Supabase SQL Editor if branch_id is missing.
+-- Source: yhotel-dashboard/supabase/migrations/20260521100000_create_branches.sql

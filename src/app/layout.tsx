@@ -8,6 +8,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import Providers from "./providers";
 import type { Language } from "@/lib/i18n/translations";
+import type { Branch } from "@/lib/branch";
+import { resolveInitialBranchId, BRANCH_STORAGE_KEY } from "@/lib/branch";
+import { supabase } from "@/lib/supabase/server";
+import { supportsBranchSchema } from "@/lib/branch-support.server";
 import "@/index.css";
 
 const cabin = Cabin({
@@ -58,6 +62,26 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://yhotel.lovable.app"),
 };
 
+async function listActiveBranches(): Promise<Branch[]> {
+  const hasBranchSchema = await supportsBranchSchema(supabase);
+  if (!hasBranchSchema) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("branches")
+    .select("id, code, name, address, phone, image_url, is_active")
+    .is("deleted_at", null)
+    .eq("is_active", true)
+    .order("name", { ascending: true });
+
+  if (error) {
+    return [];
+  }
+
+  return (data ?? []) as Branch[];
+}
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -69,6 +93,10 @@ export default async function RootLayout({
     cookieLanguage === "vi" || cookieLanguage === "en" || cookieLanguage === "zh"
       ? cookieLanguage
       : "vi";
+
+  const branches = await listActiveBranches();
+  const branchCookie = cookieStore.get(BRANCH_STORAGE_KEY)?.value ?? null;
+  const initialSelectedBranchId = resolveInitialBranchId(branches, branchCookie);
 
   const structuredData = {
     "@context": "https://schema.org",
@@ -206,7 +234,11 @@ export default async function RootLayout({
             __html: JSON.stringify(faqStructuredData)
           }}
         />
-        <Providers initialLanguage={initialLanguage}>
+        <Providers
+          initialLanguage={initialLanguage}
+          initialBranches={branches}
+          initialSelectedBranchId={initialSelectedBranchId}
+        >
           <TooltipProvider>
             <Toaster />
             <Sonner />

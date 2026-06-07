@@ -115,6 +115,10 @@ export async function createBookingSecure(input: BookingInput): Promise<string> 
           typeof input.voucher_code === 'string' && input.voucher_code.trim() !== ''
             ? input.voucher_code.trim()
             : null,
+        p_branch_code:
+          typeof input.branch_code === 'string' && input.branch_code.trim() !== ''
+            ? input.branch_code.trim()
+            : null,
       }
     );
 

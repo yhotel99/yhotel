@@ -1,32 +1,29 @@
-"use client";
-
-import { useEffect } from "react";
-import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { cookies } from "next/headers";
+import { translations, type Language } from "@/lib/i18n/translations";
 
-export default function NotFound() {
-  const pathname = usePathname();
-  const { t } = useLanguage();
+function resolveLanguage(value: string | undefined): Language {
+  if (value === "vi" || value === "en" || value === "zh") {
+    return value;
+  }
+  return "vi";
+}
 
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      pathname
-    );
-  }, [pathname]);
+export default async function NotFound() {
+  const cookieStore = await cookies();
+  const language = resolveLanguage(cookieStore.get("language")?.value);
+  const t = translations[language].notFound;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">{t.notFound.title}</h1>
-        <p className="text-xl text-foreground mb-2">{t.notFound.message}</p>
-        <p className="text-muted-foreground mb-4">{t.notFound.description}</p>
+        <h1 className="text-4xl font-bold mb-4">{t.title}</h1>
+        <p className="text-xl text-foreground mb-2">{t.message}</p>
+        <p className="text-muted-foreground mb-4">{t.description}</p>
         <Link href="/" className="text-blue-500 hover:text-blue-700 underline">
-          {t.notFound.backToHome}
+          {t.backToHome}
         </Link>
       </div>
     </div>
   );
 }
-

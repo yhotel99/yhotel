@@ -61,9 +61,10 @@ export function isTestOrPlaceholderRoom(room: Room): boolean {
 export function deduplicateRooms(rooms: RoomWithImages[]): RoomWithImages[] {
   const roomMap = new Map<string, RoomWithImages[]>();
   
-  // Group rooms by normalized name
+  // Group rooms by branch + normalized name so cross-branch rooms are not collapsed
   rooms.forEach(room => {
-    const normalizedName = room.name.trim().toLowerCase();
+    const branchKey = room.branch_id || 'default';
+    const normalizedName = `${branchKey}::${room.name.trim().toLowerCase()}`;
     if (!roomMap.has(normalizedName)) {
       roomMap.set(normalizedName, []);
     }

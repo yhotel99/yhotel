@@ -13,9 +13,17 @@ export interface Room {
   max_guests: number;
   amenities: string[]; // JSONB stored as array of strings
   status: RoomStatus;
+  branch_id?: string | null;
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface BranchSummary {
+  id: string;
+  code: string;
+  name: string;
+  address: string | null;
 }
 
 export interface Image {
@@ -58,6 +66,11 @@ export interface RoomResponse {
   popular: boolean;
   category: RoomType;
   category_code?: string;
+  category_slug?: string;
+  branch_id?: string;
+  branch_code?: string;
+  branch_name?: string;
+  branch_address?: string | null;
   description?: string;
   status: RoomStatus;
 }

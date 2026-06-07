@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { BookingDraft } from '@/lib/booking-draft';
 import { BOOKING_STATUS } from '@/lib/constants';
 
 type WebhookPayload = {
@@ -26,137 +25,6 @@ function isSuccessTransfer(statusText: string) {
     statusText.includes('success') ||
     statusText.includes('receive')
   );
-}
-
-async function handlePaymentIntent(
-  supabaseService: SupabaseClient,
-  intentCode: string,
-  payload: WebhookPayload
-) {
-  const { content, amount, transactionId, bankCode, statusText, body } = payload;
-
-  const { data: intentRow, error: fetchIntentError } = await supabaseService
-    .from('payment_logs')
-    .select('id, amount, status, raw_payload, booking_id')
-    .eq('booking_code', intentCode)
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (fetchIntentError || !intentRow) {
-    console.error('[sepay] intent not found:', fetchIntentError);
-    return NextResponse.json({ success: true, ignored: true, reason: 'intent_not_found' });
-  }
-
-  if (intentRow.status === 'paid_booking_created' && intentRow.booking_id) {
-    return NextResponse.json({ success: true, booking_id: intentRow.booking_id, duplicate: true });
-  }
-
-  if (!Number.isFinite(amount) || amount <= 0) {
-    await supabaseService
-      .from('payment_logs')
-      .update({
-        transaction_id: transactionId,
-        bank_code: bankCode,
-        content,
-        status: 'intent_failed',
-        raw_payload: body,
-        reason: 'invalid_amount',
-      })
-      .eq('id', intentRow.id);
-    return NextResponse.json({ success: true, ignored: true, reason: 'invalid_amount' });
-  }
-
-  if (!isSuccessTransfer(statusText)) {
-    return NextResponse.json({ success: true, ignored: true, reason: 'non_success_status' });
-  }
-
-  const expectedAmount = Number(intentRow.amount ?? 0);
-  if (expectedAmount > 0 && Math.round(amount) < Math.round(expectedAmount)) {
-    await supabaseService
-      .from('payment_logs')
-      .update({
-        transaction_id: transactionId,
-        bank_code: bankCode,
-        content,
-        status: 'intent_failed',
-        raw_payload: body,
-        reason: `amount_mismatch_expected_${expectedAmount}_actual_${amount}`,
-      })
-      .eq('id', intentRow.id);
-    return NextResponse.json({ success: true, ignored: true, reason: 'amount_mismatch' });
-  }
-
-  const rawPayload = intentRow.raw_payload as { draft?: BookingDraft } | null;
-  const draft = rawPayload?.draft;
-  if (!draft || (draft.type !== 'single' && draft.type !== 'multi')) {
-    await supabaseService
-      .from('payment_logs')
-      .update({
-        transaction_id: transactionId,
-        bank_code: bankCode,
-        content,
-        status: 'intent_failed',
-        raw_payload: body,
-        reason: 'missing_draft_payload',
-      })
-      .eq('id', intentRow.id);
-    return NextResponse.json({ success: true, ignored: true, reason: 'missing_draft' });
-  }
-
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL ||
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-  const createUrl =
-    draft.type === 'single' ? `${appUrl}/api/bookings` : `${appUrl}/api/bookings/multi`;
-
-  const bookingRes = await fetch(createUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(draft.payload),
-    cache: 'no-store',
-  });
-  const bookingJson = await bookingRes.json();
-
-  if (!bookingRes.ok) {
-    await supabaseService
-      .from('payment_logs')
-      .update({
-        transaction_id: transactionId,
-        bank_code: bankCode,
-        content,
-        status: 'intent_failed',
-        raw_payload: body,
-        reason: `create_booking_failed:${bookingJson?.error || 'unknown'}`,
-      })
-      .eq('id', intentRow.id);
-    return NextResponse.json({ success: true, ignored: true, reason: 'create_booking_failed' });
-  }
-
-  const bookingId = String(bookingJson.booking_id ?? bookingJson.booking?.id ?? bookingJson.id ?? '');
-  if (!bookingId) {
-    return NextResponse.json({ success: true, ignored: true, reason: 'missing_booking_id' });
-  }
-
-  await supabaseService
-    .from('payment_logs')
-    .update({
-      booking_id: bookingId,
-      transaction_id: transactionId,
-      bank_code: bankCode,
-      content,
-      amount,
-      status: 'paid_booking_created',
-      raw_payload: body,
-      reason: 'sepay_confirmed',
-    })
-    .eq('id', intentRow.id);
-
-  return NextResponse.json({
-    success: true,
-    intent_code: intentCode,
-    booking_id: bookingId,
-  });
 }
 
 async function handleBookingPayment(
@@ -290,11 +158,6 @@ export async function POST(request: Request) {
     };
 
     const supabaseService = createServiceClient();
-
-    const intentMatch = content.match(/YHP[0-9A-Z]{8,}/);
-    if (intentMatch?.[0]) {
-      return handlePaymentIntent(supabaseService, intentMatch[0], payload);
-    }
 
     const bookingMatch = content.match(/YH[0-9]{10,}/);
     if (bookingMatch?.[0]) {

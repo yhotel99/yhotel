@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/server';
+import { createServiceSupabase } from '@/lib/supabase/server';
 import { PAYMENT_METHOD, BOOKING_STATUS } from '@/lib/constants';
 import type { BookingRecord } from '@/lib/types';
 
@@ -9,8 +9,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const db = createServiceSupabase();
 
-    const { data: booking, error } = await supabase
+    const { data: booking, error } = await db
       .from('bookings')
       .select(
         `
@@ -41,7 +42,7 @@ export async function GET(
     }
 
     // Lấy thông tin booking_rooms (cho multi-room booking)
-    const { data: bookingRooms } = await supabase
+    const { data: bookingRooms } = await db
       .from('booking_rooms')
       .select(
         `
@@ -59,7 +60,7 @@ export async function GET(
     // Lấy payment_method (nếu có) từ bảng payments
     let paymentMethod: string | null = null;
     try {
-      const { data: payments } = await supabase
+      const { data: payments } = await db
         .from('payments')
         .select('payment_method')
         .eq('booking_id', id)
@@ -95,6 +96,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
+    const db = createServiceSupabase();
 
     // Cho phép cập nhật status và/hoặc payment_method
     const { status, payment_method } = body as {
@@ -134,7 +136,7 @@ export async function PATCH(
 
     // Cập nhật payment_method trong bảng payments (nếu có)
     if (payment_method) {
-      const { error: paymentError } = await supabase
+      const { error: paymentError } = await db
         .from('payments')
         .update({ payment_method })
         .eq('booking_id', id)
@@ -162,7 +164,7 @@ export async function PATCH(
     let booking: BookingRecord | null = null;
 
     if (Object.keys(updateData).length > 0) {
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('bookings')
         .update(updateData)
         .eq('id', id)
@@ -206,7 +208,7 @@ export async function PATCH(
       booking = data;
     } else {
       // Không có status để cập nhật, chỉ đổi payment_method → vẫn cần trả về booking
-      const { data, error } = await supabase
+      const { data, error } = await db
         .from('bookings')
         .select(
           `
@@ -251,7 +253,7 @@ export async function PATCH(
     let finalPaymentMethod: string | null = payment_method ?? null;
     if (!finalPaymentMethod) {
       try {
-        const { data: payments } = await supabase
+        const { data: payments } = await db
           .from('payments')
           .select('payment_method')
           .eq('booking_id', id)
@@ -290,9 +292,10 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const db = createServiceSupabase();
 
     // Check if booking exists and get its status
-    const { data: booking } = await supabase
+    const { data: booking } = await db
       .from('bookings')
       .select('id, status')
       .eq('id', id)
@@ -315,7 +318,7 @@ export async function DELETE(
     }
 
     // Soft delete the booking
-    const { error } = await supabase
+    const { error } = await db
       .from('bookings')
       .update({ deleted_at: new Date().toISOString() })
       .eq('id', id);

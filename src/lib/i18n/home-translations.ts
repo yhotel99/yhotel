@@ -54,6 +54,8 @@ export const homeTranslations = {
 
     // Rooms Section
     rooms: {
+      eyebrow: "Khám phá không gian lưu trú tại Y Hotel",
+      badge: "Trải nghiệm nghỉ dưỡng mới",
       title: "Phòng & Suites",
       description: "Trải nghiệm không gian nghỉ ngơi với trang thiết bị mới, thiết kế hiện đại và tiện nghi đầy đủ. Mỗi phòng được trang bị nội thất chất lượng, công nghệ tiện nghi để mang đến sự thoải mái cho kỳ nghỉ của bạn.",
       noRooms: "Chưa có phòng nào.",
@@ -357,9 +359,11 @@ export const homeTranslations = {
 
     // Rooms Page
     roomsPage: {
+      eyebrow: "Khám phá không gian lưu trú tại Y Hotel",
+      badge: "Trải nghiệm nghỉ dưỡng mới",
       title: "Phòng & Suites",
       backToHome: "Về Trang Chủ",
-      description: "Khám phá không gian nghỉ ngơi thoải mái với thiết kế hiện đại, tiện nghi đầy đủ và dịch vụ tận tâm. Mỗi phòng đều được chăm chút tỉ mỉ để mang đến sự thoải mái.",
+      description: "Trải nghiệm không gian nghỉ ngơi với trang thiết bị mới, thiết kế hiện đại và tiện nghi đầy đủ. Mỗi phòng được trang bị nội thất chất lượng, công nghệ tiện nghi để mang đến sự thoải mái cho kỳ nghỉ của bạn.",
       availableFrom: "Phòng trống từ",
       to: "đến",
       filteredByDate: "Đã lọc theo ngày",
@@ -447,6 +451,8 @@ export const homeTranslations = {
 
     // Rooms Section
     rooms: {
+      eyebrow: "Discover refined stays at Y Hotel",
+      badge: "A new chapter of comfort",
       title: "Rooms & Suites",
       description: "Experience a comfortable resting space with new equipment, modern design and full amenities. Each room is equipped with quality furniture and convenient technology to bring comfort to your stay.",
       noRooms: "No rooms available.",
@@ -750,9 +756,11 @@ export const homeTranslations = {
 
     // Rooms Page
     roomsPage: {
+      eyebrow: "Discover refined stays at Y Hotel",
+      badge: "A new chapter of comfort",
       title: "Rooms & Suites",
       backToHome: "Back to Home",
-      description: "Explore comfortable accommodation with modern design, full amenities and dedicated service. Each room is meticulously cared for to bring comfort.",
+      description: "Experience a comfortable resting space with new equipment, modern design and full amenities. Each room is equipped with quality furniture and convenient technology to bring comfort to your stay.",
       availableFrom: "Available rooms from",
       to: "to",
       filteredByDate: "Filtered by date",
@@ -840,6 +848,8 @@ export const homeTranslations = {
 
     // Rooms Section
     rooms: {
+      eyebrow: "在 Y Hotel 探索精致住宿",
+      badge: "全新舒适体验",
       title: "客房与套房",
       description:
         "以全新设备、现代设计与完善设施，打造舒适的休憩空间。每间房都配备高品质家具与便捷科技，让您的旅程更自在。",
@@ -1147,10 +1157,12 @@ export const homeTranslations = {
 
     // Rooms Page
     roomsPage: {
+      eyebrow: "在 Y Hotel 探索精致住宿",
+      badge: "全新舒适体验",
       title: "客房与套房",
       backToHome: "返回首页",
       description:
-        "探索舒适住宿体验：现代设计、完善设施与专注服务。每间房都经过精心呵护，让您更安心舒适。",
+        "以全新设备、现代设计与完善设施，打造舒适的休憩空间。每间房都配备高品质家具与便捷科技，让您的旅程更自在。",
       availableFrom: "可预订房间从",
       to: "至",
       filteredByDate: "按日期筛选",

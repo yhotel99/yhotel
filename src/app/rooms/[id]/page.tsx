@@ -23,7 +23,7 @@ import {
   Loader2,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
 import { vi, enUS, zhCN } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -54,6 +54,18 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import Script from "next/script";
 import { useQuery } from "@tanstack/react-query";
 import { setBookingDraft, type BookingDraftSingle } from "@/lib/booking-draft";
+import { useBranch } from "@/contexts/branch-context";
+import { withBranchQuery, DEFAULT_BRANCH_CODE, parseBranchFilter } from "@/lib/branch";
+
+function buildCategoryHref(
+  categoryCode: string,
+  branchId: string | null
+): string {
+  return withBranchQuery(
+    `/rooms/category/${encodeURIComponent(categoryCode)}`,
+    branchId
+  );
+}
 import {
   calculateTotalWithWeekdayRates,
 } from "@/lib/pricing";
@@ -100,7 +112,13 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   const unwrappedParams = use(params);
   const { id } = unwrappedParams;
   const { t, language } = useLanguage();
+  const { selectedBranchId, selectedBranch, setSelectedBranchId } = useBranch();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const branchFromUrl = useMemo(
+    () => parseBranchFilter(searchParams).branchId,
+    [searchParams]
+  );
   const { toast } = useToast();
   const isScrolled = useScrollThreshold(100);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -145,13 +163,45 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   const lightboxTouchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [lightboxTouchEnd, setLightboxTouchEnd] = useState<{ x: number; y: number } | null>(null);
 
-  const { data: room, isLoading: loading } = useRoom(id, true);
+  const { data: room, isLoading: loading } = useRoom(
+    id,
+    true,
+    branchFromUrl ?? selectedBranchId
+  );
+
+  // Keep branch context aligned with URL or the room being viewed
+  useEffect(() => {
+    const targetBranchId = branchFromUrl ?? room?.branch_id;
+    if (targetBranchId && targetBranchId !== selectedBranchId) {
+      setSelectedBranchId(targetBranchId);
+    }
+  }, [branchFromUrl, room?.branch_id, selectedBranchId, setSelectedBranchId]);
+
+  // Persist branch_id in URL so category links and refresh stay on the same branch
+  useEffect(() => {
+    if (!room?.branch_id || branchFromUrl) return;
+
+    const path = withBranchQuery(`/rooms/${id}`, room.branch_id);
+    const checkIn = searchParams.get("check_in");
+    const checkOut = searchParams.get("check_out");
+    const extra = new URLSearchParams();
+    if (checkIn && checkOut) {
+      extra.set("check_in", checkIn);
+      extra.set("check_out", checkOut);
+    }
+    const qs = extra.toString();
+    const nextUrl = qs
+      ? `${path}${path.includes("?") ? "&" : "?"}${qs}`
+      : path;
+    router.replace(nextUrl, { scroll: false });
+  }, [room?.branch_id, branchFromUrl, id, router, searchParams]);
   
-  // Fetch room categories for similar rooms
+  // Fetch room categories for similar rooms (same branch as current room)
+  const similarRoomsBranchId = room?.branch_id ?? branchFromUrl ?? selectedBranchId;
   const { data: allCategories = [], isLoading: loadingSimilarRooms } = useQuery<any[]>({
-    queryKey: ['room-categories'],
+    queryKey: ['room-categories', similarRoomsBranchId],
     queryFn: async () => {
-      const response = await fetch('/api/rooms/categories');
+      const response = await fetch(withBranchQuery('/api/rooms/categories', similarRoomsBranchId));
       
       if (!response.ok) {
         throw new Error('Không thể lấy danh sách loại phòng');
@@ -679,6 +729,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
           customer_nationality: formData.nationality || null,
           ...(formData.specialRequests && { notes: formData.specialRequests }),
           ...(appliedVoucher && { voucher_code: appliedVoucher.code }),
+          branch_code: selectedBranch?.code ?? DEFAULT_BRANCH_CODE,
         },
         display: {
           room_name: room.name,
@@ -980,6 +1031,12 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                           {getCategoryLabel(room.category)}
                         </Badge>
                       </div>
+                      {room.branch_name ? (
+                        <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1.5">
+                          <Building2 className="w-4 h-4" />
+                          <span>{room.branch_name}</span>
+                        </p>
+                      ) : null}
                         <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-muted-foreground">
                         {room.size && (
                           <div className="flex items-center gap-1">
@@ -1503,7 +1560,10 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
               
               // Filter similar categories: exclude current room's category, limit to 4
               const similarCategories = allCategories
-                .filter((cat) => cat.category_code !== room.category_code)
+                .filter((cat) =>
+                  cat.category_slug !== room.category_slug &&
+                  !(cat.branch_id === room.branch_id && cat.category_code === room.category_code)
+                )
                 .slice(0, 4)
                 .map(cat => {
                   const minPrice = cat.min_price;
@@ -1515,6 +1575,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                   return {
                     id: cat.category_code,
                     name: cat.name,
+                    branchName: cat.branch_name,
                     image: cat.image,
                     price: priceDisplay,
                     guests: cat.max_guests,
@@ -1549,7 +1610,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                         transition={{ duration: 0.3 }}
                       >
                         <Link 
-                          href={`/rooms/category/${encodeURIComponent(category.id)}`}
+                          href={buildCategoryHref(category.id, similarRoomsBranchId)}
                           className="block h-full"
                         >
                           <div className="border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg bg-card h-full">
@@ -1656,7 +1717,10 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      window.location.href = `/rooms/category/${encodeURIComponent(category.id)}`;
+                                      window.location.href = buildCategoryHref(
+                                        category.id,
+                                        similarRoomsBranchId
+                                      );
                                     }}
                                   >
                                     <Plus className="w-4 h-4 mr-2" />
