@@ -341,21 +341,7 @@ const RoomsPageContent = () => {
               <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground absolute left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none">
                 {t.roomsPage.title}
               </h1>
-              <div className="w-[100px] shrink-0 md:w-[140px]">
-                {checkInParam && checkOutParam ? (
-                  <div className="flex items-center justify-end gap-2">
-                    <Badge variant="outline" className="hidden sm:inline-flex bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
-                      <CalendarIcon className="w-3 h-3 mr-1" />
-                      {t.roomsPage.filteredByDate}
-                    </Badge>
-                    <Link href="/rooms">
-                      <Button variant="ghost" size="sm" className="h-7 text-xs px-2">
-                        <X className="w-3 h-3" />
-                      </Button>
-                    </Link>
-                  </div>
-                ) : null}
-              </div>
+              <div className="w-[100px] shrink-0 md:w-[140px]" aria-hidden />
             </div>
 
             {checkInParam && checkOutParam ? (

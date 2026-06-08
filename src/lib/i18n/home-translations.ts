@@ -276,7 +276,7 @@ export const homeTranslations = {
     footer: {
       description: "Khách sạn hiện đại với trang thiết bị mới, tiêu chuẩn dịch vụ chuyên nghiệp và vị trí trung tâm thuận lợi. Trải nghiệm lưu trú thoải mái tại Cần Thơ.",
       followUs: "Theo dõi chúng tôi",
-      contact: "Liên hệ",
+      contact: "LIÊN HỆ",
       customerService: "DỊCH VỤ KHÁCH HÀNG",
       privacyPolicy: "Chính sách bảo mật",
       promotions: "Chương trình giá ưu đãi",
@@ -673,7 +673,7 @@ export const homeTranslations = {
     footer: {
       description: "Modern hotel with new equipment, professional service standards and convenient central location. Experience comfortable accommodation in Can Tho.",
       followUs: "Follow us",
-      contact: "Contact",
+      contact: "CONTACT",
       customerService: "CUSTOMER SERVICE",
       privacyPolicy: "Privacy Policy",
       promotions: "Special Offers",

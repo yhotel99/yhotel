@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -53,28 +53,41 @@ interface SelectedRoom {
   quantity: number;
 }
 
+function parseDateParam(value: string | null): Date | undefined {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
 export const MultiRoomBookingSection = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const { t, language } = useLanguage();
   const { selectedBranchId, selectedBranch } = useBranch();
-  
-  // Read URL params for check_in and check_out
-  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-  const checkInParam = searchParams.get('check_in');
-  const checkOutParam = searchParams.get('check_out');
-  
+
+  const checkInParam = searchParams.get("check_in");
+  const checkOutParam = searchParams.get("check_out");
+
   const [formData, setFormData] = useState({
-    checkIn: checkInParam ? new Date(checkInParam) : undefined as Date | undefined,
-    checkOut: checkOutParam ? new Date(checkOutParam) : undefined as Date | undefined,
+    checkIn: parseDateParam(checkInParam),
+    checkOut: parseDateParam(checkOutParam),
     totalGuests: "2",
     fullName: "",
     email: "",
     phone: "",
     nationality: "",
     specialRequests: "",
-    agreedToTerms: false
+    agreedToTerms: false,
   });
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      checkIn: parseDateParam(checkInParam),
+      checkOut: parseDateParam(checkOutParam),
+    }));
+  }, [checkInParam, checkOutParam]);
 
   const [selectedRooms, setSelectedRooms] = useState<SelectedRoom[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -555,11 +568,6 @@ export const MultiRoomBookingSection = () => {
                             ? parseFloat(room.price.replace(/\./g, "").replace(/,/g, "").replace(/₫/g, "")) 
                             : 0;
                           
-                          // Calculate remaining available count (subtract selected rooms)
-                          const remainingAvailable = room.available_count !== undefined 
-                            ? Math.max(0, room.available_count - selectedCategoryRooms.length)
-                            : undefined;
-                          
                           return (
                             <div
                               key={room.id}
@@ -592,24 +600,6 @@ export const MultiRoomBookingSection = () => {
                                           <Building2 className="w-4 h-4 text-primary flex-shrink-0" />
                                           <h3 className="font-semibold text-base sm:text-lg truncate">{room.name}</h3>
                                         </div>
-                                        {/* Available rooms count */}
-                                        {formData.checkIn && formData.checkOut && remainingAvailable !== undefined && (
-                                          <p className="text-xs text-muted-foreground mb-1">
-                                            {remainingAvailable > 0 ? (
-                                              <span className="text-green-600 font-medium">
-                                                {t.multiBooking.remainingRoomsText.replace("{count}", String(remainingAvailable))}
-                                              </span>
-                                            ) : selectedCategoryRooms.length > 0 ? (
-                                              <span className="text-orange-600 font-medium">
-                                                {t.multiBooking.allSelectedText.replace("{count}", String(selectedCategoryRooms.length))}
-                                              </span>
-                                            ) : (
-                                              <span className="text-red-600 font-medium">
-                                                {t.multiBooking.noRoomsLeftText}
-                                              </span>
-                                            )}
-                                          </p>
-                                        )}
                                         <div className="mb-2">
                                           <div className="flex items-baseline gap-1">
                                             <p className="text-lg sm:text-xl font-bold text-primary">

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase/server';
+import { getResolvedBranchIdFromRequest } from '@/lib/branch-query.server';
 import {
   attachCategoryImages,
   fetchActiveBranches,
@@ -14,9 +15,11 @@ const DEFAULT_BRANCH_ID = 'a0000000-0000-4000-8000-000000000001';
 /**
  * GET /api/rooms/categories-available
  * Categories with availability, grouped per branch + category_code.
+ * Query params: check_in, check_out, branch_id | branch_code | branch
  */
 export async function GET(request: Request) {
   try {
+    const resolvedBranchId = await getResolvedBranchIdFromRequest(supabase, request);
     const { searchParams } = new URL(request.url);
     const checkIn = searchParams.get('check_in');
     const checkOut = searchParams.get('check_out');
@@ -102,10 +105,15 @@ export async function GET(request: Request) {
     });
 
     const categoryMap = groupRoomsByBranchCategory(allRooms, branchById, DEFAULT_BRANCH_ID);
-    const categories = (await attachCategoryImages(
-      supabase,
-      Array.from(categoryMap.values())
-    )).filter((cat) => (cat.available_count || 0) > 0);
+    let categories = Array.from(categoryMap.values());
+
+    if (resolvedBranchId) {
+      categories = categories.filter((cat) => cat.branch_id === resolvedBranchId);
+    }
+
+    categories = (await attachCategoryImages(supabase, categories)).filter(
+      (cat) => (cat.available_count || 0) > 0
+    );
 
     return NextResponse.json(categories, {
       headers: {

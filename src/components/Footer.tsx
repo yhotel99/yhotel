@@ -1,18 +1,37 @@
 "use client";
 
 import { memo } from "react";
-import { Mail, Phone, MapPin } from "lucide-react";
+import { Mail, Phone, MapPin, Facebook, Instagram } from "lucide-react";
 import Link from "next/link";
 import Image from "@/components/ui/safe-image";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
+function ZaloIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M12 2C6.48 2 2 5.82 2 10.5c0 2.73 1.5 5.17 3.86 6.77L4.5 21.5l4.55-2.5c.94.26 1.93.4 2.95.4 5.52 0 10-3.82 10-8.5S17.52 2 12 2zm-2.2 10.9H7.8V8.6h2v4.3zm3.2 0h-2V8.6h2c1.1 0 2 .75 2 1.65s-.9 1.65-2 1.65zm3.5-2.35c0 .95-.75 1.7-1.7 1.7h-.55v2.3h-2V8.6h2.55c.95 0 1.7.75 1.7 1.7v.25z" />
+    </svg>
+  );
+}
+
+function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+      <path d="M16.5 3c.4 2.2 1.7 4.1 3.5 5.3V12c-2.2 0-4.2-.7-5.9-1.9v7.4c0 3.4-2.8 6.2-6.2 6.2S1.7 20.9 1.7 17.5 4.5 11.3 7.9 11.3c.4 0 .8 0 1.2.1v3.4c-.4-.1-.7-.2-1.1-.2-1.7 0-3 1.3-3 3s1.3 3 3 3 3-1.3 3-3V3h3.5z" />
+    </svg>
+  );
+}
+
+const SOCIAL_LINKS = [
+  { icon: Facebook, href: "https://www.facebook.com/yhotelcantho/", label: "Facebook" },
+  { icon: ZaloIcon, href: "https://zalo.me/3269878540880387196", label: "Zalo" },
+  { icon: TikTokIcon, href: "https://www.tiktok.com/@y.hotel.cn.th", label: "TikTok" },
+  { icon: Instagram, href: "https://www.instagram.com/yhotelvn/", label: "Instagram" },
+] as const;
+
 const Footer = memo(() => {
   const { t } = useLanguage();
-  
-  const socialLinks: Array<{ icon: React.ComponentType<{ className?: string }>; href: string; label: string }> = [
-    // Cập nhật URL thật khi sẵn sàng; hiện tại ẩn link placeholder để tránh điều hướng tới "#"
-  ];
 
 
   return (
@@ -41,16 +60,21 @@ const Footer = memo(() => {
               {/* Social Links */}
               <div>
                 <h3 className="text-sm font-semibold text-background mb-3">{t.footer.followUs}</h3>
-                <div className="flex space-x-2">
-                  {socialLinks.map((social, index) => (
+                <div className="flex flex-wrap gap-2">
+                  {SOCIAL_LINKS.map((social) => (
                     <Button
-                      key={index}
+                      key={social.label}
                       variant="ghost"
                       size="icon"
                       className="text-background/60 hover:text-primary hover:bg-background/10 rounded-full transition-all"
                       asChild
                     >
-                      <a href={social.href} aria-label={social.label}>
+                      <a
+                        href={social.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={social.label}
+                      >
                         <social.icon className="w-5 h-5" />
                       </a>
                     </Button>

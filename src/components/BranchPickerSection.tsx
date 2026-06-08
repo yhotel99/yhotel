@@ -106,26 +106,9 @@ function BranchOption({
           "group relative block w-full overflow-hidden text-left",
           "rounded-[1.25rem] sm:rounded-[1.4rem]",
           "aspect-[5/6] sm:aspect-[4/5] max-h-[300px]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-          !showSelected && "opacity-75 hover:opacity-90"
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         )}
       >
-        {showSelected ? (
-          <motion.div
-            layoutId="branch-active-ring"
-            className="pointer-events-none absolute inset-0 z-20 rounded-[1.25rem] sm:rounded-[1.4rem] ring-[2.5px] ring-primary"
-            transition={spring}
-          />
-        ) : null}
-
-        {showSelected ? (
-          <motion.div
-            layoutId="branch-active-shadow"
-            className="pointer-events-none absolute -inset-1 z-0 rounded-[1.35rem] sm:rounded-[1.5rem] bg-primary/15 blur-md"
-            transition={spring}
-          />
-        ) : null}
-
         <div className="absolute inset-0 overflow-hidden rounded-[1.25rem] sm:rounded-[1.4rem]">
           {branch.image_url ? (
             <Image
@@ -134,9 +117,7 @@ function BranchOption({
               fill
               className={cn(
                 "object-cover transition-all duration-500",
-                showSelected
-                  ? "scale-105 grayscale-0"
-                  : "scale-100 grayscale-[35%] brightness-90 group-hover:grayscale-[15%]"
+                showSelected ? "scale-105" : "scale-100"
               )}
               sizes="(max-width: 640px) 45vw, 280px"
             />
@@ -150,15 +131,6 @@ function BranchOption({
               />
             </div>
           )}
-
-          <div
-            className={cn(
-              "absolute inset-0 bg-gradient-to-t transition-opacity duration-300",
-              showSelected
-                ? "from-black/85 via-black/30 to-black/10"
-                : "from-black/70 via-black/20 to-transparent"
-            )}
-          />
         </div>
 
         <div className="relative z-10 flex h-full flex-col justify-between p-3 sm:p-4">
@@ -179,13 +151,11 @@ function BranchOption({
             )}
           </AnimatePresence>
 
-          <div className="space-y-1 sm:space-y-1.5">
+          <div className="space-y-1 sm:space-y-1.5 [text-shadow:0_1px_3px_rgba(0,0,0,0.85),0_0_12px_rgba(0,0,0,0.45)]">
             <p
               className={cn(
-                "font-display font-bold leading-tight line-clamp-2 drop-shadow-md",
-                showSelected
-                  ? "text-sm sm:text-base md:text-lg text-white"
-                  : "text-xs sm:text-sm text-white/90"
+                "font-display font-bold leading-tight line-clamp-2 text-white",
+                showSelected ? "text-sm sm:text-base md:text-lg" : "text-xs sm:text-sm"
               )}
             >
               {branch.name}
@@ -193,8 +163,8 @@ function BranchOption({
 
             {branch.phone ? (
               <div className="flex items-center gap-1.5">
-                <Phone className="h-3 w-3 shrink-0 text-white/85" />
-                <span className="text-[10px] sm:text-xs text-white/90 font-medium">
+                <Phone className="h-3 w-3 shrink-0 text-white" />
+                <span className="text-[10px] sm:text-xs text-white font-medium">
                   {branch.phone}
                 </span>
               </div>
@@ -202,8 +172,8 @@ function BranchOption({
 
             {branch.address ? (
               <div className="hidden sm:flex items-start gap-1.5">
-                <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-white/80" />
-                <span className="text-[11px] text-white/80 line-clamp-1 leading-snug">
+                <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-white" />
+                <span className="text-[11px] text-white line-clamp-1 leading-snug">
                   {branch.address}
                 </span>
               </div>
