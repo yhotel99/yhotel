@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { use, useState, useRef, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import Image from "@/components/ui/safe-image";
 import {
@@ -9,8 +9,6 @@ import {
   ArrowLeft,
   Calendar as CalendarIcon,
   ArrowRight,
-  ChevronLeft,
-  ChevronRight,
   FileText,
   Shield,
   CheckCircle,
@@ -40,7 +38,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
+import { RoomImageGallery } from "@/components/RoomImageGallery";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useScrollThreshold } from "@/hooks/use-scroll";
@@ -48,6 +46,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { useRoom } from "@/hooks/use-rooms";
 import { RoomDetailSkeleton } from "@/components/RoomDetailSkeleton";
+import { RoomGridSkeleton } from "@/components/RoomCardSkeleton";
 import { getAmenityLabel } from "@/lib/constants";
 import { getAmenityIcon } from "@/lib/amenity-icons";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -121,12 +120,6 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   );
   const { toast } = useToast();
   const isScrolled = useScrollThreshold(100);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [lightboxImageIndex, setLightboxImageIndex] = useState(0);
-  const [showAllGalleryImages, setShowAllGalleryImages] = useState(false);
-  const [mainCarouselApi, setMainCarouselApi] = useState<CarouselApi>();
-  const [thumbnailCarouselApi, setThumbnailCarouselApi] = useState<CarouselApi>();
   const [isTermsDialogOpen, setIsTermsDialogOpen] = useState(false);
   const [isPrivacyDialogOpen, setIsPrivacyDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -158,10 +151,6 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   const prevDatesKeyForVoucherRef = useRef<string>("");
 
   const dateLocale = language === "vi" ? vi : language === "zh" ? zhCN : enUS;
-
-  // Touch handlers for lightbox - moved before early return
-  const lightboxTouchStartRef = useRef<{ x: number; y: number } | null>(null);
-  const [lightboxTouchEnd, setLightboxTouchEnd] = useState<{ x: number; y: number } | null>(null);
 
   const { data: room, isLoading: loading } = useRoom(
     id,
@@ -213,9 +202,6 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   });
 
   const images = room ? (room.galleryImages || [room.image]) : [];
-  const INITIAL_GALLERY_IMAGE_COUNT = 8;
-  const galleryImages = showAllGalleryImages ? images : images.slice(0, INITIAL_GALLERY_IMAGE_COUNT);
-  const hasMoreGalleryImages = images.length > INITIAL_GALLERY_IMAGE_COUNT && !showAllGalleryImages;
 
   // Persist booking form state per room so users don't lose data when navigating
   useEffect(() => {
@@ -274,78 +260,6 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
       console.error("[RoomDetail] Failed to persist booking form state to localStorage:", error);
     }
   }, [formData, id]);
-
-  // Keep gallery state in sync with main carousel only.
-  // Avoid 2-way select syncing (main <-> thumbnails), which can cause redundant
-  // select events and extra work during drag/scroll.
-  useEffect(() => {
-    if (!mainCarouselApi) return;
-
-    const syncFromMainCarousel = () => {
-      const selected = mainCarouselApi.selectedScrollSnap();
-      setCurrentImageIndex((prev) => (prev === selected ? prev : selected));
-      thumbnailCarouselApi?.scrollTo(selected);
-    };
-
-    // Sync immediately when APIs become available.
-    syncFromMainCarousel();
-    mainCarouselApi.on("select", syncFromMainCarousel);
-    mainCarouselApi.on("reInit", syncFromMainCarousel);
-
-    return () => {
-      mainCarouselApi.off("select", syncFromMainCarousel);
-      mainCarouselApi.off("reInit", syncFromMainCarousel);
-    };
-  }, [mainCarouselApi, thumbnailCarouselApi]);
-
-  useEffect(() => {
-    if (galleryImages.length === 0) return;
-    if (currentImageIndex >= galleryImages.length) {
-      setCurrentImageIndex(0);
-      mainCarouselApi?.scrollTo(0);
-    }
-  }, [currentImageIndex, galleryImages.length, mainCarouselApi]);
-
-  const openLightbox = useCallback((index: number) => {
-    setLightboxImageIndex(index);
-    setIsLightboxOpen(true);
-  }, []);
-
-  const closeLightbox = useCallback(() => {
-    setIsLightboxOpen(false);
-  }, []);
-
-  const nextLightboxImage = useCallback(() => {
-    if (images.length === 0) return;
-    setLightboxImageIndex((prev) => (prev + 1) % images.length);
-  }, [images.length]);
-
-  const prevLightboxImage = useCallback(() => {
-    if (images.length === 0) return;
-    setLightboxImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  }, [images.length]);
-
-  // Minimum swipe distance (in px) to trigger image change in lightbox
-  const minSwipeDistance = 50;
-
-
-  // Keyboard navigation for lightbox
-  useEffect(() => {
-    if (!isLightboxOpen || images.length === 0) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft') {
-        prevLightboxImage();
-      } else if (e.key === 'ArrowRight') {
-        nextLightboxImage();
-      } else if (e.key === 'Escape') {
-        closeLightbox();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isLightboxOpen, images.length, prevLightboxImage, nextLightboxImage, closeLightbox]);
 
   const nights = useMemo(() => {
     if (!formData.checkIn || !formData.checkOut) return 0;
@@ -616,47 +530,6 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
   }
 
 
-  const onLightboxTouchStart = (e: React.TouchEvent) => {
-    const touch = e.targetTouches[0];
-    lightboxTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
-    setLightboxTouchEnd(null);
-  };
-
-  const onLightboxTouchMove = (e: React.TouchEvent) => {
-    const touch = e.targetTouches[0];
-    setLightboxTouchEnd({ x: touch.clientX, y: touch.clientY });
-  };
-
-  const onLightboxTouchEnd = () => {
-    const start = lightboxTouchStartRef.current;
-    if (!start || !lightboxTouchEnd) {
-      lightboxTouchStartRef.current = null;
-      setLightboxTouchEnd(null);
-      return;
-    }
-    
-    const distance = start.x - lightboxTouchEnd.x;
-    const deltaX = Math.abs(distance);
-    const deltaY = Math.abs(start.y - lightboxTouchEnd.y);
-    
-    // Only trigger swipe if horizontal movement is greater than vertical
-    if (deltaX > deltaY && deltaX > minSwipeDistance) {
-      if (distance > 0) {
-        // Swipe left -> next image
-        nextLightboxImage();
-      } else {
-        // Swipe right -> previous image
-        prevLightboxImage();
-      }
-    }
-    
-    lightboxTouchStartRef.current = null;
-    setLightboxTouchEnd(null);
-  };
-
-
-
-
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -886,120 +759,20 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
               transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
               className="relative"
             >
-              <Carousel
-                setApi={setMainCarouselApi}
-                opts={{
-                  align: "start",
-                  loop: true,
-                }}
-                className="w-full"
-              >
-                <CarouselContent>
-                  {galleryImages.map((image, index) => (
-                    <CarouselItem key={index}>
-                      <div 
-                        className="relative w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] rounded-xl overflow-hidden cursor-pointer group"
-                        onClick={() => openLightbox(index)}
-                      >
-                        <Image
-                          src={image}
-                          alt={`${room.name} - ${language === "vi" ? "Hình" : "Image"} ${index + 1}`}
-                          fill
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 1200px"
-                          className="object-cover select-none transition-transform duration-300 ease-out md:group-hover:scale-[1.02]"
-                          priority={index === 0}
-                          loading={index === 0 ? "eager" : "lazy"}
-                          quality={60}
-                          draggable={false}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
-                        <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                          <div className="bg-black/50 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-sm">
-                            {t.roomDetail.clickToView}
-                          </div>
-                        </div>
-                      </div>
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-
-                {/* Image Indicators */}
-                {galleryImages.length > 1 && (
-                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10 pointer-events-none">
-                    {galleryImages.map((_, index) => (
-                      <button
-                        key={index}
-                        onClick={() => mainCarouselApi?.scrollTo(index)}
-                        className={`w-2 h-2 rounded-full transition-all pointer-events-auto ${
-                          index === currentImageIndex
-                            ? "bg-white w-8"
-                            : "bg-white/50 hover:bg-white/75"
-                        }`}
-                        aria-label={`${t.roomDetail.goToImage} ${index + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </Carousel>
-
-              {/* Thumbnail Gallery */}
-              {galleryImages.length > 1 && (
-                <div className="mt-3 md:mt-4">
-                  <Carousel
-                    setApi={setThumbnailCarouselApi}
-                    opts={{
-                      align: "start",
-                      loop: false,
-                      containScroll: "trimSnaps",
-                    }}
-                    className="w-full"
-                  >
-                    <CarouselContent className="-ml-2 md:-ml-4">
-                      {galleryImages.map((image, index) => (
-                        <CarouselItem key={index} className="pl-2 md:pl-4 basis-auto">
-                          <button
-                            onClick={() => {
-                              mainCarouselApi?.scrollTo(index);
-                            }}
-                            className={`relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
-                              index === currentImageIndex
-                                ? "border-primary"
-                                : "border-transparent hover:border-primary/50"
-                            }`}
-                          >
-                            <Image
-                              src={image}
-                              alt={`Thumbnail ${index + 1}`}
-                              fill
-                              sizes="112px"
-                              quality={55}
-                              loading="lazy"
-                              className="w-full h-full object-cover"
-                              draggable={false}
-                            />
-                          </button>
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                  </Carousel>
-                </div>
-              )}
-              {hasMoreGalleryImages && (
-                <div className="mt-4 text-center">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowAllGalleryImages(true)}
-                    className="backdrop-blur-sm"
-                  >
-                    {language === "vi"
-                      ? `Xem thêm ${images.length - INITIAL_GALLERY_IMAGE_COUNT} ảnh`
-                      : `Show ${images.length - INITIAL_GALLERY_IMAGE_COUNT} more photos`}
-                  </Button>
-                </div>
-              )}
+              <RoomImageGallery
+                images={images}
+                roomName={room.name}
+                language={language}
+                clickToViewLabel={t.roomDetail.clickToView}
+                closeLabel={t.roomDetail.close}
+                showAllPhotosLabel={(count) =>
+                  language === "vi"
+                    ? `Xem tất cả ${count} ảnh`
+                    : language === "zh"
+                      ? `查看全部 ${count} 张`
+                      : `Show all ${count} photos`
+                }
+              />
             </motion.div>
           </div>
         </section>
@@ -1031,24 +804,28 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                           {getCategoryLabel(room.category)}
                         </Badge>
                       </div>
-                      {room.branch_name ? (
-                        <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1.5">
-                          <Building2 className="w-4 h-4" />
-                          <span>{room.branch_name}</span>
-                        </p>
-                      ) : null}
-                        <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-muted-foreground">
-                        {room.size && (
-                          <div className="flex items-center gap-1">
-                            <Bed className="w-3 h-3 md:w-4 md:h-4" />
-                            <span>{room.size}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-1">
-                          <Users className="w-3 h-3 md:w-4 md:h-4" />
-                          <span>{t.roomDetail.capacity} {room.guests} {room.guests > 1 ? t.common.guests : t.common.guest}</span>
+                      {room.branch_name || room.size || room.guests ? (
+                        <div className="flex flex-wrap items-center gap-3 md:gap-4 text-xs md:text-sm text-muted-foreground mb-2">
+                          {room.branch_name ? (
+                            <div className="flex items-center gap-1.5">
+                              <Building2 className="w-3 h-3 md:w-4 md:h-4" />
+                              <span>{room.branch_name}</span>
+                            </div>
+                          ) : null}
+                          {room.size ? (
+                            <div className="flex items-center gap-1">
+                              <Bed className="w-3 h-3 md:w-4 md:h-4" />
+                              <span>{room.size}</span>
+                            </div>
+                          ) : null}
+                          {room.guests ? (
+                            <div className="flex items-center gap-1">
+                              <Users className="w-3 h-3 md:w-4 md:h-4" />
+                              <span>{t.roomDetail.capacity} {room.guests} {room.guests > 1 ? t.common.guests : t.common.guest}</span>
+                            </div>
+                          ) : null}
                         </div>
-                      </div>
+                      ) : null}
                     </div>
                     <div className="text-left md:text-right">
                       <div className="flex items-baseline gap-2">
@@ -1542,13 +1319,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
             </motion.div>
 
             {loadingSimilarRooms ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div key={index} className="animate-pulse">
-                    <div className="bg-muted rounded-lg h-48" />
-                  </div>
-                ))}
-              </div>
+              <RoomGridSkeleton count={4} />
             ) : (() => {
               if (!room || allCategories.length === 0) {
                 return (
@@ -1608,13 +1379,14 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ duration: 0.3 }}
+                        className="h-full"
                       >
                         <Link 
                           href={buildCategoryHref(category.id, similarRoomsBranchId)}
                           className="block h-full"
                         >
-                          <div className="border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg bg-card h-full">
-                            <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4">
+                          <div className="border rounded-lg overflow-hidden transition-all hover:border-primary/50 hover:shadow-lg bg-card h-full md:h-[279px]">
+                            <div className="grid md:grid-cols-[200px_1fr] gap-4 p-4 h-full">
                               {/* Category Image */}
                               <div className="relative h-40 md:h-full rounded-lg overflow-hidden flex-shrink-0">
                                 <Image
@@ -1629,8 +1401,8 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
                               </div>
 
                               {/* Category Info */}
-                              <div className="flex flex-col min-w-0">
-                                <div className="flex-1">
+                              <div className="flex flex-col min-w-0 h-full">
+                                <div className="flex-1 min-h-0">
                                   <div className="flex items-start justify-between mb-2 gap-2">
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 mb-1">
@@ -1743,102 +1515,6 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
         </section>
       </main>
       <Footer />
-
-      {/* Lightbox Modal */}
-      <Dialog open={isLightboxOpen} onOpenChange={setIsLightboxOpen}>
-        <DialogContent className="!max-w-[95vw] !max-h-[95vh] !w-full !h-full !p-0 bg-black/95 border-0 !translate-x-[-50%] !translate-y-[-50%] !left-1/2 !top-1/2 [&>button]:hidden">
-          <DialogTitle className="sr-only">
-            {language === "vi"
-              ? `Xem ảnh ${room.name} - Hình ${lightboxImageIndex + 1}`
-              : `View image ${room.name} - Image ${lightboxImageIndex + 1}`}
-          </DialogTitle>
-          <div 
-            className="relative w-full h-full flex items-center justify-center overflow-auto"
-            onTouchStart={onLightboxTouchStart}
-            onTouchMove={onLightboxTouchMove}
-            onTouchEnd={onLightboxTouchEnd}
-          >
-            {/* Close Button */}
-            <button
-              onClick={closeLightbox}
-              className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors backdrop-blur-sm"
-              aria-label={t.roomDetail.close}
-            >
-              <ArrowRight className="w-5 h-5 rotate-45" />
-            </button>
-
-            {/* Previous Button */}
-            {images.length > 1 && (
-              <button
-                onClick={prevLightboxImage}
-                className="absolute left-4 z-50 w-12 h-12 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors backdrop-blur-sm"
-                aria-label={language === "vi" ? "Ảnh trước" : "Previous image"}
-              >
-                <ChevronLeft className="w-6 h-6" />
-              </button>
-            )}
-
-            {/* Next Button */}
-            {images.length > 1 && (
-              <button
-                onClick={nextLightboxImage}
-                className="absolute right-4 z-50 w-12 h-12 rounded-full bg-black/50 hover:bg-black/70 text-white flex items-center justify-center transition-colors backdrop-blur-sm"
-                aria-label={language === "vi" ? "Ảnh tiếp" : "Next image"}
-              >
-                <ChevronRight className="w-6 h-6" />
-              </button>
-            )}
-
-            {/* Image */}
-            <motion.img
-              key={lightboxImageIndex}
-              src={images[lightboxImageIndex]}
-              alt={`${room.name} - ${language === "vi" ? "Hình" : "Image"} ${lightboxImageIndex + 1}`}
-              className="w-full h-full object-contain"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-              draggable={false}
-            />
-
-            {/* Image Counter */}
-            {images.length > 1 && (
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/50 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm">
-                {lightboxImageIndex + 1} / {images.length}
-              </div>
-            )}
-
-            {/* Thumbnail Strip */}
-            {images.length > 1 && (
-              <div className="absolute bottom-16 left-1/2 -translate-x-1/2 flex gap-2 max-w-[90vw] overflow-x-auto pb-2 scrollbar-hide">
-                {images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setLightboxImageIndex(index)}
-                    className={`relative flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                      index === lightboxImageIndex
-                        ? "border-white"
-                        : "border-transparent hover:border-white/50 opacity-60 hover:opacity-100"
-                    }`}
-                  >
-                    <Image
-                      src={image}
-                      alt={`Thumbnail ${index + 1}`}
-                      fill
-                      sizes="64px"
-                      quality={45}
-                      loading="lazy"
-                      className="w-full h-full object-cover"
-                      draggable={false}
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Terms & Conditions Dialog */}
       <Dialog open={isTermsDialogOpen} onOpenChange={setIsTermsDialogOpen}>

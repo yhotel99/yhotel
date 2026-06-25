@@ -106,6 +106,7 @@ const RoomsSection = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
+                  className="h-full"
                 >
                   <Link 
                     href={withBranchQuery(
@@ -131,8 +132,8 @@ const RoomsSection = () => {
                         </div>
 
                         {/* Room Info */}
-                        <div className="flex flex-col min-w-0">
-                          <div className="flex-1">
+                        <div className="flex flex-col min-w-0 h-full">
+                          <div className="flex-1 min-h-0">
                             <div className="flex items-start justify-between mb-2 gap-2">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">

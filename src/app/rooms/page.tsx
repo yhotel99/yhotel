@@ -553,6 +553,7 @@ const RoomsPageContent = () => {
                       initial={{ opacity: 0, y: 30 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                      className="h-full"
                     >
                       <Link 
                         href={roomLink}
@@ -575,8 +576,8 @@ const RoomsPageContent = () => {
                             </div>
 
                             {/* Room Info */}
-                            <div className="flex flex-col min-w-0">
-                              <div className="flex-1">
+                            <div className="flex flex-col min-w-0 h-full">
+                              <div className="flex-1 min-h-0">
                                 <div className="flex items-start justify-between mb-2 gap-2">
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 mb-1">

@@ -53,7 +53,10 @@ export default function SafeImage(props: ImageProps) {
       {...rest}
       src={resolvedSrc}
       onError={handleError}
-      unoptimized={unoptimized ?? true}
+      unoptimized={
+        unoptimized ??
+        (typeof resolvedSrc === "string" && resolvedSrc.startsWith("data:"))
+      }
     />
   );
 }
