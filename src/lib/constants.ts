@@ -1,3 +1,6 @@
+/** Online payment window before auto-cancel (minutes) */
+export const PAYMENT_TIMEOUT_MINUTES = 10;
+
 /**
  * Booking status values
  */

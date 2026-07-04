@@ -17,7 +17,8 @@ import {
   Phone,
   Mail,
   FileText,
-  CreditCard
+  CreditCard,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +30,7 @@ import { RoomDetailSkeleton } from "@/components/RoomDetailSkeleton";
 import { PaymentSkeleton } from "@/components/PaymentSkeleton";
 import { BookingStatusBadge } from "@/components/BookingStatusBadge";
 import { BOOKING_STATUS, bookingStatusLabels } from "@/lib/constants";
+import { getEffectivePaymentExpiresAt, getPaymentRemainingSeconds } from "@/lib/payment-expiry";
 import { cn } from "@/lib/utils";
 import { GradientBorder } from "@/components/ui/gradient-border";
 import { FloatingCard } from "@/components/ui/floating-card";
@@ -366,27 +368,26 @@ const PaymentContent = () => {
   }, [bookingId, booking?.status, queryClient, toast, router]);
 
   const canProceedPayment = booking?.status === BOOKING_STATUS.PENDING;
+  const paymentExpiresAt = getEffectivePaymentExpiresAt(booking);
 
   const [isCopied, setIsCopied] = useState(false);
-  const [countdown, setCountdown] = useState(15 * 60); // 15 minutes
+  const [countdown, setCountdown] = useState(0);
   const [isCancelling, setIsCancelling] = useState(false);
   const [isQrLoaded, setIsQrLoaded] = useState(false);
+  const cancelRequestedRef = useRef(false);
 
-  // Handle timeout - cancel booking if not paid
-  const handleTimeoutCancel = useCallback(async () => {
-    if (!bookingId || isCancelling) return;
-    
-    // Check if booking is still pending
+  const handleCancelBooking = useCallback(async (reason: 'timeout' | 'manual') => {
+    if (!bookingId || isCancelling || cancelRequestedRef.current) return;
+
     if (booking?.status !== BOOKING_STATUS.PENDING) {
-      // Booking already confirmed or cancelled, redirect to success
       router.push(`/checkout/success?booking_id=${bookingId}`);
       return;
     }
 
+    cancelRequestedRef.current = true;
     setIsCancelling(true);
-    
+
     try {
-      // Cancel the booking using RPC function
       const response = await fetch(`/api/bookings/${bookingId}`, {
         method: 'PATCH',
         headers: {
@@ -398,18 +399,31 @@ const PaymentContent = () => {
       });
 
       if (response.ok) {
-        toast({
-          title: t.payment.timeoutTitle,
-          description: t.payment.timeoutDescription,
-          variant: "destructive",
-          duration: 5000,
-        });
-        
-        // Redirect to success page with cancelled status
-        setTimeout(() => {
-          router.push(`/checkout/success?booking_id=${bookingId}&timeout=true`);
-        }, 2000);
+        await queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+
+        if (reason === 'timeout') {
+          toast({
+            title: t.payment.timeoutTitle,
+            description: t.payment.timeoutDescription,
+            variant: "destructive",
+            duration: 5000,
+          });
+          setTimeout(() => {
+            router.push(`/checkout/success?booking_id=${bookingId}&timeout=true`);
+          }, 2000);
+        } else {
+          toast({
+            title: t.payment.bookingCancelled,
+            description: t.payment.bookingCancelledDescription,
+            variant: "destructive",
+            duration: 5000,
+          });
+          setTimeout(() => {
+            router.push(`/checkout/success?booking_id=${bookingId}`);
+          }, 1500);
+        }
       } else {
+        cancelRequestedRef.current = false;
         console.error('Failed to cancel booking:', await response.text());
         toast({
           title: t.payment.systemError,
@@ -418,6 +432,7 @@ const PaymentContent = () => {
         });
       }
     } catch (error) {
+      cancelRequestedRef.current = false;
       console.error('Error cancelling booking:', error);
       toast({
         title: t.payment.systemError,
@@ -427,25 +442,28 @@ const PaymentContent = () => {
     } finally {
       setIsCancelling(false);
     }
-  }, [bookingId, isCancelling, booking?.status, router, toast]);
+  }, [bookingId, isCancelling, booking?.status, router, toast, t, queryClient]);
 
-  // Countdown timer effect
+  // Sync countdown from server-side payment_expires_at (or created_at fallback)
   useEffect(() => {
-    if (canProceedPayment && countdown > 0) {
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            // Countdown finished, cancel booking if not paid
-            handleTimeoutCancel();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => clearInterval(timer);
+    if (!canProceedPayment || !paymentExpiresAt) {
+      setCountdown(0);
+      return;
     }
-  }, [canProceedPayment, countdown, handleTimeoutCancel]);
+
+    const expiresAt = paymentExpiresAt;
+    const tick = () => {
+      const remaining = getPaymentRemainingSeconds(expiresAt);
+      setCountdown(remaining);
+      if (remaining <= 0) {
+        handleCancelBooking('timeout');
+      }
+    };
+
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [canProceedPayment, paymentExpiresAt, booking?.status, handleCancelBooking]);
 
   const bankAccount = {
     number: "01801807326",
@@ -977,22 +995,30 @@ const PaymentContent = () => {
                         </div>
 
                         {/* Countdown Timer */}
-                        {canProceedPayment && countdown > 0 && (
+                        {canProceedPayment && paymentExpiresAt && (
                           <div className="w-full p-6 bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 rounded-lg border border-primary/20">
                             <div className="text-center">
-                              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                                <Clock className="h-8 w-8 text-primary animate-pulse" />
+                              <div className="text-3xl font-bold text-primary font-mono tabular-nums mb-4">
+                                {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
                               </div>
                               <h3 className="text-lg font-semibold mb-2">{t.payment.waitingPayment}</h3>
                               <p className="text-sm text-muted-foreground mb-4">
                                 {t.payment.autoConfirm}
                               </p>
-                              <div className="text-3xl font-bold text-primary font-mono">
-                                {Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-2">
-                                {t.payment.checkingPayment}
-                              </p>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="mt-4"
+                                disabled={isCancelling}
+                                onClick={() => handleCancelBooking('manual')}
+                              >
+                                {isCancelling ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : (
+                                  <X className="h-4 w-4 mr-2" />
+                                )}
+                                {t.payment.cancelBooking}
+                              </Button>
                             </div>
                           </div>
                         )}

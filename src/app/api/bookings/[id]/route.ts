@@ -2,6 +2,81 @@ import { NextResponse } from 'next/server';
 import { createServiceSupabase } from '@/lib/supabase/server';
 import { PAYMENT_METHOD, BOOKING_STATUS } from '@/lib/constants';
 import type { BookingRecord } from '@/lib/types';
+import {
+  computePaymentExpiresAtFromCreatedAt,
+  getEffectivePaymentExpiresAt,
+  isOnlinePaymentMethod,
+  isPaymentExpired,
+} from '@/lib/payment-expiry';
+
+async function fetchBookingWithRelations(db: ReturnType<typeof createServiceSupabase>, id: string) {
+  const { data: booking, error } = await db
+    .from('bookings')
+    .select(
+      `
+      *,
+      customers (
+        id,
+        full_name,
+        email,
+        phone
+      ),
+      rooms (
+        id,
+        name,
+        room_type,
+        price_per_night
+      )
+      `
+    )
+    .eq('id', id)
+    .is('deleted_at', null)
+    .single();
+
+  if (error || !booking) {
+    return { booking: null, error };
+  }
+
+  const { data: bookingRooms } = await db
+    .from('booking_rooms')
+    .select(
+      `
+      *,
+      rooms (
+        id,
+        name,
+        room_type,
+        price_per_night
+      )
+      `
+    )
+    .eq('booking_id', id);
+
+  let paymentMethod: string | null = null;
+  try {
+    const { data: payments } = await db
+      .from('payments')
+      .select('payment_method')
+      .eq('booking_id', id)
+      .order('created_at', { ascending: true })
+      .limit(1);
+
+    if (payments && payments.length > 0) {
+      paymentMethod = (payments[0] as { payment_method: string }).payment_method;
+    }
+  } catch (pmError) {
+    console.error('Error fetching payment_method for booking:', pmError);
+  }
+
+  return {
+    booking: {
+      ...booking,
+      payment_method: paymentMethod,
+      booking_rooms: bookingRooms || [],
+    },
+    error: null,
+  };
+}
 
 export async function GET(
   request: Request,
@@ -11,28 +86,7 @@ export async function GET(
     const { id } = await params;
     const db = createServiceSupabase();
 
-    const { data: booking, error } = await db
-      .from('bookings')
-      .select(
-        `
-        *,
-        customers (
-          id,
-          full_name,
-          email,
-          phone
-        ),
-        rooms (
-          id,
-          name,
-          room_type,
-          price_per_night
-        )
-        `
-      )
-      .eq('id', id)
-      .is('deleted_at', null)
-      .single();
+    let { booking, error } = await fetchBookingWithRelations(db, id);
 
     if (error || !booking) {
       return NextResponse.json(
@@ -41,45 +95,36 @@ export async function GET(
       );
     }
 
-    // Lấy thông tin booking_rooms (cho multi-room booking)
-    const { data: bookingRooms } = await db
-      .from('booking_rooms')
-      .select(
-        `
-        *,
-        rooms (
-          id,
-          name,
-          room_type,
-          price_per_night
-        )
-        `
-      )
-      .eq('booking_id', id);
+    // Server-side expiry: cancel pending online-payment bookings past deadline
+    const effectivePaymentExpiresAt = getEffectivePaymentExpiresAt({
+      payment_expires_at: booking.payment_expires_at,
+      created_at: booking.created_at,
+      payment_method: booking.payment_method,
+    });
+    if (
+      booking.status === BOOKING_STATUS.PENDING &&
+      isPaymentExpired(effectivePaymentExpiresAt)
+    ) {
+      const { error: cancelError } = await db.rpc('cancel_booking_system', {
+        p_booking_id: id,
+      });
 
-    // Lấy payment_method (nếu có) từ bảng payments
-    let paymentMethod: string | null = null;
-    try {
-      const { data: payments } = await db
-        .from('payments')
-        .select('payment_method')
-        .eq('booking_id', id)
-        .order('created_at', { ascending: true })
-        .limit(1);
-
-      if (payments && payments.length > 0) {
-        paymentMethod = (payments[0] as { payment_method: string }).payment_method;
+      if (!cancelError) {
+        const refreshed = await fetchBookingWithRelations(db, id);
+        booking = refreshed.booking;
+      } else {
+        console.error('Error auto-cancelling expired booking:', cancelError);
       }
-    } catch (pmError) {
-      console.error('Error fetching payment_method for booking:', pmError);
-      // Không chặn response chính, chỉ log lỗi
     }
 
-    return NextResponse.json({
-      ...booking,
-      payment_method: paymentMethod,
-      booking_rooms: bookingRooms || [],
-    });
+    if (!booking) {
+      return NextResponse.json(
+        { error: 'Không tìm thấy thông tin đặt phòng' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(booking);
   } catch (error) {
     console.error('Error fetching booking:', error);
     return NextResponse.json(
@@ -153,6 +198,37 @@ export async function PATCH(
           { status: 500 }
         );
       }
+
+      // Start payment countdown in DB when switching to online payment
+      if (isOnlinePaymentMethod(payment_method)) {
+        const { data: currentBooking, error: fetchExpiryError } = await db
+          .from('bookings')
+          .select('payment_expires_at, created_at')
+          .eq('id', id)
+          .is('deleted_at', null)
+          .single();
+
+        if (
+          !fetchExpiryError &&
+          currentBooking &&
+          !currentBooking.payment_expires_at &&
+          currentBooking.created_at
+        ) {
+          const { error: expiryError } = await db
+            .from('bookings')
+            .update({
+              payment_expires_at: computePaymentExpiresAtFromCreatedAt(
+                currentBooking.created_at
+              ),
+            })
+            .eq('id', id)
+            .is('deleted_at', null);
+
+          if (expiryError) {
+            console.error('Error setting payment_expires_at:', expiryError);
+          }
+        }
+      }
     }
 
     // Xây dựng dữ liệu update cho bảng bookings (chỉ gồm status nếu có)
@@ -163,7 +239,19 @@ export async function PATCH(
 
     let booking: BookingRecord | null = null;
 
-    if (Object.keys(updateData).length > 0) {
+    if (status === BOOKING_STATUS.CANCELLED) {
+      const { error: cancelError } = await db.rpc('cancel_booking_system', {
+        p_booking_id: id,
+      });
+
+      if (cancelError) {
+        console.error('Error cancelling booking via RPC:', cancelError);
+        return NextResponse.json(
+          { error: cancelError.message || 'Không thể hủy đặt phòng' },
+          { status: 500 }
+        );
+      }
+    } else if (Object.keys(updateData).length > 0) {
       const { data, error } = await db
         .from('bookings')
         .update(updateData)
@@ -206,8 +294,9 @@ export async function PATCH(
       }
 
       booking = data;
-    } else {
-      // Không có status để cập nhật, chỉ đổi payment_method → vẫn cần trả về booking
+    }
+
+    if (!booking) {
       const { data, error } = await db
         .from('bookings')
         .select(
