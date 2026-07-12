@@ -80,13 +80,25 @@ async function handleBookingPayment(
     return NextResponse.json({ success: true, ignored: true, reason: 'amount_mismatch' });
   }
 
-  const { error: updateError } = await supabaseService
-    .from('bookings')
-    .update({ status: BOOKING_STATUS.CONFIRMED })
-    .eq('id', booking.id);
+  const { error: confirmError } = await supabaseService.rpc('confirm_booking_system', {
+    p_booking_id: booking.id,
+  });
 
-  if (updateError) {
-    console.error('[sepay] failed to confirm booking:', updateError);
+  if (confirmError) {
+    console.error('[sepay] confirm_booking_system failed:', confirmError);
+    await supabaseService.from('payment_logs').insert([
+      {
+        booking_id: booking.id,
+        booking_code: bookingCode,
+        transaction_id: transactionId,
+        bank_code: bankCode,
+        content,
+        amount,
+        status: 'error',
+        raw_payload: body,
+        reason: 'Confirmation failed',
+      },
+    ]);
     return NextResponse.json({ success: true, ignored: true, reason: 'confirm_booking_failed' });
   }
 
