@@ -95,25 +95,47 @@ export async function GET(
       );
     }
 
-    // Server-side expiry: cancel pending online-payment bookings past deadline
+    // Server-side expiry: website online-payment bookings only (created_by IS NULL)
     const effectivePaymentExpiresAt = getEffectivePaymentExpiresAt({
       payment_expires_at: booking.payment_expires_at,
       created_at: booking.created_at,
       payment_method: booking.payment_method,
     });
+    const isWebsiteBooking = booking.created_by == null;
     if (
+      isWebsiteBooking &&
       booking.status === BOOKING_STATUS.PENDING &&
+      booking.payment_expires_at &&
       isPaymentExpired(effectivePaymentExpiresAt)
     ) {
-      const { error: cancelError } = await db.rpc('cancel_booking_system', {
-        p_booking_id: id,
-      });
+      const { data: hasReceivedPayment, error: paymentCheckError } = await db.rpc(
+        'booking_has_received_payment',
+        { p_booking_id: id }
+      );
 
-      if (!cancelError) {
-        const refreshed = await fetchBookingWithRelations(db, id);
-        booking = refreshed.booking;
+      if (paymentCheckError) {
+        console.error('Error checking received payment:', paymentCheckError);
+      } else if (hasReceivedPayment) {
+        const { error: confirmError } = await db.rpc('confirm_booking_system', {
+          p_booking_id: id,
+        });
+        if (!confirmError) {
+          const refreshed = await fetchBookingWithRelations(db, id);
+          booking = refreshed.booking;
+        } else {
+          console.error('Error confirming booking after received payment:', confirmError);
+        }
       } else {
-        console.error('Error auto-cancelling expired booking:', cancelError);
+        const { error: cancelError } = await db.rpc('cancel_booking_system', {
+          p_booking_id: id,
+        });
+
+        if (!cancelError) {
+          const refreshed = await fetchBookingWithRelations(db, id);
+          booking = refreshed.booking;
+        } else {
+          console.error('Error auto-cancelling expired booking:', cancelError);
+        }
       }
     }
 
@@ -199,11 +221,11 @@ export async function PATCH(
         );
       }
 
-      // Start payment countdown in DB when switching to online payment
+      // Start payment countdown in DB when switching to online payment (website checkout)
       if (isOnlinePaymentMethod(payment_method)) {
         const { data: currentBooking, error: fetchExpiryError } = await db
           .from('bookings')
-          .select('payment_expires_at, created_at')
+          .select('payment_expires_at, created_at, created_by')
           .eq('id', id)
           .is('deleted_at', null)
           .single();
@@ -211,6 +233,7 @@ export async function PATCH(
         if (
           !fetchExpiryError &&
           currentBooking &&
+          currentBooking.created_by == null &&
           !currentBooking.payment_expires_at &&
           currentBooking.created_at
         ) {
@@ -240,16 +263,38 @@ export async function PATCH(
     let booking: BookingRecord | null = null;
 
     if (status === BOOKING_STATUS.CANCELLED) {
-      const { error: cancelError } = await db.rpc('cancel_booking_system', {
+      const { data: hasReceivedPayment } = await db.rpc('booking_has_received_payment', {
         p_booking_id: id,
       });
 
-      if (cancelError) {
-        console.error('Error cancelling booking via RPC:', cancelError);
-        return NextResponse.json(
-          { error: cancelError.message || 'Không thể hủy đặt phòng' },
-          { status: 500 }
-        );
+      if (hasReceivedPayment) {
+        const { error: confirmError } = await db.rpc('confirm_booking_system', {
+          p_booking_id: id,
+        });
+
+        if (confirmError) {
+          console.error('Error confirming instead of cancel (payment received):', confirmError);
+          return NextResponse.json(
+            {
+              error:
+                'Đã nhận được thanh toán, không thể hủy. Vui lòng chờ xác nhận hoặc liên hệ khách sạn.',
+            },
+            { status: 409 }
+          );
+        }
+      } else {
+        const { error: cancelError } = await db.rpc('cancel_booking_system', {
+          p_booking_id: id,
+        });
+
+        if (cancelError) {
+          console.error('Error cancelling booking via RPC:', cancelError);
+          const message =
+            cancelError.message?.includes('BOOKING_HAS_RECEIVED_PAYMENT')
+              ? 'Đã nhận được thanh toán, không thể hủy. Vui lòng chờ xác nhận hoặc liên hệ khách sạn.'
+              : cancelError.message || 'Không thể hủy đặt phòng';
+          return NextResponse.json({ error: message }, { status: 409 });
+        }
       }
     } else if (Object.keys(updateData).length > 0) {
       const { data, error } = await db

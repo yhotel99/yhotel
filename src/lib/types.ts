@@ -31,6 +31,7 @@ export interface BookingRecord {
   status: 'pending' | 'awaiting_payment' | 'confirmed' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled' | 'no_show' | 'refunded';
   booking_code: string | null;
   payment_expires_at?: string | null;
+  created_by?: string | null;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
