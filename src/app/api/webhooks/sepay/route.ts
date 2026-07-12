@@ -171,7 +171,7 @@ export async function POST(request: Request) {
 
     const supabaseService = createServiceClient();
 
-    const bookingMatch = content.match(/YH[0-9]{10,}/);
+    const bookingMatch = content.match(/YH\d{8}[A-Z0-9]{6}/i);
     if (bookingMatch?.[0]) {
       return handleBookingPayment(supabaseService, bookingMatch[0], payload);
     }

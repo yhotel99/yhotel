@@ -592,7 +592,7 @@ const RoomDetailPage = ({ params }: RoomDetailPageProps) => {
       const draft: BookingDraftSingle = {
         type: 'single',
         payload: {
-          ...(room.category_code ? { category_code: room.category_code } : { room_id: room.id }),
+          room_id: room.id,
           check_in: checkInDate.toISOString(),
           check_out: checkOutDate.toISOString(),
           total_guests: parseInt(formData.guests) || 1,

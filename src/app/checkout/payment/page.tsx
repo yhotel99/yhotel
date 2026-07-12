@@ -1019,6 +1019,9 @@ const PaymentContent = () => {
                                 )}
                                 {t.payment.cancelBooking}
                               </Button>
+                              <p className="text-xs text-muted-foreground mt-2">
+                                {t.payment.checkingPayment}
+                              </p>
                             </div>
                           </div>
                         )}
