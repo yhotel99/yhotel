@@ -135,7 +135,7 @@ serve(async (req) => {
       );
     }
 
-    const bookingMatch = content.match(/YH[0-9]{10,}/);
+    const bookingMatch = content.match(/YH\d{8}[A-Z0-9]{6}/i);
     const bookingCode = bookingMatch?.[0] ?? null;
 
     if (!bookingCode) {
