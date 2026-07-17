@@ -1,22 +1,15 @@
 import type { Metadata } from "next";
-
-interface BlogDetailResponse {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string | null;
-  content: string;
-  image: string | null;
-  author: {
-    full_name: string;
-    email: string;
-  } | null;
-  date: string;
-}
+import { supabase } from "@/lib/supabase/server";
 
 type BlogLayoutProps = {
   children: React.ReactNode;
   params: Promise<{ id: string }>;
+};
+
+const FALLBACK_METADATA: Metadata = {
+  title: "Blog | Y Hotel Cần Thơ",
+  description:
+    "Các bài viết mới nhất từ Y Hotel Cần Thơ về du lịch, nghỉ dưỡng và ưu đãi.",
 };
 
 export async function generateMetadata({
@@ -29,44 +22,62 @@ export async function generateMetadata({
     process.env.NEXT_PUBLIC_SITE_URL || "https://yhotel.lovable.app";
 
   try {
-    const url = new URL(`/api/blogs/${encodeURIComponent(id)}`, baseUrl);
+    // Query Supabase directly instead of self-fetching /api/blogs/[id],
+    // which breaks OG tags whenever NEXT_PUBLIC_SITE_URL is misconfigured.
+    let query = supabase
+      .from("blogs")
+      .select("id, title, slug, excerpt, content, featured_image")
+      .is("deleted_at", null)
+      .eq("status", "published");
 
-    const res = await fetch(url.toString(), {
-      next: { revalidate: 300 },
-    });
+    const isUUID =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        id
+      );
+    query = isUUID ? query.eq("id", id) : query.eq("slug", id);
 
-    if (!res.ok) {
-      return {
-        title: "Blog | Y Hotel Cần Thơ",
-        description:
-          "Các bài viết mới nhất từ Y Hotel Cần Thơ về du lịch, nghỉ dưỡng và ưu đãi.",
-      };
+    const { data: blog, error } = await query.single();
+
+    if (error || !blog) {
+      return FALLBACK_METADATA;
     }
-
-    const blog = (await res.json()) as BlogDetailResponse;
 
     const title = `${blog.title} | Blog Y Hotel Cần Thơ`;
     const baseDescription =
       blog.excerpt ||
-      blog.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+      (blog.content || "")
+        .replace(/<[^>]*>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
     const description = baseDescription.slice(0, 180).trim();
 
     const imageUrl =
-      blog.image && blog.image.startsWith("http")
-        ? blog.image
-        : `${baseUrl}${blog.image || "/logo.png"}`;
+      blog.featured_image && blog.featured_image.startsWith("http")
+        ? blog.featured_image
+        : `${baseUrl}${blog.featured_image || "/logo.png"}`;
 
     const canonicalUrl = `${baseUrl}/blog/${blog.slug || id}`;
 
     return {
       title,
       description,
+      alternates: {
+        canonical: canonicalUrl,
+      },
       openGraph: {
         title,
         description,
         type: "article",
         url: canonicalUrl,
-        images: [imageUrl],
+        siteName: "Y Hotel",
+        images: [
+          {
+            url: imageUrl,
+            width: 1200,
+            height: 630,
+            alt: blog.title,
+          },
+        ],
       },
       twitter: {
         card: "summary_large_image",
@@ -76,15 +87,10 @@ export async function generateMetadata({
       },
     };
   } catch {
-    return {
-      title: "Blog | Y Hotel Cần Thơ",
-      description:
-        "Các bài viết mới nhất từ Y Hotel Cần Thơ về du lịch, nghỉ dưỡng và ưu đãi.",
-    };
+    return FALLBACK_METADATA;
   }
 }
 
 export default function BlogDetailLayout({ children }: BlogLayoutProps) {
   return children;
 }
-
